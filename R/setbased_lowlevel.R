@@ -37,11 +37,28 @@ get_ngrams_multiple_sizes <- function(abs_melody, M) {
 #' @export
 #'
 #' @examples
-get_all_ngrams <- function(x, N = 3){
-  l <- length(x) - N + 1
-  stopifnot(l > 0)
-  purrr::map_dfr(1:l, function(i){
-    ngram <- x[i:(i + N - 1)]
-    tibble::tibble(start = i, N = N, value = paste(ngram, collapse = ","))
+get_all_ngrams <- function(x, N = 3, collapse = ",", keep_length = F){
+  stopifnot(is.vector(x) & !is.list(x))
+  ret <-
+    map_dfr(N, function(n){
+    if(keep_length){
+      l <- length(x)
+    }
+    else{
+      l <- length(x) - n + 1
+    }
+    if(l <= 0){
+      return(NULL)
+    }
+    purrr::map_dfr(1:l, function(i){
+      tibble::tibble(start = i, N = n, value = paste(x[i:(i + n - 1)], collapse = collapse))
+    })
+
   })
+  if(keep_length){
+    ret[stringr::str_detect(ret$value, "NA"),]$value <- NA
+  }
+  ret
 }
+
+

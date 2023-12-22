@@ -53,3 +53,29 @@ modus <- function(x){
   as(names(t[t == max(t)]), class(x))
 
 }
+
+#' @export
+value_to_vec <- function(value_str,
+                         type = c("integer", "character", "double"),
+                         collapse = "",
+                         simplify = T){
+  type <- match.arg(type)
+  if(type == "integer"){
+    ret <- stringr::str_extract_all(value_str, "[0-9]+") %>% lapply(as.integer)
+    if(length(value_str) == 1  && simplify){
+      ret <- ret[[1]]
+    }
+    return(ret)
+  }
+  else if(type == "double"){
+    ret <- stringr::str_extract_all(value_str, "[0-9\\.]+") %>% lapply(as.numeric)
+    if(length(value_str) == 1 && simplify){
+      ret <- ret[[1]]
+    }
+    return(ret)
+  }
+  else{
+    return(stringr::str_remove_all(value_str, "[\\[\\]\\{\\}\\(\\)]") %>% str_replace_all("[,]+", collapse))
+
+  }
+}

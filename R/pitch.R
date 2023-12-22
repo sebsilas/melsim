@@ -151,6 +151,20 @@ parsons <- function(intervals) {
 
 
 
+#' @export
+fuzzyint_class <- Vectorize(
+  function(x){
+    if(is.na(x)) return(NA)
+    class_vec <- list("0" = 0, "1" = 1, "2" = 1, "3" = 2, "4" = 2, "5" = 3, "6" = 3, "7" = 3)
+    s <- sign(x)
+    a <- abs(x)
+    if(a > 7){
+      return(s * 4)
+    }
+    return(s * class_vec[[as.character(a)]])
+
+  })
+
 
 
 

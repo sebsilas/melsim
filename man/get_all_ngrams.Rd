@@ -4,7 +4,7 @@
 \alias{get_all_ngrams}
 \title{Get all ngrams from a given vector}
 \usage{
-get_all_ngrams(x, N = 3)
+get_all_ngrams(x, N = 3, collapse = ",", keep_length = F)
 }
 \arguments{
 \item{N}{}

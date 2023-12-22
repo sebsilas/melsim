@@ -1,7 +1,7 @@
 Package: melsim
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
+Title: Calculating melodic similarities
+Version: 0.2.0
 Author: Who wrote it
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: More about what it does (maybe more than one line)
@@ -12,7 +12,8 @@ LazyData: true
 Imports: 
     dplyr,
     magrittr,
-    purrr
+    purrr,
+    tibble
 RoxygenNote: 7.2.3
 URL: https://github.com/sebsilas/melsim
 BugReports: https://github.com/sebsilas/melsim/issues

@@ -1,4 +1,5 @@
 
+library(tidyverse)
 
 
 # Tversky
@@ -7,7 +8,7 @@
 
 tversky_sim <- function(stimuli_pitch, sung_recall_pitch, alpha = 1, beta = 1) {
 
-
+  browser()
   stimuli_pitch_intervals <- diff(stimuli_pitch)
   stimuli_pitch_ngrams <- get_ngrams_multiple_sizes2(stimuli_pitch_intervals, M = 8)
 
@@ -28,22 +29,20 @@ get_salience <- function(ngrams) {
 
   idfs <- get_idf_of_ngrams(ngrams$value)
   tfs <- get_tfs_ngrams(ngrams)
+  browser()
+  jit <- idfs %>%
+    dplyr::left_join(tfs, by = "ngram")
 
-  joined_idfs_and_tfs <- idfs %>%
-    left_join(tfs, by = "ngram")
-
-  sum( sqrt( joined_idfs_and_tfs$idf * sqrt ( joined_idfs_and_tfs$tf * joined_idfs_and_tfs$tf ) ), na.rm = TRUE) / sum(joined_idfs_and_tfs$idf, na.rm = TRUE)
+  sum(sqrt(jit$idf * sqrt(jit$tf * jit$tf )), na.rm = TRUE) / sum(jit$idf, na.rm = TRUE)
 }
 
 
 
 get_tfs_ngrams <- function(ngrams) {
 
-  ngram_count <- ngrams %>%
+  ngrams %>%
     count(value) %>%
-    arrange(desc(n))
-
-  ngram_count %>%
+    arrange(desc(n)) %>%
     rename(ngram = value,
            tf = n)
 }
@@ -65,7 +64,7 @@ get_idf_of_ngrams <- function(ngrams) {
 
     tibble::tibble(ngram = ngram,
                    idf = log(nrow(Berkowitz::phrase_item_bank)/no_corpus_melodies_containing_ngram)) %>%
-      mutate(idf = dplyr::case_when(is.infinite(idf) ~ as.numeric(NA), TRUE ~ idf))
+      dplyr::mutate(idf = dplyr::case_when(is.infinite(idf) ~ as.numeric(NA), TRUE ~ idf))
   })
 
 }

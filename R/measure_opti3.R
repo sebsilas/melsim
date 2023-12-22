@@ -1,5 +1,59 @@
+ukkon_similarity <- function (x, y, na.rm = T){
+  if(na.rm){
+    x <- na.omit(x)
+    y <- na.omit(y)
+  }
+  joint <- c(x, y) %>% table()
+  tx <- factor(x, levels = names(joint)) %>% table()
+  ty <- factor(y, levels = names(joint)) %>% table()
+  1 - sum(abs(tx - ty))/(length(x) + length(y))
+}
 
+count_distinct <- function(x, y, na.rm = T){
+  if(na.rm){
+    x <- na.omit(x)
+    y <- na.omit(y)
+  }
+  length(intersect(x, y))/max(length(x), length(y))
+}
 
+sum_common <- function(x, y, na.rm = T){
+  if(na.rm){
+    x <- na.omit(x)
+    y <- na.omit(y)
+  }
+  joint <- c(x, y) %>% table()
+  tx <- factor(x, levels = names(joint)) %>% table()
+  ty <- factor(y, levels = names(joint)) %>% table()
+  is <- intersect(names(tx[tx > 0]), names(ty[ty > 0]))
+  sum(tx[is] + ty[is])/(length(x) + length(y))
+}
+
+#' An ngrukkon wrapper to produce warnings and return NAs rather than stop if one entry is too short
+#'
+#' @param x
+#' @param y
+#' @param N
+#'
+#' @return
+#' @export
+#'
+#' @examples
+ngrukkon_safe <- function(x, y, N = 3) {
+  ngrukkon_warning(x)
+  ngrukkon_warning(y)
+  if( length(x) < N | length(y) < N ) {
+    res <- NA
+  } else {
+    res <- ngrukkon(x, y, N)
+  }
+  res
+}
+
+ngrukkon_warning <- function(v) {
+  # ngrukkon must be used on intervals not pitches, so warn based on a guess that the input might be pitch rather than interval values
+  if(mean(v, na.rm = TRUE) > 20) warning("Are you definitely using intervals for ngrukkon?")
+}
 #' Score using the opti3 measure of similarity
 #'
 #' @param pitch_vec1
@@ -86,7 +140,7 @@ read_melody <- function(fname, style = c("sonic_annotator", "tony")) {
     stop("Warning: Melody (%s) contains invalid pitches", fname)
   }
   if(any(melody$ioi[!is.na(melody$ioi)] < .01)){
-    stop("Warnings: Melody (%s) contains IOIs less than 1 ms, possibly no note track", fname)
+    stop("Warnings: Melody (%s) contains IOIs less than 10 ms, possibly no note track", fname)
   }
   melody
 }

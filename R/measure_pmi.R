@@ -1,7 +1,6 @@
 
 
 
-
 #' PMI similarity measure
 #'
 #' @param stimuli_pitch
@@ -19,11 +18,11 @@ pmi <- function(stimuli_pitch, sung_recall_pitch) {
 
     stimuli_length <- length(stimuli_pitch)
     sung_recall_length <- length(sung_recall_pitch)
-
     aligned <- Biostrings::pairwiseAlignment(intToUtf8(stimuli_pitch),
                                              intToUtf8(sung_recall_pitch),
-                                             type="global", # i.e., Needleman-Wunsch
-                                             gapOpening=12, gapExtension=6)
+                                             type = "global", # i.e., Needleman-Wunsch
+                                             gapOpening = 12,
+                                             gapExtension = 6)
 
     stimuli_pitch_aligned <- utf8ToInt(as.character(aligned@pattern))
     sung_recall_pitch_aligned <- utf8ToInt(as.character(aligned@subject))
