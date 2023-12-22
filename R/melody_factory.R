@@ -272,7 +272,7 @@ melody_factory <- R6Class("Melody",
 
       },
       add_features = function(columns = c("pitch", "int", "fuzzy_int"),
-                              func_list,
+                              func_list = list(mean = mean, abs_mean = abs_mean, sd = sd, abs_sd = abs_sd),
                               segmentation = NULL,
                               override = T
                               ){
