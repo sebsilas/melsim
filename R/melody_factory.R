@@ -64,7 +64,7 @@ melody_factory <- R6Class("Melody",
 
           }
         }
-        stopifnot(self$validate_data(mel_data))
+        stopifnot(self$validate_mel_data(mel_data))
         stopifnot(is.list(mel_meta))
         private$.mel_data <- mel_data %>%
           mutate(across(where(is.integer), as.numeric)) %>%
@@ -74,8 +74,8 @@ melody_factory <- R6Class("Melody",
         self$add_meta("title", "My Title")
       },
 
-      validate_data = function(data){
-        return(is.data.frame(data)  && "onset" %in% names(data) && "pitch" %in% names(data))
+      validate_mel_data = function(mel_data){
+        return(is.data.frame(mel_data)  && "onset" %in% names(mel_data) && "pitch" %in% names(mel_data))
       },
 
       print = function(...) {
