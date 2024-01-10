@@ -2,7 +2,6 @@
 
 #find a list of candidates for best transpositions for two pitch vectors, based on basic stats
 get_transposition_hints <- function(pitch_vec1, pitch_vec2){
-  browser()
   ih1 <- get_implicit_harmonies(pitch_vec1, only_winner = TRUE)
   key1 <- ih1 %>% dplyr::pull(key)
   pc1 <- ih1 %>% dplyr::pull(transposition)
@@ -29,7 +28,6 @@ find_best_transposition <- function(pitch_vec1, pitch_vec2){
     tidyr::tibble(transposition = x,
                   dist = edit_dist(intToUtf8(pitch_vec1), intToUtf8(pitch_vec2 + x)))
   })
-  browser()
   sims %>% dplyr::arrange(dist, abs(transposition)) %>% head(1) %>% dplyr::pull(transposition)
 }
 

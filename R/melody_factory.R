@@ -1,49 +1,5 @@
-library(R6)
-library(tidyverse)
 
-classify_duration <- Vectorize(
-  function(dur_vec, ref_duration = .5){
-    rel_dur <- dur_vec/ref_duration
-    rhythm_class <- rep(NA, length(rel_dur))
-    rhythm_class[rel_dur > 0 & !is.na(rel_dur)] <- -2
-    rhythm_class[rel_dur > 0.45] <- -1
-    rhythm_class[rel_dur > 0.9] <- 0
-    rhythm_class[rel_dur > 1.8] <- 1
-    rhythm_class[rel_dur > 3.3] <- 2
-    rhythm_class
-  })
-
-abs_mean <- function(x, ...) mean(abs(x), ...)
-abs_sd <- function(x, ...) sd(abs(x), ...)
-safe_entropy <- function(x, ...) suppressWarnings(entropy::entropy(na.omit(x)))
-
-add_ngrams <- function(mel_data, columns, N, override = F) {
-  ngram_cols <-
-    map_dfc(columns, function(col){
-      if(!(col %in% names(mel_data))){
-        return(NULL)
-      }
-      ngrams <- get_all_ngrams(mel_data[[col]],
-                               N,
-                               keep_length = T) %>%
-        pivot_wider(id_cols = start,
-                    names_from = N,
-                    names_prefix = sprintf("%s_ngram_", col),
-                    values_from = value) %>%
-        select(-start)
-      ngrams
-    })
-  if(!override){
-    new_cols <- setdiff(names(ngram_cols), names(mel_data))
-    bind_cols(mel_data, ngram_cols %>% select(new_cols))
-  }
-  else{
-    new_cols <- names(ngram_cols)
-    bind_cols(mel_data[, setdiff(names(mel_data), new_cols)], ngram_cols)
-  }
-}
-
-melody_factory <- R6Class("Melody",
+melody_factory <- R6::R6Class("Melody",
     private = list(
       .mel_data = tibble(onset = numeric(),
                          pitch = numeric()),
@@ -59,7 +15,7 @@ melody_factory <- R6Class("Melody",
                             format = "") {
         if(nzchar(fname) && nzchar(format)){
           if(substr(format, 1, 4) == "mcsv"){
-            mel_data <- read.csv(fname, header = T, sep = ";", stringsAsFactors = F) %>% as_tibble()
+            mel_data <- read.csv(fname, header = TRUE, sep = ";", stringsAsFactors = FALSE) %>% as_tibble()
             mel_meta <- list(file_name =  fname)
 
           }
@@ -70,7 +26,7 @@ melody_factory <- R6Class("Melody",
           mutate(across(where(is.integer), as.numeric)) %>%
           mutate(phrase_id = 1)
         private$.mel_meta <- mel_meta
-        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = F)
+        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = FALSE)
         self$add_meta("title", "My Title")
       },
 
@@ -96,7 +52,7 @@ melody_factory <- R6Class("Melody",
         }
       },
 
-      add_tranforms = function(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = T){
+      add_tranforms = function(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = TRUE){
         if(length(transforms) == 1  && is.function(transforms)){
           tmp <- transforms(private$.mel_data)
           if(intersect(names(private$.mel_data), names(tmp)) == names(private$.mel_data) &&
@@ -163,12 +119,45 @@ melody_factory <- R6Class("Melody",
         invisible(self)
       },
       read_mcsv = function(fname){
-        private$.mel_data <- read.csv(fname, header = T, sep = ";", stringsAsFactors = F) %>% as_tibble()
-        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = F)
+        private$.mel_data <- read.csv(fname, header = TRUE, sep = ";", stringsAsFactors = FALSE) %>% as_tibble()
+        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = FALSE)
         self$add_meta("file_name", fname)
         invisible(self)
       },
-      get_implicit_harmonies = function(segmentation = NULL, only_winner = T, cache = T){
+      read_named_list = function(named_object) {
+        stopifnot(
+          "abs_melody" %in% names(named_object) || "pitch" %in% names(named_object),
+          "durations" %in% names(named_object) || "onset" %in% names(named_object)
+        )
+        ret <- tryCatch({
+          named_object %>%
+            tibble::as_tibble()
+        }, error = function(err) {
+          logging::logerror(err)
+          logging::logerror("Make sure your input is correct")
+        })
+
+        if(!"onset" %in% names(ret)) {
+          ret <- ret %>%
+            mutate(onset = cumsum(durations) - durations[1])
+        }
+
+        if("abs_melody" %in% names(ret) && ! "pitch" %in% names(ret)) {
+          ret <- ret %>%
+            rename(pitch = abs_melody)
+        }
+
+        ret <- ret %>%
+          select(pitch, onset)
+
+        if(nrow(ret) == 1 && grepl(",", ret$pitch)) {
+          ret <- ret %>% musicassessr::expand_string_df_row()
+        }
+
+        return(ret)
+
+      },
+      get_implicit_harmonies = function(segmentation = NULL, only_winner = TRUE, cache = TRUE){
         ih_id <- sprintf("%s_%s",
                          ifelse(is.null(segmentation), "none", segmentation),
                          ifelse(only_winner, "best", "full"))
@@ -223,12 +212,10 @@ melody_factory <- R6Class("Melody",
         } else{
           stop("Undefined edit similarity")
         }
-
         edit_sim(intToUtf8(v1), intToUtf8(v2))
       },
-      ngram_similarity = function(melody, N = 3, transform = "int", method = "ukkon", modify = T){
+      ngram_similarity = function(melody, N = 3, transform = "int", method = "ukkon", modify = TRUE){
         stopifnot(N > 1, is(melody, "Melody"), transform %in% names(private$.mel_data))
-        browser()
         ngr <- sprintf("%s_ngram_%d", transform, N)
         if(self$has_not(ngr)){
           if(!modify){
@@ -274,16 +261,15 @@ melody_factory <- R6Class("Melody",
       add_features = function(columns = c("pitch", "int", "fuzzy_int"),
                               func_list = list(mean = mean, abs_mean = abs_mean, sd = sd, abs_sd = abs_sd),
                               segmentation = NULL,
-                              override = T
-                              ){
+                              override = TRUE) {
         common_cols <- intersect(names(private$.mel_data), columns)
         if(!is.null(segmentation) && self$has(segmentation)){
           tmp <- private$.mel_data %>%
             group_by(!!sym(segmentation)) %>%
-            summarise(across(all_of(common_cols), func_list, na.rm = T), .groups = "drop")
+            summarise(across(all_of(common_cols), func_list, na.rm = TRUE), .groups = "drop")
         }
         else{
-          tmp <- private$.mel_data %>% summarise(across(all_of(common_cols), func_list, na.rm = T))
+          tmp <- private$.mel_data %>% summarise(across(all_of(common_cols), func_list, na.rm = TRUE))
         }
         if(nrow(private$.mel_features) == 0){
           private$.mel_features <- tmp
@@ -302,7 +288,7 @@ melody_factory <- R6Class("Melody",
         invisible((self))
       }
     ),
-    #end public
+    # End public
     #####################
     active = list(
       data = function(value){
@@ -337,4 +323,3 @@ melody_factory <- R6Class("Melody",
 
     )
 )
-

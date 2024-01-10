@@ -8,7 +8,6 @@ library(tidyverse)
 
 tversky_sim <- function(stimuli_pitch, sung_recall_pitch, alpha = 1, beta = 1) {
 
-  browser()
   stimuli_pitch_intervals <- diff(stimuli_pitch)
   stimuli_pitch_ngrams <- get_ngrams_multiple_sizes2(stimuli_pitch_intervals, M = 8)
 
@@ -29,7 +28,7 @@ get_salience <- function(ngrams) {
 
   idfs <- get_idf_of_ngrams(ngrams$value)
   tfs <- get_tfs_ngrams(ngrams)
-  browser()
+
   jit <- idfs %>%
     dplyr::left_join(tfs, by = "ngram")
 

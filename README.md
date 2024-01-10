@@ -39,6 +39,10 @@ Pitches can be represented as a vector of integers, or a comma-separated string 
 # 60:65 %>% int() %>% fuzzy()
 # 60:65 %>% int() %>% parsons()
 
+"60, 61, 63, 68" %>% 
+  int() %>% 
+  fuzzy()
+
 ```
 
 # TODO

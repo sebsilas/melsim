@@ -60,4 +60,3 @@ NULL
 
 #' @importFrom furrr future_map_dfr
 NULL
-

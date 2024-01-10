@@ -1,0 +1,4 @@
+onset;duration;period;division;bar;beat;tatum;beat_duration;signature;pitch;phrase_id;phrase_begin
+0.0;0.248958333333;4;2;1;1;1;0.5;"""4/4""";37;0;1
+0.25;0.498958333333;4;2;1;1;2;0.5;"""4/4""";55;0;0
+0.75;0.248958333333;4;2;1;2;2;0.5;"""4/4""";37;0;0

@@ -45,14 +45,21 @@ is.scalar.integerlike <- function(x) {
   is.scalar(x) && is.integerlike(x)
 }
 
-# Mathematical
+expand.grid.unique <- function(x, y, include.equals = FALSE){
 
-modus <- function(x){
-  # Little helper to calculate modus of simple vector
-  t <- table(x)
-  as(names(t[t == max(t)]), class(x))
+  x <- unique(x)
 
+  y <- unique(y)
+
+  g <- function(i) {
+    z <- setdiff(y, x[seq_len(i-include.equals)])
+
+    if(length(z)) cbind(x[i], z, deparse.level=0)
+  }
+
+  do.call(rbind, lapply(seq_along(x), g))
 }
+
 
 #' @export
 value_to_vec <- function(value_str,
@@ -79,3 +86,51 @@ value_to_vec <- function(value_str,
 
   }
 }
+
+
+remove_attributes <- function(x) {attributes(x) <- NULL; return(x)}
+
+ticks_to_ms <- function(ticks, ppq, tempo) {
+  us_per_quarter <- tempo # Tempo in latest Set Tempo event>
+  us_per_tick <- us_per_quarter / ppq
+  seconds_per_tick <- us_per_tick / 1000000
+  seconds <- ticks * seconds_per_tick
+  seconds
+}
+
+get_division_from_midi_file <- function(file){
+  # borrowed from tuneR's readMidi
+  con <- file(description = file, open = "rb")
+  on.exit(close(con))
+  MThd <- readChar(con, 4)
+  if(MThd != "MThd")
+    stop("No Header Chunk in this Midi (?)")
+  MThd_length <- readBin(con, integer(0), n = 1, size = 4, endian = "big")
+  if(MThd_length != 6)
+    stop("Unexpected Header Chunk size")
+  MThd_format <- readBin(con, integer(0), n = 1, size = 2, endian = "big", signed = FALSE)
+  if(!(MThd_format %in% 0:2))
+    stop("Unexpected Mide file format")
+  MThd_tracks <- readBin(con, integer(0), n = 1, size = 2, endian = "big", signed = FALSE)
+
+  # FIXME: MThd_division < 0 can appear in Midi files with a very different interpretation!
+  MThd_division <- readBin(con, integer(0), n = 1, size = 2, signed = TRUE, endian = "big")
+  if(MThd_division < 0){
+    stop("Midi representation of timing: Frames per second / ticks per frame not yet implemented, please ask the author")
+  }
+  MThd_division
+}
+
+# Mathematical
+
+abs_mean <- function(x, ...) mean(abs(x), ...)
+abs_sd <- function(x, ...) sd(abs(x), ...)
+safe_entropy <- function(x, ...) suppressWarnings(entropy::entropy(na.omit(x)))
+
+modus <- function(x){
+  # Little helper to calculate modus of simple vector
+  t <- table(x)
+  as(names(t[t == max(t)]), class(x))
+
+}
+

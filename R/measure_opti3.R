@@ -1,4 +1,4 @@
-ukkon_similarity <- function (x, y, na.rm = T){
+ukkon_similarity <- function (x, y, na.rm = TRUE){
   if(na.rm){
     x <- na.omit(x)
     y <- na.omit(y)
@@ -9,7 +9,7 @@ ukkon_similarity <- function (x, y, na.rm = T){
   1 - sum(abs(tx - ty))/(length(x) + length(y))
 }
 
-count_distinct <- function(x, y, na.rm = T){
+count_distinct <- function(x, y, na.rm = TRUE){
   if(na.rm){
     x <- na.omit(x)
     y <- na.omit(y)
@@ -17,7 +17,7 @@ count_distinct <- function(x, y, na.rm = T){
   length(intersect(x, y))/max(length(x), length(y))
 }
 
-sum_common <- function(x, y, na.rm = T){
+sum_common <- function(x, y, na.rm = TRUE){
   if(na.rm){
     x <- na.omit(x)
     y <- na.omit(y)

@@ -11,9 +11,16 @@ Encoding: UTF-8
 LazyData: true
 Imports: 
     dplyr,
+    humdrumR (>= 0.7.0.3),
     magrittr,
+    proxy,
     purrr,
+    purrrlyr,
+    R6,
+    tabr,
     tibble
 RoxygenNote: 7.2.3
 URL: https://github.com/sebsilas/melsim
 BugReports: https://github.com/sebsilas/melsim/issues
+Remotes:  
+    Computational-Cognitive-Musicology-Lab/humdrumR
