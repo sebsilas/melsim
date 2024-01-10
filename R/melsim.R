@@ -186,7 +186,6 @@ melsim_many_to_many_multiple_algorithms <- function(melody_set,
   no_computations <- no_comparisons * length(algorithms)
 
   askYesNo(paste0("There will be ", no_computations, "similarity computations. Are you sure you want to continue?"))
-  # 924
 
   ret <- map_dfr(algorithms, function(alg) mel_sim_many_to_many(melody_set, input_type, alg))
 
