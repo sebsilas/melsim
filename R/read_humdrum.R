@@ -1,20 +1,20 @@
 
 
 read_humdrum <- function(fn) {
-
-  h <- humdrumR::readHumdrum(fn)
-
-  pitches <- h %>% humdrumR::pitch()
-
-  rhythms <- h |> humdrumR::select(Token) |> humdrumR::dur()
-
-
-  # pitches$Pitch %>%
-  #   remove_attributes() %>%
-  #   itembankr::sci_notation_to_midi() %>%
-  #   tibble::tibble(pitch = .)
-
-  rhythms
+  stop("Not implemented yet")
+  # h <- humdrumR::readHumdrum(fn)
+  #
+  # pitches <- h %>% humdrumR::pitch()
+  #
+  # rhythms <- h |> humdrumR::select(Token) |> humdrumR::dur()
+  #
+  #
+  # # pitches$Pitch %>%
+  # #   remove_attributes() %>%
+  # #   itembankr::sci_notation_to_midi() %>%
+  # #   tibble::tibble(pitch = .)
+  #
+  # rhythms
 }
 
 
