@@ -1,4 +1,4 @@
-
+file_extension <- function(file) strsplit(basename(file), ".", fixed = T)[[1]][-1]
 
 #find a list of candidates for best transpositions for two pitch vectors, based on basic stats
 get_transposition_hints <- function(pitch_vec1, pitch_vec2){

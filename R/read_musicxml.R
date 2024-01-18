@@ -1,7 +1,7 @@
 
 
 read_musicxml <- function(musicxml_file) {
-
+  browser()
   data <- XML::xmlParse(musicxml_file)
   xml_data <- XML::xmlToList(data)
   part <- xml_data$part
@@ -14,7 +14,7 @@ read_musicxml <- function(musicxml_file) {
   notes <- lapply(part, function(measure) measure[names(measure) == "note"])
   notes <- unlist(notes, recursive = FALSE)
 
-  purrr::map_dfr(notes, function(note) {
+  ret <- purrr::map_dfr(notes, function(note) {
 
     # Pitches
     sci_no <- paste0(note$pitch$step, note$pitch$octave)
@@ -29,6 +29,7 @@ read_musicxml <- function(musicxml_file) {
                    duration = duration)
 
   })
+  ret %>% mutate(onset = cumsum(c(0, duration[1:(length(duration)-1)])))
 }
 
 

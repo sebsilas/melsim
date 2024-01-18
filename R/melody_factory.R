@@ -11,14 +11,11 @@ melody_factory <- R6::R6Class("Melody",
       initialize = function(mel_data = tibble(onset = numeric(),
                                               pitch = numeric()),
                             mel_meta = list(name = "melody"),
-                            fname = "",
-                            format = "") {
-        if(nzchar(fname) && nzchar(format)){
-          if(substr(format, 1, 4) == "mcsv"){
-            mel_data <- read.csv(fname, header = TRUE, sep = ";", stringsAsFactors = FALSE) %>% as_tibble()
-            mel_meta <- list(file_name =  fname)
-
-          }
+                            fname = "") {
+        if(nzchar(fname)){
+          tmp <- self$read(fname)
+          mel_data <- tmp$mel_data
+          mel_meta <- tmp$mel_meta
         }
         stopifnot(self$validate_mel_data(mel_data))
         stopifnot(is.list(mel_meta))
@@ -105,7 +102,7 @@ melody_factory <- R6::R6Class("Melody",
       },
       remove_columns = function(col_names){
         to_keep <- union(c("onset", "pitch"), setdiff(names(private$.mel_data), col_names))
-        print(to_keep)
+        #print(to_keep)
         private$.mel_data <- private$.mel_data[, to_keep]
         invisible(self)
 
@@ -118,44 +115,29 @@ melody_factory <- R6::R6Class("Melody",
         }
         invisible(self)
       },
-      read_mcsv = function(fname){
-        private$.mel_data <- read.csv(fname, header = TRUE, sep = ";", stringsAsFactors = FALSE) %>% as_tibble()
-        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = FALSE)
-        self$add_meta("file_name", fname)
-        invisible(self)
+      read = function(fname){
+        ext <- file_extension(fname)
+        if(ext %in% c("csv", "mcsv")){
+          return(self$read_mcsv(fname))
+        }
+        if(ext %in% c("krn", "kern")){
+          stop("Not implemented")
+        }
+        if(ext %in% c("mid", "midi")){
+          stop("Not implemented")
+        }
+        if(ext %in% c("xml", "mxl", "musicxml")){
+          list(mel_data = read_musicxml(fname), mel_meta = list(file_name = fname))
+        }
       },
-      read_named_list = function(named_object) {
-        stopifnot(
-          "abs_melody" %in% names(named_object) || "pitch" %in% names(named_object),
-          "durations" %in% names(named_object) || "onset" %in% names(named_object)
-        )
-        ret <- tryCatch({
-          named_object %>%
-            tibble::as_tibble()
-        }, error = function(err) {
-          logging::logerror(err)
-          logging::logerror("Make sure your input is correct")
-        })
-
-        if(!"onset" %in% names(ret)) {
-          ret <- ret %>%
-            mutate(onset = cumsum(durations) - durations[1])
-        }
-
-        if("abs_melody" %in% names(ret) && ! "pitch" %in% names(ret)) {
-          ret <- ret %>%
-            rename(pitch = abs_melody)
-        }
-
-        ret <- ret %>%
-          select(pitch, onset)
-
-        if(nrow(ret) == 1 && grepl(",", ret$pitch)) {
-          ret <- ret %>% musicassessr::expand_string_df_row()
-        }
-
-        return(ret)
-
+      read_mcsv = function(fname){
+        mel_data <- read.csv(fname,
+                             header = TRUE,
+                             sep = ";",
+                             stringsAsFactors = FALSE) %>%
+          as_tibble()
+        mel_meta <- list(file_name =  fname)
+        list(mel_data = mel_data, mel_meta = mel_meta)
       },
       get_implicit_harmonies = function(segmentation = NULL, only_winner = TRUE, cache = TRUE){
         ih_id <- sprintf("%s_%s",
@@ -179,7 +161,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         return(ih)
       },
-      edit_sim = function(melody, transform = "ioi_class"){
+      edit_sim = function(melody, transform = "int"){
         if(transform == "harm"){
           ih1 <- self$get_implicit_harmonies() %>% pull(key)
           ih2 <- melody$get_implicit_harmonies() %>% pull(key)
@@ -259,7 +241,10 @@ melody_factory <- R6::R6Class("Melody",
 
       },
       add_features = function(columns = c("pitch", "int", "fuzzy_int"),
-                              func_list = list(mean = mean, abs_mean = abs_mean, sd = sd, abs_sd = abs_sd),
+                              func_list = list(mean = mean,
+                                               abs_mean = abs_mean,
+                                               sd = sd,
+                                               abs_sd = abs_sd),
                               segmentation = NULL,
                               override = TRUE) {
         common_cols <- intersect(names(private$.mel_data), columns)
@@ -286,8 +271,20 @@ melody_factory <- R6::R6Class("Melody",
           }
         }
         invisible((self))
+      },
+      plot = function(){
+        if(self$length == 0 ){
+          stop("No melody data to plot")
+        }
+
+        q <- private$.mel_data %>% ggplot(aes(x = onset, y = pitch))
+        q <- q + geom_segment(aes(xend = onset + ioi, yend = pitch))
+        q <- q + theme_bw()
+        q
       }
     ),
+
+
     # End public
     #####################
     active = list(

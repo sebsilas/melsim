@@ -6,47 +6,54 @@ library(tidyverse)
 
 
 
-tversky_sim <- function(stimuli_pitch, sung_recall_pitch, alpha = 1, beta = 1) {
-  browser()
-  stimuli_pitch_intervals <- diff(stimuli_pitch)
-  stimuli_pitch_ngrams <- get_ngrams_multiple_sizes2(stimuli_pitch_intervals, M = 8)
+tversky_sim <- function(query_pitch, target_pitch, alpha = 1, beta = 1, max_ngram_size = 3) {
+  #browser()
+  query_int_ngrams <- get_all_ngrams(diff(query_pitch), N = max_ngram_size) %>% count(value)
+  target_int_ngrams <- get_all_ngrams(diff(target_pitch), N = max_ngram_size) %>% count(value)
 
-  sung_recall_pitch_intervals <- diff(sung_recall_pitch)
-  sung_recall_pitch_ngrams <- get_ngrams_multiple_sizes2(sung_recall_pitch_intervals, M = 8)
-
-  intersect_ngrams <- tibble::tibble(value = intersect(stimuli_pitch_ngrams$value, sung_recall_pitch_ngrams$value))
+  intersect_ngrams <- intersect(query_int_ngrams$value, target_int_ngrams$value)
+  only_query_ngrams <- setdiff(query_int_ngrams$value, intersect_ngrams)
+  only_target_ngrams <- setdiff(target_int_ngrams$value, intersect_ngrams)
 
   salience_intersect_ngrams <- get_salience(intersect_ngrams)
-  salience_stimuli_ngrams <- get_salience(stimuli_pitch_ngrams)
-  salience_sung_recall_ngrams <- get_salience(sung_recall_pitch_ngrams)
-
-  salience_intersect_ngrams / (salience_intersect_ngrams + alpha *  salience_stimuli_ngrams + beta *  salience_sung_recall_ngrams)
+  salience_only_query_ngrams <- get_salience(only_query_ngrams)
+  salience_only_target_ngrams <- get_salience(only_target_ngrams)
+  if(!is.numeric(alpha)){
+    tfs <- query_int_ngrams %>% filter(value %in% intersect_ngrams)
+    alpha <- sum(tfs$n)/nrow(query_int_ngrams)
+  }
+  if(!is.numeric(beta)){
+    tfs <- target_int_ngrams %>% filter(value %in% intersect_ngrams)
+    beta <- sum(tfs$n)/nrow(target_int_ngrams)
+  }
+  salience_intersect_ngrams / (salience_intersect_ngrams + alpha *  salience_only_target_ngrams + beta *  salience_only_query_ngrams)
 }
 
 
 get_salience <- function(ngrams) {
-  browser()
-  idfs <- get_idf_of_ngrams(ngrams$value)
-  tfs <- get_tfs_ngrams(ngrams)
 
-  jit <- idfs %>%
-    dplyr::left_join(tfs, by = "ngram")
-  tf_idf <-  jit$idf * jit$tf
-  sum(sqrt(jit$idf * jit$tf), na.rm = TRUE) / sum(jit$idf, na.rm = TRUE)
+  #idfs <- get_idf_of_ngrams(ngrams$value)
+  idfs <- int_ngrams_berkowitz %>%
+    filter(value %in% ngrams) %>%
+    select(ngram = value, idf)
+  return(nrow(idfs))
+  return(sum(idfs$idf))
+
+  # tfs <- table(ngrams) %>% as.data.frame() %>% set_names(c("ngram", "tf"))
+  #
+  #  jit <- idfs %>%
+  #    dplyr::left_join(tfs, by = "ngram")
+  # #tf_idf <-  jit$idf * jit$tf
+  # sum(sqrt(jit$idf * jit$tf), na.rm = TRUE) / sum(jit$idf, na.rm = TRUE)
 }
 
-
-
 get_tfs_ngrams <- function(ngrams) {
-
   ngrams %>%
     count(value) %>%
     arrange(desc(n)) %>%
     rename(ngram = value,
            tf = n)
 }
-
-
 
 get_idf <- function(ngram, ngram_db = Berkowitz::ngram_item_bank){
   if(is.null(ngram_db) || nrow(ngram_db) == 0) return(0)
@@ -58,30 +65,6 @@ get_idf <- function(ngram, ngram_db = Berkowitz::ngram_item_bank){
 
 }
 
-make_berkowitz_bigram_stack <- function(N = 8){
-  vecs <- str_split(Berkowitz::phrase_item_bank$melody, ",")
-  int_data <-
-    map_dfr(1: nrow(Berkowitz::phrase_item_bank), function(i){
-    vec <- vecs[[i]]
-    id <- i
-    tibble(int_raw = vec, id = i)
-  })
-  bs <- parkR:::build_bigram_stack(int_data$int_raw, max_level = max(1, N - 1), sd_threshold = 0, ids = int_data$id)
-  int_data %>%
-    rename(value = int_raw) %>%
-    group_by(id) %>%
-    mutate(pos = 1:n(),
-           bi_enc = as.integer(factor(as.character(value))),
-           n = nrow(.)) %>%
-    ungroup() %>%
-    group_by(value) %>%
-    mutate(DF = n_distinct(id),
-           n_xy = n(),
-           f_xy = n_xy/n,
-           level = 0,
-           bigram_id = sprintf("%s-0", bi_enc)) %>% ungroup() %>%
-    bind_rows(bs) %>% mutate(idf = log(nrow(Berkowitz::phrase_item_bank)/DF))
-}
 
 get_idf_of_ngrams <- function(ngrams, item_bank = Berkowitz::ngram_item_bank) {
 
@@ -91,7 +74,7 @@ get_idf_of_ngrams <- function(ngrams, item_bank = Berkowitz::ngram_item_bank) {
     return(tibble(ngram = ngrams, idf = 0))
   }
   purrr::map2_dfr(ngrams, ngram_lengths, function(ngram, n) {
-    browser()
+    #browser()
     DF <- get_idf(ngram, item_bank %>% filter(N == n))
     tibble::tibble(ngram = ngram,
                    idf = log(nrow(Berkowitz::phrase_item_bank)/DF)) %>%
@@ -99,9 +82,6 @@ get_idf_of_ngrams <- function(ngrams, item_bank = Berkowitz::ngram_item_bank) {
   })
 
 }
-
-
-
 
 get_ngrams_multiple_sizes2 <- function (abs_melody, M) {
   if (length(abs_melody) == 1) {
@@ -128,8 +108,27 @@ test_tverski_sim <- function(){
   stimuli_pitch <- c(67, 64, 62, 67, 67, 64, 62, 67, 67, 64, 62, 64, 60, 62, 60, 59, 57)
   sung_recall_pitch <- c(55, 60, 62, 64, 64, 60, 62, 64, 60, 61, 62, 64, 65, 65, 65, 62, 64, 65, 62, 58, 60, 62, 60, 59, 57)
 
+  print(tversky_sim(stimuli_pitch, stimuli_pitch, alpha = 1, beta = 1))
 
-  tversky_sim(stimuli_pitch, sung_recall_pitch, alpha = 1, beta = 1)
+  print(tversky_sim(stimuli_pitch, sung_recall_pitch, alpha = 1, beta = 1))
+  print(tversky_sim(stimuli_pitch, sung_recall_pitch, alpha = 1, beta = 0))
+  print(tversky_sim(stimuli_pitch, sung_recall_pitch, alpha = 0, beta = 1))
+  print(tversky_sim(stimuli_pitch, sung_recall_pitch, alpha = "auto", beta = "auto"))
+  for(i in 1:10) {
+    query <- sung_recall_pitch[1:(length(sung_recall_pitch)-i)]
+    target <- sung_recall_pitch[(i+1):length(sung_recall_pitch)]
+    mel_query <- melody_factory$new(tibble(onset = 1:length(query), pitch = query))
+    mel_target <- melody_factory$new(tibble(onset = 1:length(target), pitch = target))
+    ed_sim <- mel_query$edit_sim(mel_target)
+    ukkon_sim <- mel_query$ngram_similarity(mel_target, method = "sum_common")
+    tv_sim <- tversky_sim(query,
+                          target,
+                          alpha = 1,
+                          beta = 1,
+                          max_ngram_size = 3)
+    print(sprintf("%d - TV: %.3f, ED: %.3f, UKKON: %.3f", i, tv_sim, ed_sim, ukkon_sim))
+  }
+
   # 0.3170575
 
   # tversky_sim(stimuli_pitch, sung_recall_pitch, alpha = 1, beta = 2)

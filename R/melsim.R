@@ -1,3 +1,77 @@
+#' Compute the melodic similarity two melodies
+#'
+#' @param melody1 Vector of melody objects or file names - for comparison.
+#' @param melody2 Vector of melody objects or file names - for comparison.
+#' @param similarity_algorithm Which similarity algorithm to use.
+#' @param ngram_length For set-based similarity, the N-gram length.
+#'
+#' @return
+#' @export
+#'
+#' @examples
+melsim <- function(melody1,
+                    melody2,
+                    similarity_algorithm = c("edit_distance",
+                                             "set_based",
+                                             # "opti3",
+                                             # "needleman_wunsch",
+                                             # "compression_distance_gzip",
+                                             # "correlation",
+                                             get_proxy_sim_measures()),
+                    ngram_length = 3L) {
+  browser()
+  similarity_algorithm <- match.arg(similarity_algorithm)
+
+  # Instantiate melodies
+  if(any(!is(melody1, "Melody"))){
+    if(all(is.character(melody1))){
+      melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f))
+    }
+  }
+  else{
+    stop("Melody1 must be vector or melody objects to valid filenames")
+  }
+  if(any(!is(melody2, "Melody"))){
+    if(all(is.character(melody2))){
+      melody2 <- lapply(melody2, function(f) melody_factory$new(fname = f))
+    }
+  }
+  else{
+    stop("Melody2 must be vector of melody objects or valid filenames")
+  }
+  # Apply the similarity algorithm
+  map_dfr(melody1, function(m1){
+    browser()
+    if(!("name" %in% names(m1$meta))){
+      m1$add_meta("name", unlist(m1$meta) %>% paste(collapse = ","))
+    }
+    map_dfr(melody2, function(m2){
+      if(!("name" %in% names(m2$meta))){
+        m2$add_meta("name", unlist(m2$meta) %>% paste(collapse = ","))
+      }
+      map_dfr(similarity_algorithm, function(sim_algo){
+        browser()
+        if(sim_algo %in% get_proxy_sim_measures()) {
+          sim <- get_proxy_sim(m1, m2, similarity_algorithm)
+        }
+        else if (sim_algo == "edit_distance"){
+          sim  <- m1$edit_sim(m2)
+        }
+      else if(sim_algo == "set_based"){
+        sim <- m1$ngram_similarity(m2, ngram_length = ngram_length )
+      }
+      else{
+        stop(sprintf("Similarity algorithm: '%s' not recognised.", sim_algo))
+      }
+      tibble(melody1 = m1$meta$name,
+             melody2 = m2$meta$name,
+             similarity = sim,
+             algorithm = sim_algo)
+      })
+    })
+  })
+}
+
 
 
 #' Compute the melodic similarity two melodies
@@ -12,7 +86,7 @@
 #' @export
 #'
 #' @examples
-melsim <- function(melody1,
+melsim2 <- function(melody1,
                    melody2,
                    input_type = c("mcsv_file",
                                   "named_list",
@@ -29,7 +103,7 @@ melsim <- function(melody1,
                                             get_proxy_sim_measures()
                                             ),
                    ngram_length = 3L) {
-
+  browser()
   input_type <- match.arg(input_type)
   similarity_algorithm <- match.arg(similarity_algorithm)
 
@@ -72,9 +146,13 @@ melsim <- function(melody1,
 
 }
 
+test_melsim <- function(){
+  melsim(c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
+         list.files("data-raw", pattern = "csv", full.names = T),
+         similarity_algorithm = 'edit_distance')
+  #melsim('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv', similarity_algorithm = 'set_based')
 
-# melsim('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv', similarity_algorithm = 'edit_distance')
-# melsim('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv', similarity_algorithm = 'set_based')
+}
 
 
 melsim_multiple_algorithms <- function(melody1,

@@ -40,8 +40,9 @@ read_named_list <- function(named_object) {
 # Berkowitz::phrase_item_bank %>%
 #   tibble::as_tibble() %>%
 #   slice(1) %>%
-#   read_named_list()
-
+#   read_named_list() %>%
+#   melody_factory$new()
+#
 
 # Get extra melodic features
 
