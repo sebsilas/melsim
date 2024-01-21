@@ -24,7 +24,7 @@ melody_factory <- R6::R6Class("Melody",
           mutate(phrase_id = 1)
         private$.mel_meta <- mel_meta
         self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = FALSE)
-        self$add_meta("title", "My Title")
+        self$add_meta("title", "<MELODY>")
       },
 
       validate_mel_data = function(mel_data){
@@ -34,7 +34,11 @@ melody_factory <- R6::R6Class("Melody",
       print = function(...) {
         cat("Melody: \n")
         cat("  Num events: ", nrow(private$.mel_data), "\n", sep = "")
-        cat("  Metadata fields:  ", paste(names(private$.mel_meta), collapse = ", "), "\n", sep = "")
+        cat("  Metadata :  ", "\n",
+            sprintf("    %s: %s",
+                    names(private$.mel_meta),
+                    private$.mel_meta),
+            "\n", sep = "")
         invisible(self)
       },
 
@@ -47,6 +51,7 @@ melody_factory <- R6::R6Class("Melody",
             private$.mel_meta[[field]] <- value
           }
         }
+        invisible(self)
       },
 
       add_tranforms = function(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = TRUE){

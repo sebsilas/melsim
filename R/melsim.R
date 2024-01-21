@@ -10,7 +10,7 @@
 #'
 #' @examples
 melsim <- function(melody1,
-                    melody2,
+                    melody2 = NULL,
                     similarity_algorithm = c("edit_distance",
                                              "set_based",
                                              # "opti3",
@@ -18,18 +18,23 @@ melsim <- function(melody1,
                                              # "compression_distance_gzip",
                                              # "correlation",
                                              get_proxy_sim_measures()),
-                    ngram_length = 3L) {
-  browser()
-  similarity_algorithm <- match.arg(similarity_algorithm)
-
+                    ngram_length = 3L,
+                   name = "MELSIM") {
+  #similarity_algorithm <- match.arg(similarity_algorithm)
+  #browser()
   # Instantiate melodies
   if(any(!is(melody1, "Melody"))){
     if(all(is.character(melody1))){
-      melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f))
+      melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f)$add_meta("name", f))
     }
   }
   else{
-    stop("Melody1 must be vector or melody objects to valid filenames")
+    stop("Melody1 must be vector of melody objects of valid filenames")
+  }
+  self_sim <- FALSE
+  if(is.null(melody2)){
+    self_sim <- TRUE
+    melody2 <- melody1
   }
   if(any(!is(melody2, "Melody"))){
     if(all(is.character(melody2))){
@@ -40,36 +45,41 @@ melsim <- function(melody1,
     stop("Melody2 must be vector of melody objects or valid filenames")
   }
   # Apply the similarity algorithm
-  map_dfr(melody1, function(m1){
-    browser()
-    if(!("name" %in% names(m1$meta))){
-      m1$add_meta("name", unlist(m1$meta) %>% paste(collapse = ","))
-    }
-    map_dfr(melody2, function(m2){
-      if(!("name" %in% names(m2$meta))){
-        m2$add_meta("name", unlist(m2$meta) %>% paste(collapse = ","))
-      }
-      map_dfr(similarity_algorithm, function(sim_algo){
-        browser()
-        if(sim_algo %in% get_proxy_sim_measures()) {
-          sim <- get_proxy_sim(m1, m2, similarity_algorithm)
+  ret <-
+    map_dfr(similarity_algorithm, function(sim_algo){
+      #browser()
+      message(sprintf("Testing: %s", sim_algo))
+      imap_dfr(melody1, function(m1, i){
+        #browser()
+        if(!("name" %in% names(m1$meta))){
+          m1$add_meta("name", sprintf("SET1MEL%03d", i))
         }
-        else if (sim_algo == "edit_distance"){
-          sim  <- m1$edit_sim(m2)
-        }
-      else if(sim_algo == "set_based"){
-        sim <- m1$ngram_similarity(m2, ngram_length = ngram_length )
-      }
-      else{
-        stop(sprintf("Similarity algorithm: '%s' not recognised.", sim_algo))
-      }
-      tibble(melody1 = m1$meta$name,
-             melody2 = m2$meta$name,
-             similarity = sim,
-             algorithm = sim_algo)
+        imap_dfr(melody2, function(m2, j){
+          if(!("name" %in% names(m2$meta)) && !self_sim){
+            m2$add_meta("name", sprintf("SET2MEL%03d", j))
+          }
+          if(sim_algo %in% get_proxy_sim_measures()) {
+            sim <- get_proxy_sim(m1, m2, similarity_algorithm)
+          }
+          else if (sim_algo == "edit_distance"){
+            sim  <- m1$edit_sim(m2)
+          }
+          else if(sim_algo == "set_based"){
+            sim <- m1$ngram_similarity(m2, N = ngram_length, transform = "int" )
+          }
+          else{
+            stop(sprintf("Similarity algorithm: '%s' not recognised.", sim_algo))
+          }
+          tibble(melody1 = m1$meta$name,
+                 melody2 = m2$meta$name,
+                 sim = sim,
+                 algorithm = sim_algo)
+        })
       })
-    })
-  })
+    }) %>%
+    arrange(algorithm, melody1, melody2)
+
+  sim_mat_factory$new(ret, name = name)
 }
 
 
@@ -103,7 +113,7 @@ melsim2 <- function(melody1,
                                             get_proxy_sim_measures()
                                             ),
                    ngram_length = 3L) {
-  browser()
+  #browser()
   input_type <- match.arg(input_type)
   similarity_algorithm <- match.arg(similarity_algorithm)
 
@@ -146,13 +156,6 @@ melsim2 <- function(melody1,
 
 }
 
-test_melsim <- function(){
-  melsim(c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
-         list.files("data-raw", pattern = "csv", full.names = T),
-         similarity_algorithm = 'edit_distance')
-  #melsim('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv', similarity_algorithm = 'set_based')
-
-}
 
 
 melsim_multiple_algorithms <- function(melody1,
@@ -277,3 +280,12 @@ melsim_many_to_many_multiple_algorithms <- function(melody_set,
 # t <- list.files('data-raw', full.names = TRUE) %>%
 #   melsim_many_to_many_multiple_algorithms()
 
+test_melsim <- function(){
+  melsim(
+    #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
+    melody1 = list.files("data-raw", pattern = "csv", full.names = T),
+    melody2 = NULL,
+    similarity_algorithm = c('edit_distance', "set_based"))
+  #melsim('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv', similarity_algorithm = 'set_based')
+
+}
