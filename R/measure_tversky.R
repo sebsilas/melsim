@@ -116,7 +116,7 @@ test_tverski_sim <- function(){
   print(tversky_sim(stimuli_pitch, sung_recall_pitch, alpha = "auto", beta = "auto"))
   for(i in 1:10) {
     query <- sung_recall_pitch[1:(length(sung_recall_pitch)-i)]
-    target <- sung_recall_pitch[(i+1):length(sung_recall_pitch)]
+    target <- sung_recall_pitch[(i + 1):length(sung_recall_pitch)]
     mel_query <- melody_factory$new(tibble(onset = 1:length(query), pitch = query))
     mel_target <- melody_factory$new(tibble(onset = 1:length(target), pitch = target))
     ed_sim <- mel_query$edit_sim(mel_target)

@@ -1,7 +1,7 @@
-#' int_ngram_berkowitz
+#' int_ngrams_berkowitz
 #'
 #' Interval ngrams from Berkowitz corpus, N = 1 to 10
-#' @name int_ngram_berkowitz
+#' @name int_ngrams_berkowitz
 #' @docType data
 NULL
 
