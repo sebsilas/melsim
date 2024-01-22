@@ -144,7 +144,8 @@ melody_factory <- R6::R6Class("Melody",
         mel_meta <- list(file_name =  fname)
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
-      get_implicit_harmonies = function(segmentation = NULL, only_winner = TRUE, cache = TRUE){
+      get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE){
+        #browser()
         ih_id <- sprintf("%s_%s",
                          ifelse(is.null(segmentation), "none", segmentation),
                          ifelse(only_winner, "best", "full"))
@@ -167,7 +168,7 @@ melody_factory <- R6::R6Class("Melody",
         return(ih)
       },
       edit_sim = function(melody, transform = "int"){
-        if(transform == "harm"){
+        if(transform == "implicit_harmonies"){
           ih1 <- self$get_implicit_harmonies() %>% pull(key)
           ih2 <- melody$get_implicit_harmonies() %>% pull(key)
           common_keys <- levels(factor(union(ih1, ih2)))
@@ -240,9 +241,47 @@ melody_factory <- R6::R6Class("Melody",
         else if(method == "ukkon"){
           ukkon_similarity(mel1$data[[ngr]], mel2$data[[ngr]])
         }
+        else if(proxy::pr_DB$entry_exists(method)){
+          proxy_simil(mel1$data[[ngr]], mel2$data[[ngr]], method)
+        }
         else{
           stop("Similarity function not defined")
         }
+      },
+      similarity = function(melody, sim_measures){
+        #browser()
+        if(!is.list(sim_measures)){
+          sim_measures <- list(sim_measures)
+        }
+        stopifnot(is(melody, "Melody"),
+                  all(sapply(sim_measures, function(x) is(x, "SimilarityMeasure"))))
+        imap_dfr(sim_measures, function(sm, i){
+          #browser()
+          if(sm$type == "sequence_based"){
+            sim <- self$edit_sim(melody, sm$transformation)
+            return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+          }
+          else if(sm$type == "set_based"){
+            if(sm$transformation == "ngrams"){
+              sim <- self$ngram_similarity(melody,
+                                           N = sm$parameters$ngram_length,
+                                           transform = sm$parameters$transform,
+                                           method = sm$sim_measure,
+                                           modify = sm$cache
+                                           )
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+            else{
+              warning(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
+              return(NULL)
+            }
+          }
+          else{
+            warning(sprintf("Type: %s not implemented.", sm$type))
+            return(NULL)
+          }
+
+        })
 
       },
       add_features = function(columns = c("pitch", "int", "fuzzy_int"),

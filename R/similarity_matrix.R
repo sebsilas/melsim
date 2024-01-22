@@ -39,6 +39,7 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                    return(TRUE)
                                  },
                                  validate = function(similarity_df){
+                                   #browser()
                                    private$type <- "invalid"
                                    if(!is.data.frame(similarity_df)){
                                      warning("No data frame")
@@ -129,11 +130,17 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                        arrange(algorithm, melody1, melody2)
                                      nr <- nc <- length(unique(sim_df$melody1))
                                    }
-                                   if(!is.null(algorithm)){
+                                   if(is.null(algorithm)){
                                      algorithm <- unique(sim_df$algorithm)
                                    }
+                                   else{
+                                     algorithm <- intersect(unique(sim_df$algorithm), algorithm)
+                                   }
+                                   if(length(algorithm) == 0){
+                                     stop("Unknown algorithms requested")
+                                   }
                                    ret <- lapply(algorithm, function(algo){
-                                     tmp <- matrix(sim_df$sim,
+                                     tmp <- matrix(sim_df[sim_df$algorithm == algo,]$sim,
                                                    nrow = nr,
                                                    ncol = nc)
                                      row.names(tmp) <- unique(sim_df$melody1)
@@ -146,20 +153,45 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                    }
                                    return(ret)
                                  },
+                                 as.dist = function(algorithm = NULL, method = "cauchy", ...){
+                                   tmp <- self$as.matrix(algorithm)
+                                   #browser()
+                                   trafo <- function(x, a = 1, b = 1){
+                                     b * (1-x)^a
+                                   }
+                                   if(method == "cauchy"){
+                                     trafo <- function(x, a = 1, b = 1){
+                                      1/(a + b * x) - 1/(a + b)
+                                     }
+                                   }
+                                   if(is.list(tmp)) tmp <- lapply(tmp, function(x) as.dist(trafo(x)))
+                                   else if(length(tmp) == 0) tmp <- NULL
+                                   else tmp <- as.dist(trafo(tmp))
+                                   tmp
+                                 },
+                                 make_symmetric = function(){
+                                   private$sim_df <- self$get_symmetric()
+                                   private$type <- "full-diag"
+                                   private$diagonal <- T
+                                   private$symmetric < T
+                                   invisible(self)
+                                 },
+
                                  get_symmetric = function(with_diagonal = T){
                                    if(private$type == "general") {
-                                     warning("Requesting symmetrizing of general sim matrix, you fool.")
-                                     return(private$sim_df)
+                                     stop("Requesting symmetrizing of general sim matrix, you fool.")
+                                     #return(private$sim_df)
                                    }
                                    if(private$type == "full-diag" ) {
                                      return(private$sim_df)
                                    }
-                                   algorithms <- unique(private$data$algorithm)
+                                   algorithms <- unique(private$sim_df$algorithm)
                                    map_dfr(algorithms, function(sim_algo){
                                     self$symmetrize(sim_algo, with_diagonal)
                                    })
                                  },
-                                 symmetrize = function(algorithm, with_diagonal = T){
+                                 symmetrize = function(algorithm, with_diagonal = T, modify = F){
+
                                    sim_df <- private$sim_df %>%
                                      filter(algorithm == !!algorithm)
                                    if(private$type == "full-no-diag" && with_diagonal) {
@@ -174,9 +206,10 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                    }
                                    sim_df <- sim_df %>%
                                      bind_rows(
-                                      sim_df %>%
-                                         set_names(c("melody2", "melody1", "sim", "algorithm"))
-                                    ) %>% distinct()
+                                       sim_df %>%
+                                         rename(tmp = melody2) %>%
+                                         rename(melody1 = tmp, melody2 = melody1)
+                                     ) %>% distinct()
                                    if(with_diagonal){
                                      sim_df <- sim_df %>%
                                        distinct() %>%
@@ -186,10 +219,13 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                               melody2 = private$melodies[[1]],
                                               sim = 1.0, algorithm = algorithm))
                                    }
+                                   if(modify){
+                                     private$sim_df <- sim_df
+                                   }
                                    sim_df
                                  },
                                  plot = function(algorithms = NULL){
-                                   browser()
+                                   #browser()
                                    sim_df <- private$sim_df
                                    if(!is.null(algorithms)){
                                      sim_df <- sim_df %>% filter(algorithms %in% algorithm)
@@ -201,8 +237,41 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                    q <- q + scale_fill_viridis_c(option = "inferno")
                                    if(length(unique(sim_df$algorithm)) > 1){
                                      q <- q +facet_wrap(~algorithm)
-                                     }
+                                   }
                                    q
+                                 },
+                                 linear_sum = function(algorithms,
+                                                       weights = rep(1.0, length(algorithms)),
+                                                       name = "",
+                                                       add = F){
+                                   #browser()
+                                   algorithms <- unique(algorithms)
+                                   stopifnot(length(algorithms) == length(weights),
+                                             is.vector(algorithms), is.vector(weights))
+                                   tmp <- private$sim_df %>% filter(algorithm %in% algorithms)
+                                   if(length(unique(tmp$algorithm)) != length(algorithms)){
+                                     browser()
+                                     warning(sprintf("Found unknown algorithms: %s",
+                                             paste(setdiff(algorithms, tmp$algorithm), collapse = ", ")))
+                                     return(NULL)
+                                   }
+                                   tmp <- tmp %>% pivot_wider(id_cols = c("melody1", "melody2"),
+                                                      names_from = algorithm,
+                                                      names_prefix = "sim_",
+                                                      values_from = sim)
+                                   lin_sim <- (tmp %>% select(starts_with("sim")) %>% as.matrix()) %*% weights
+                                   if(is.null(name) || !nzchar(name)){
+                                     name <- sprintf("%.2f * %s", weights, algorithms) %>% paste(collapse = " + ")
+                                   }
+                                   ret <- tmp %>% select(melody1, melody2) %>% mutate(sim = lin_sim[,1],
+                                                                                      algorithm = name,
+                                                                                      full_name = name)
+                                   if(add){
+                                     private$sim_df <- private$sim_df %>% bind_rows(ret)
+                                     return(self)
+                                   }
+                                   ret
+
                                  },
                                  print = function(...) {
                                    cat("Similarity matrix: \n")

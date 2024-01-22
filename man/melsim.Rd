@@ -6,20 +6,15 @@
 \usage{
 melsim(
   melody1,
-  melody2,
-  input_type = c("mcsv_file", "named_list", "midi_file", "musicxml_file",
-    "monophonic_audio_file", "humdrum_file"),
-  similarity_algorithm = c("edit_distance", "set_based", "opti3", "needleman_wunsch",
-    "compression_distance_gzip", "correlation", get_proxy_sim_measures()),
-  ngram_length = 3L
+  melody2 = NULL,
+  similarity_measures = c("ngram_ukkon", "rhythfuz", "harmcore"),
+  name = "MELSIM"
 )
 }
 \arguments{
-\item{melody1}{The first melody - or set of melodies - for comparison.}
+\item{melody1}{Vector of melody objects or file names - for comparison.}
 
-\item{melody2}{The second melody - or set of melodies - for comparison.}
-
-\item{input_type}{The format in which the melodies are being represented initially.}
+\item{melody2}{Vector of melody objects or file names - for comparison.}
 
 \item{similarity_algorithm}{Which similarity algorithm to use.}
 

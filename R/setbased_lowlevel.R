@@ -1,5 +1,4 @@
 
-
 add_ngrams <- function(mel_data, columns, N, override = FALSE) {
   ngram_cols <-
     map_dfc(columns, function(col){

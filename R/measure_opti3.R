@@ -29,6 +29,18 @@ sum_common <- function(x, y, na.rm = TRUE){
   sum(tx[is] + ty[is])/(length(x) + length(y))
 }
 
+proxy_simil <- function(x, y, proxy_method = "Jaccard", na.rm = T){
+  #browser()
+  if(!proxy::pr_DB$entry_exists(proxy_method)){
+    warning(sprintf("Method %s does not exist in pr_DB", proxy_method))
+  }
+  if(na.rm){
+    x <- na.omit(x)
+    y <- na.omit(y)
+  }
+  xy <- union(x, y)
+  proxy::simil(rbind(xy %in%  x, xy %in%  y), method = proxy_method) %>% as.numeric()
+}
 #' An ngrukkon wrapper to produce warnings and return NAs rather than stop if one entry is too short
 #'
 #' @param x
