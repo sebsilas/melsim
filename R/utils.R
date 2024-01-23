@@ -128,3 +128,11 @@ modus <- function(x){
 
 }
 
+top_n <- function(x, n = 3){
+  # Little helper to calculate modus of simple vector
+  t <- table(x)
+  top_n <- sort(t, decreasing = T)[1:n]
+  top_n <- top_n[!is.na(top_n)]
+  as(names(top_n), class(x))
+
+}

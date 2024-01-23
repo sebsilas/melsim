@@ -10,12 +10,12 @@ sim_transformations <- c("pitch",
                          "implicit_harmonies",
                          "ngrams")
 
-sim_measures <- c("edit_distance", "ukkon", "sum_common", "count_distinct", "cosine",
+sim_measures <- c("edit_distance", "edit_sim_utf8", "ukkon", "sum_common", "count_distinct", "cosine",
                   "Jaccard", "Kulczynski1",  "Kulczynski2", "Mountford",
                   "Fager", "Russel", "Hamman", "Faith",
                   "Tanimoto", "Dice", "Phi", "Stiles", "Michael",
                   "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
-                  "Braun-Blanquet")
+                  "Braun-Blanquet", "Tversky", "pmi")
 #'@export
 sim_measure_factory <- R6::R6Class("SimilarityMeasure",
                                private = list(

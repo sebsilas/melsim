@@ -3,47 +3,52 @@
 
 #' PMI similarity measure
 #'
-#' @param stimuli_pitch
-#' @param sung_recall_pitch
+#' @param query_pitch (integer vector) query pitch sequence
+#' @param target_pitch (integer vector) target pitch sequence
 #'
 #' @return
 #' @export
 #'
 #' @examples
-pmi <- function(stimuli_pitch, sung_recall_pitch) {
+pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExentsion = 6) {
 
   # They use a gap opening penalty of 12 and a gap extension penalty of 6 as parameters.
 
-  pmi <- function(stimuli_pitch, sung_recall_pitch) {
-
-    stimuli_length <- length(stimuli_pitch)
-    sung_recall_length <- length(sung_recall_pitch)
-    aligned <- Biostrings::pairwiseAlignment(intToUtf8(stimuli_pitch),
-                                             intToUtf8(sung_recall_pitch),
+  pmi <- function(q, t) {
+    q_l <- length(q)
+    t_l <- length(t)
+    aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
+                                             intToUtf8(t),
                                              type = "global", # i.e., Needleman-Wunsch
-                                             gapOpening = 12,
-                                             gapExtension = 6)
+                                             gapOpening = gapOpening,
+                                             gapExtension = gapExentsion)
 
-    stimuli_pitch_aligned <- utf8ToInt(as.character(aligned@pattern))
-    sung_recall_pitch_aligned <- utf8ToInt(as.character(aligned@subject))
+    q_aligned <- utf8ToInt(as.character(aligned@pattern))
+    t_aligned <- utf8ToInt(as.character(aligned@subject))
 
-
-    no_correct_positions <- sum(stimuli_pitch_aligned == sung_recall_pitch_aligned)
-
-
-    no_correct_positions / ((stimuli_length + sung_recall_length)/2)
+    sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
   }
-
+  pmi_edit_sim <- function(q, t){
+    edit_sim(intToUtf8(q),
+             intToUtf8(t))
+  }
   # Run for all transpositions and pick the top
+  #tictoc::tic()
+  query_pitch <- as.integer(query_pitch - median(query_pitch))
+  target_pitch <- as.integer(target_pitch - median(target_pitch))
+  query_pitch <- query_pitch + 60 + min(c(query_pitch, target_pitch))
+  target_pitch <- target_pitch + 60 + min(c(query_pitch, target_pitch))
 
-  pmi_res <- purrr::map_dfr(0:11, function(transposition) {
-
-    sung_recall_pitch <- sung_recall_pitch + transposition
+  #hints <- get_transposition_hints(query_pitch, target_pitch )
+  #tictoc::toc()
+  hints <- 0:11
+  pmi_res <- purrr::map_dfr(hints, function(transposition) {
+    #logging::loginfo(sprintf("Trans: %d", transposition))
+    query_pitch <- query_pitch + transposition
     tibble::tibble(transposition = transposition,
-                   pmi = pmi(stimuli_pitch, sung_recall_pitch))
+                   pmi = pmi(query_pitch, target_pitch))
 
   })
-
   pmi_res %>%
     dplyr::slice_max(pmi) %>%
     dplyr::pull(pmi) %>%

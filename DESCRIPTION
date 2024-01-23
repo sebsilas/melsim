@@ -1,8 +1,8 @@
 Package: melsim
 Type: Package
 Title: Calculating melodic similarities
-Version: 0.3.0
-Author: Who wrote it
+Version: 0.4.0
+Author: Klaus Frieler, Sebastiatn Silas
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.

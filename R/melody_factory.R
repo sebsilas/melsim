@@ -167,7 +167,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         return(ih)
       },
-      edit_sim = function(melody, transform = "int"){
+      edit_sim = function(melody, transform = "int", sim_measure = edit_sim_utf8, optimizer = NULL){
         if(transform == "implicit_harmonies"){
           ih1 <- self$get_implicit_harmonies() %>% pull(key)
           ih2 <- melody$get_implicit_harmonies() %>% pull(key)
@@ -176,7 +176,7 @@ melody_factory <- R6::R6Class("Melody",
             as.integer()
           ih2 <- factor(ih2, levels = common_keys) %>%
             as.integer()
-          return(edit_sim(intToUtf8(ih1), intToUtf8(ih2)))
+          return(sim_measure(ih1, ih2))
         }
         if(self$has_not(transform)){
           self$add_transforms(transform)
@@ -200,9 +200,12 @@ melody_factory <- R6::R6Class("Melody",
         } else{
           stop("Undefined edit similarity")
         }
-        edit_sim(intToUtf8(v1), intToUtf8(v2))
+        if(!is.null(optimizer)){
+          return(optim_transposer(v1, v2, sim_measure = sim_measure, strategy = "all"))
+        }
+        sim_measure(v1, v2)
       },
-      ngram_similarity = function(melody, N = 3, transform = "int", method = "ukkon", modify = TRUE){
+      ngram_similarity = function(melody, N = 3, transform = "int", method = "ukkon", modify = TRUE, parameters = NULL){
         stopifnot(N > 1, is(melody, "Melody"), transform %in% names(private$.mel_data))
         ngr <- sprintf("%s_ngram_%d", transform, N)
         if(self$has_not(ngr)){
@@ -229,20 +232,30 @@ melody_factory <- R6::R6Class("Melody",
         else{
           mel2 <- melody
         }
+        ngrams1 <- na.omit(mel1$data[[ngr]]) %>% as.vector()
+        ngrams2 <- na.omit(mel2$data[[ngr]]) %>%  as.vector()
         if(is.function(method)){
-          method(mel1$data[[ngr]], mel2$data[[ngr]])
+          method(ngrams1, ngrams2)
         }
         else if(method == "count_distinct"){
-          count_distinct(mel1$data[[ngr]], mel2$data[[ngr]])
+          count_distinct(ngrams1, ngrams2)
         }
         else if(method == "sum_common"){
-          sum_common(mel1$data[[ngr]], mel2$data[[ngr]])
+          sum_common(ngrams1, ngrams2)
         }
         else if(method == "ukkon"){
-          ukkon_similarity(mel1$data[[ngr]], mel2$data[[ngr]])
+          ukkon_similarity(ngrams1, ngrams2)
+        }
+        else if(method == "Tversky"){
+          tversky_sim(ngrams1,
+                      ngrams2,
+                      alpha = parameters$alpha,
+                      beta = parameters$beta,
+                      ngram_db = parameters$ngram_db
+          )
         }
         else if(proxy::pr_DB$entry_exists(method)){
-          proxy_simil(mel1$data[[ngr]], mel2$data[[ngr]], method)
+          proxy_simil(ngrams1, ngrams2, method)
         }
         else{
           stop("Similarity function not defined")
@@ -258,7 +271,11 @@ melody_factory <- R6::R6Class("Melody",
         imap_dfr(sim_measures, function(sm, i){
           #browser()
           if(sm$type == "sequence_based"){
-            sim <- self$edit_sim(melody, sm$transformation)
+            #browser()
+            sim <- self$edit_sim(melody,
+                                 sm$transformation,
+                                 sim_measure = eval(parse(text = sm$sim_measure)),
+                                 optimizer = sm$parameters$optimizer)
             return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
           }
           else if(sm$type == "set_based"){
@@ -267,7 +284,8 @@ melody_factory <- R6::R6Class("Melody",
                                            N = sm$parameters$ngram_length,
                                            transform = sm$parameters$transform,
                                            method = sm$sim_measure,
-                                           modify = sm$cache
+                                           modify = sm$cache,
+                                           parameters = sm$parameters
                                            )
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
@@ -275,6 +293,14 @@ melody_factory <- R6::R6Class("Melody",
               logging::logwarn(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
               return(NULL)
             }
+          }
+          else if (sm$type == "special"){
+            if(sm$sim_measure == "pmi"){
+              sim <- pmi(private$.mel_data$pitch, melody$data$pitch)
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+            logging::logwarn(sprintf("Special measure: %s not implemented.", sm$sim_measure))
+            return(NULL)
           }
           else{
             logging::logwarn(sprintf("Type: %s not implemented.", sm$type))

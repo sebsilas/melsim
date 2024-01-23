@@ -43,9 +43,56 @@ diffed <- melsim::sim_measure_factory$new(full_name = "int-edit-distance",
                                            transposition_invariant = T,
                                            tempo_invariant = T)
 
+ngram_tversky <- melsim::sim_measure_factory$new(full_name = "ngram-int-3-tversky",
+                                                 name = "ngrtvers",
+                                                 type = "set_based",
+                                                 transformation = "ngrams",
+                                                 parameters = list(transformation = "int",
+                                                                   ngram_length = 3,
+                                                                   ngram_db = "melsim::int_ngrams_berkowitz",
+                                                                   alpha = 1,
+                                                                   beta = 1),
+                                                 sim_measure = "Tversky",
+                                                 transposition_invariant = T,
+                                                 tempo_invariant = T)
+
+ngram_tversky_auto <- melsim::sim_measure_factory$new(full_name = "ngram-int-3-tversky",
+                                                      name = "ngrtvera",
+                                                      type = "set_based",
+                                                      transformation = "ngrams",
+                                                      parameters = list(transformation = "int",
+                                                                        ngram_length = 3,
+                                                                        ngram_db = "melsim::int_ngrams_berkowitz",
+                                                                        alpha = "auto",
+                                                                        beta = "auto"),
+                                                      sim_measure = "Tversky",
+                                                      transposition_invariant = T,
+                                                      tempo_invariant = T)
+pmi_ps <- melsim::sim_measure_factory$new(full_name = "pat_savage_pmi",
+                                          name = "pmips",
+                                          type = "sequence_based",
+                                          transformation = "pitch",
+                                          parameters = list(optimizer = "transpose"),
+                                          sim_measure = "pmi",
+                                          transposition_invariant = T,
+                                          tempo_invariant = T)
+rawed <- melsim::sim_measure_factory$new(full_name = "pitch-edit-distance",
+                                          name = "rawed",
+                                          type = "sequence_based",
+                                          transformation = "pitch",
+                                          parameters = list(optimizer = "transpose"),
+                                          sim_measure = "edit_sim_utf8",
+                                          transposition_invariant = T,
+                                          tempo_invariant = T)
+
 similarity_measures <- list("ngram_ukkon" = ngram_ukkon,
                             "ngram_jaccard" = ngram_jaccard,
                             "harmcore" = harmcore,
                             "rhythfuz" = rhytfuz,
-                            "diffed" = diffed)
+                            "diffed" = diffed,
+                            "ngram_tversky" = ngram_tversky,
+                            "ngram_tversky_auto" = ngram_tversky_auto,
+                            "pmi_ps" = pmi_ps,
+                            "rawed" = rawed)
+
 usethis::use_data(similarity_measures, overwrite = T)

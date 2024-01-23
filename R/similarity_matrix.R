@@ -173,6 +173,14 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                    else tmp <- as.dist(trafo(tmp))
                                    tmp
                                  },
+                                 wide = function(){
+                                   private$sim_df %>% pivot_wider(id_cols = c("melody1", "melody2"),
+                                                                  names_from = algorithm,
+                                                                  names_prefix = "sim_",
+                                                                  values_from = sim
+                                                                  )
+                                 },
+
                                  make_symmetric = function(){
                                    private$sim_df <- self$get_symmetric()
                                    private$type <- "full-diag"

@@ -6,38 +6,40 @@ library(tidyverse)
 
 
 
-tversky_sim <- function(query_pitch, target_pitch, alpha = 1, beta = 1, max_ngram_size = 3) {
-  #browser()
-  query_int_ngrams <- get_all_ngrams(diff(query_pitch), N = max_ngram_size) %>% count(value)
-  target_int_ngrams <- get_all_ngrams(diff(target_pitch), N = max_ngram_size) %>% count(value)
+tversky_sim <- function(query_ngrams,
+                        target_ngrams,
+                        alpha = 1,
+                        beta = 1,
+                        ngram_db = int_ngrams_berkowitz) {
+  #query_ngrams <- get_all_ngrams(query, N = max_ngram_size) %>% count(value)
+  #target_ngrams <- get_all_ngrams(target, N = max_ngram_size) %>% count(value)
 
-  intersect_ngrams <- intersect(query_int_ngrams$value, target_int_ngrams$value)
-  only_query_ngrams <- setdiff(query_int_ngrams$value, intersect_ngrams)
-  only_target_ngrams <- setdiff(target_int_ngrams$value, intersect_ngrams)
-
-  salience_intersect_ngrams <- get_salience(intersect_ngrams)
-  salience_only_query_ngrams <- get_salience(only_query_ngrams)
-  salience_only_target_ngrams <- get_salience(only_target_ngrams)
+  intersect_ngrams <- intersect(query_ngrams, target_ngrams)
+  only_query_ngrams <- setdiff(query_ngrams, intersect_ngrams)
+  only_target_ngrams <- setdiff(target_ngrams, intersect_ngrams)
+  if(is.character(ngram_db)){
+    ngram_db <- eval(parse(text = ngram_db), envir = globalenv())
+  }
+  salience_intersect_ngrams <- get_salience(intersect_ngrams, ngram_db)
+  salience_only_query_ngrams <- get_salience(only_query_ngrams, ngram_db)
+  salience_only_target_ngrams <- get_salience(only_target_ngrams, ngram_db)
   if(!is.numeric(alpha)){
-    tfs <- query_int_ngrams %>% filter(value %in% intersect_ngrams)
-    alpha <- sum(tfs$n)/nrow(query_int_ngrams)
+    alpha <- sum(prop.table(table(query_ngrams))[intersect_ngrams])
   }
   if(!is.numeric(beta)){
-    tfs <- target_int_ngrams %>% filter(value %in% intersect_ngrams)
-    beta <- sum(tfs$n)/nrow(target_int_ngrams)
+    beta <- sum(prop.table(table(target_ngrams))[intersect_ngrams])
   }
   salience_intersect_ngrams / (salience_intersect_ngrams + alpha *  salience_only_target_ngrams + beta *  salience_only_query_ngrams)
 }
 
 
-get_salience <- function(ngrams) {
-
+get_salience <- function(ngrams, ngram_db = int_ngrams_berkowitz) {
   #idfs <- get_idf_of_ngrams(ngrams$value)
-  idfs <- int_ngrams_berkowitz %>%
+  idfs <- ngram_db %>%
     filter(value %in% ngrams) %>%
     select(ngram = value, idf)
   return(nrow(idfs))
-  return(sum(idfs$idf))
+  #return(sum(idfs$idf))
 
   # tfs <- table(ngrams) %>% as.data.frame() %>% set_names(c("ngram", "tf"))
   #
@@ -66,38 +68,6 @@ get_idf <- function(ngram, ngram_db = Berkowitz::ngram_item_bank){
 }
 
 
-get_idf_of_ngrams <- function(ngrams, item_bank = Berkowitz::ngram_item_bank) {
-
-  ngram_lengths <- str_extract_all(ngrams, ",") %>% sapply(function(x) length(x) + 2)
-  item_bank <- as_tibble(item_bank) %>% filter(N %in% unique(ngram_lengths))
-  if(nrow(item_bank) == 0){
-    return(tibble(ngram = ngrams, idf = 0))
-  }
-  purrr::map2_dfr(ngrams, ngram_lengths, function(ngram, n) {
-    #browser()
-    DF <- get_idf(ngram, item_bank %>% filter(N == n))
-    tibble::tibble(ngram = ngram,
-                   idf = log(nrow(Berkowitz::phrase_item_bank)/DF)) %>%
-      dplyr::mutate(idf = dplyr::case_when(is.infinite(idf) ~ as.numeric(NA), TRUE ~ idf))
-  })
-
-}
-
-get_ngrams_multiple_sizes2 <- function (abs_melody, M) {
-  if (length(abs_melody) == 1) {
-    ngrams.multi <- tibble::tibble(start = NA, N = 1, value = paste(abs_melody, collapse = ","))
-  }
-  else if (length(abs_melody) == 2) {
-    ngrams.multi <- tibble::tibble(start = NA, N = 2, value = paste(abs_melody, collapse = ","))
-  }
-  else {
-    if (length(abs_melody) < M) {
-      M <- length(abs_melody)
-    }
-    ngrams.multi <- purrr::map_dfr(1:M, itembankr::get_all_ngrams, x = abs_melody)
-  }
-  ngrams.multi
-}
 
 
 

@@ -102,11 +102,14 @@ melsim <- function(melody1,
 #   melsim_many_to_many_multiple_algorithms()
 
 test_melsim <- function(){
-  melsim(
-    #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
-    melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
-    melody2 = NULL,
-    similarity_measures = c("ngram_ukkon"))
-  #melsim('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv', similarity_algorithm = 'set_based')
-
+  tictoc::tic()
+  ret <-
+    melsim(
+      #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
+      melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
+      melody2 = NULL,
+      similarity_measures = c( "rawed", "pmi_ps",  "ngram_ukkon")#, "rhythfuz", "diffed", "harmcore")
+    )
+  tictoc::toc()
+  ret
 }

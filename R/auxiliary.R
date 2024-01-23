@@ -6,25 +6,49 @@ edit_sim <- function(s, t){
   1 - edit_dist(s, t)/max(nchar(s), nchar(t))
 }
 
+edit_dist_utf8 <- function(s, t){
+  adist(intToUtf8(s),intToUtf8(t))[1,1]
+}
+
+edit_sim_utf8 <- function(s, t){
+  edit_sim(intToUtf8(s),intToUtf8(t))
+}
+
+pmi <- function(q, t) {
+  q_l <- length(q)
+  t_l <- length(t)
+  aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
+                                           intToUtf8(t),
+                                           type = "global", # i.e., Needleman-Wunsch
+                                           gapOpening = 12,
+                                           gapExtension = 6)
+
+  q_aligned <- utf8ToInt(as.character(aligned@pattern))
+  t_aligned <- utf8ToInt(as.character(aligned@subject))
+
+  sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
+}
+
 file_extension <- function(file) strsplit(basename(file), ".", fixed = T)[[1]][-1]
 
 #find a list of candidates for best transpositions for two pitch vectors, based on basic stats
 get_transposition_hints <- function(pitch_vec1, pitch_vec2){
   ih1 <- get_implicit_harmonies(pitch_vec1, only_winner = TRUE)
   key1 <- ih1 %>% dplyr::pull(key)
-  pc1 <- ih1 %>% dplyr::pull(transposition)
+  pc1 <- ih1 %>% dplyr::pull(key_pc)
   ih2 <- get_implicit_harmonies(pitch_vec2, only_winner = TRUE)
-  pc2 <- ih2 %>% dplyr::pull(transposition)
+  pc2 <- ih2 %>% dplyr::pull(key_pc)
   key_diff <- (pc2 -  pc1) %% 12
-  #messagef("Best key 1 = %s, best key 2 = %s, key diff = %d", key1, ih2 %>% head(1) %>% dplyr::pull(key), key_diff )
-  modus1 <- modus(pitch_vec1)
-  modus2 <- modus(pitch_vec2)
-  ret <- c(expand.grid(modus1, modus2) %>% mutate(d = Var1 - Var2) %>% pull(d) %>% min(),
+  #logging::loginfo(sprintf("Best key 1 = %s, best key 2 = %s, key diff = %d", key1, ih2 %>% head(1) %>% dplyr::pull(key), key_diff ))
+  modus1 <- top_n(pitch_vec1, 3)
+  modus2 <- top_n(pitch_vec2, 3)
+  ret <- c(expand.grid(modus1, modus2) %>%
+             mutate(d = Var1 - Var2) %>% pull(d) %>% top_n(3),
            round(mean(pitch_vec1)) - round(mean(pitch_vec2)),
            round(median(pitch_vec1)) - round(median(pitch_vec2)))
   octave_offset <- modus(round(ret/12))
-  #messagef("Octave offset = %d", octave_offset)
-  ret <- c(0, ret, octave_offset*12 + key_diff, octave_offset * 12 + 12 - key_diff)
+  #logging::loginfo(sprintf("Octave offset = %d", octave_offset))
+  ret <- c(0, ret, octave_offset * 12 + key_diff, octave_offset * 12 + 12 - key_diff)
   unique(ret) %>% sort()
 
 }
@@ -39,6 +63,36 @@ find_best_transposition <- function(pitch_vec1, pitch_vec2){
   sims %>% dplyr::arrange(dist, abs(transposition)) %>% head(1) %>% dplyr::pull(transposition)
 }
 
+optim_transposer <- function(query, target,
+                             sim_measure = edit_sim_utf8,
+                             strategy = c("all", "hints", "best"),
+                             ...){
+    strategy <- match.arg(strategy)
+    # Run for all transpositions and pick the top
+    strategy <- match.arg(strategy)
+
+    #query <- as.integer(query - median(query))
+    #target <- as.integer(target - median(target))
+    query <- query + 60 - min(c(query))
+    target <- target + 60 - min(c(target))
+    d <- median(target)  -  median(query)
+    if(strategy == "all"){
+      hints <- -5:6
+    }
+    else if(strategy == "hints" ){
+      hints <- get_transposition_hints(target, query )
+    }
+    else if(strategy == "best" ){
+      hints <- find_best_transposition(target, query)
+    }
+    purrr::map_dfr(union(d, hints), function(trans) {
+      #browser()
+      tibble(trans = trans, sim = sim_measure(query + trans, target))
+    }) %>%
+      slice_max(sim) %>% distinct(sim) %>% pull(sim)
+
+
+}
 
 #' get harmonies via the Krumhansl-Schmuckler algorithm
 #'
