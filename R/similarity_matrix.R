@@ -31,11 +31,14 @@ sim_mat_factory <- R6::R6Class("SimilarityMatrix",
                                      return(FALSE)
                                    }
                                    singles <- sim_df %>% group_split(algorithm) %>% lapply(function(x) x %>% select(melody1, melody2))
-                                   for(i in 1:(length(singles) - 1)){
-                                     if(!identical(singles[[i]], singles[[i + 1]])){
-                                       logging::logwarn("Similarity no homogenuous in regard to different algorithms")
-                                       return(FALSE)
+                                   if(length(singles) > 1){
+                                     for(i in 1:(length(singles) - 1)){
+                                       if(!identical(singles[[i]], singles[[i + 1]])){
+                                         logging::logwarn("Similarity no homogenuous in regard to different algorithms")
+                                         return(FALSE)
+                                       }
                                      }
+
                                    }
                                    return(TRUE)
                                  },

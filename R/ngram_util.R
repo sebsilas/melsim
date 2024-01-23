@@ -1,3 +1,13 @@
+#' Add ngrams of multiple sizes to given melody data frame
+#'
+#' @param mel_data Melody data frame
+#' @params columns (character) Columns names to compute ngrams from
+#' @param N (vector of positive integers) N-gram lengths
+#' @param override (logical) Whether to override existing ngram columns
+#' @return melody data frame with added n
+#' @export
+#'
+#' @examples
 
 add_ngrams <- function(mel_data, columns, N, override = FALSE) {
   ngram_cols <-
@@ -25,39 +35,13 @@ add_ngrams <- function(mel_data, columns, N, override = FALSE) {
   }
 }
 
-#' Get ngrams of multiple sizes
-#'
-#' @param abs_melody
-#' @param M
-#'
-#' @return
-#' @export
-#'
-#' @examples
-get_ngrams_multiple_sizes <- function(abs_melody, M) {
-
-  if (length(abs_melody) == 1) {
-    ngrams_multi <- tibble::tibble(start = NA, N = 1, value = paste(abs_melody, collapse = ","))
-  } else if (length(abs_melody) == 2) {
-    ngrams_multi <- tibble::tibble(start = NA, N = 2, value = paste(abs_melody, collapse = ","))
-  } else {
-    if(length(abs_melody) < M) {
-      M <- length(abs_melody)
-    }
-
-    # Grab all N-grams from 3:M for a given melody
-    ngrams_multi <- purrr::map_dfr(3:M, get_all_ngrams, x = abs_melody)
-    # But this shouldn't be called if the melody length is shorter than the N-gram length..
-  }
-  ngrams_multi
-}
-
 #' Get all ngrams from a given vector
 #'
-#' @param x
-#' @param N
-#'
-#' @return
+#' @param x Arbitraty Vector
+#' @param N (set of positve integers) N.gram lengths
+#' @param collapse (string) Glue string for ngrams string representation
+#' @param keep_length (logical) Shall the length of the original vector be kept by including NA at the end?
+#' @return Data frame of ngrams with N columns
 #' @export
 #'
 #' @examples

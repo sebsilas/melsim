@@ -34,8 +34,18 @@ rhytfuz <- melsim::sim_measure_factory$new(full_name = "ioi-class-edit-distance"
                                    transposition_invariant = T,
                                    tempo_invariant = T)
 
+diffed <- melsim::sim_measure_factory$new(full_name = "int-edit-distance",
+                                           name ="diffed",
+                                           type = "sequence_based",
+                                           transformation = "int",
+                                           parameters = list(),
+                                           sim_measure = "edit_distance",
+                                           transposition_invariant = T,
+                                           tempo_invariant = T)
+
 similarity_measures <- list("ngram_ukkon" = ngram_ukkon,
                             "ngram_jaccard" = ngram_jaccard,
                             "harmcore" = harmcore,
-                            "rhythfuz" = rhytfuz)
+                            "rhythfuz" = rhytfuz,
+                            "diffed" = diffed)
 usethis::use_data(similarity_measures, overwrite = T)

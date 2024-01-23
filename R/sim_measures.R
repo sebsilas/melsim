@@ -1,4 +1,4 @@
-sim_types <- c("set_based", "sequence_based", "vector_based")
+sim_types <- c("set_based", "sequence_based", "vector_based", "linear_combibnation", "special")
 
 sim_transformations <- c("pitch",
                          "pc",

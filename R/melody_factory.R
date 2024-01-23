@@ -360,7 +360,12 @@ melody_factory <- R6::R6Class("Melody",
       },
       length =  function(){
         nrow(private$.mel_data)
+      },
+      pitch = function(){
+        private$.mel_data$pitch
+      },
+      onset = function(){
+        private$.mel_data$onset
       }
-
     )
 )

@@ -50,49 +50,92 @@ find_best_transposition <- function(pitch_vec1, pitch_vec2){
 #' @export
 #'
 #' @examples
-get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, only_winner = TRUE){
-
+get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, only_winner = TRUE, fast_algorithm = FALSE){
   #warning('Segmentation format must be as segment ID')
-
   # Krumhansl-Schmuckler algorithm
   ks_weights_major <- c(6.33, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
   ks_weights_minor <- c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
+  ks_weights_major_z <- scale(ks_weights_major) %>% as.numeric()
+  ks_weights_minor_z <- scale(ks_weights_minor) %>% as.numeric()
+
+  ks_weights_major_mat <- sapply(0:11, function(t) ks_weights_major_z[((0:11 - t) %% 12) + 1])
+  ks_weights_minor_mat <- sapply(0:11, function(t) ks_weights_minor_z[((0:11 - t) %% 12) + 1])
+  ks_mat <- cbind(ks_weights_major_mat, ks_weights_minor_mat)
+
   if(!is.null(segmentation)){
     if(length(segmentation) != length(pitch_vec)){
       stop("Segmentation must be of same length as pitch")
     }
     s <- unique(segmentation)
+    if(fast_algorithm){
+      pitch_vec <- factor(pitch_vec %% 12, levels = 0:11)
+      pitch_freq_vec <- sapply(s, function(x) table(pitch_vec[segmentation == x]) %>% scale() %>% as.numeric())
+      ks_cor <- t(pitch_freq_vec) %*% ks_mat
+      ret <-
+        imap_dfr(s, function(seg, i){
+          if(only_winner){
+            winner <- ks_cor[i, ] %>% which.max()
+            tibble(segment = seg,
+                   key_pc = (winner - 1) %% 12,
+                   type = ifelse(winner <= 12, "major", "minor"),
+                   key = sprintf("%s-%s",
+                                 itembankr::pc_labels_flat[key_pc + 1], substr(type, 1, 3)),
+                   match = ks_cor[i, winner] %>% as.numeric()
+                   )
+          }
+          else{
+            tibble(
+              segment = seg,
+              key_pc = rep(0:11, 2),
+              type = rep(c("major", "minor"), each = 12),
+              key = sprintf("%s-%s",
+                            itembankr::pc_labels_flat[key_pc + 1], substr(type, 1,3)),
+              match = ks_cor[i,] %>% as.numeric()) %>%
+              dplyr::arrange(segment, desc(match))
+          }
+        })
+      return(ret)
+    }
     return(
       purrr::map_dfr(s, function(x){
         pv <- pitch_vec[segmentation == x]
-        tidyr::tibble(segment = x,
-                      key = get_implicit_harmonies(pv, NULL, only_winner = only_winner) %>%
-                        dplyr::pull(key))
+        tidyr::tibble(segment = x) %>%
+          bind_cols(get_implicit_harmonies(pv, NULL,
+                                           only_winner = only_winner,
+                                           fast_algorithm = fast_algorithm )
+                    )
       })
     )
 
   }
-  pitch_freq <- table(factor(pitch_vec %% 12, levels = 0:11))
-  correlations <- purrr::map_dfr(0:11, function(t){
-    w_major <- cor.test(pitch_freq,
-                        ks_weights_major[((0:11 - t) %% 12) + 1]) %>%
-      broom::tidy() %>%
-      dplyr::pull(estimate)
-    w_minor <- cor.test(pitch_freq,
-                        ks_weights_minor[((0:11 - t) %% 12) + 1]) %>%
-      broom::tidy() %>%
-      dplyr::pull(estimate)
-    dplyr::bind_rows(tidyr::tibble(key_pc = t,
-                                   match = w_major,
-                                   type = "major",
-                                   key = sprintf("%s-maj", itembankr::pc_labels_flat[t + 1])),
-                     tidyr::tibble(key_pc = t,
-                                   match = w_minor,
-                                   type = "minor",
-                                   key = sprintf("%s-min", itembankr::pc_labels_flat[t + 1])))
-  }) %>%
-    dplyr::arrange(desc(match))
+  pitch_freq <- table(factor(pitch_vec %% 12, levels = 0:11)) %>% scale() %>% as.numeric()
+  if(fast_algorithm){
+    ks_cor <- pitch_freq %*% ks_mat
 
+    correlations <- tibble(key_pc = rep(0:11, 2),
+                           type = rep(c("major", "minor"), each = 12),
+                           key = sprintf("%s-%s",
+                                         itembankr::pc_labels_flat[key_pc + 1], substr(type, 1,3)),
+                           match = ks_cor %>% as.numeric()) %>%
+      dplyr::arrange(desc(match))
+  }
+  else{
+    correlations <- purrr::map_dfr(0:11, function(t){
+      w_major <- cor.test(pitch_freq,
+                          ks_weights_major_mat[, t + 1])$estimate
+      w_minor <- cor.test(pitch_freq,
+                          ks_weights_minor_mat[, t + 1])$estimate
+      dplyr::bind_rows(tidyr::tibble(key_pc = t,
+                                     match = w_major,
+                                     type = "major",
+                                     key = sprintf("%s-maj", itembankr::pc_labels_flat[t + 1])),
+                       tidyr::tibble(key_pc = t,
+                                     match = w_minor,
+                                     type = "minor",
+                                     key = sprintf("%s-min", itembankr::pc_labels_flat[t + 1])))
+    }) %>%
+      dplyr::arrange(desc(match))
+  }
   if(only_winner){
     return(correlations[1,])
   }

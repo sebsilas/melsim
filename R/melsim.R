@@ -104,9 +104,9 @@ melsim <- function(melody1,
 test_melsim <- function(){
   melsim(
     #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
-    melody1 = list.files("data-raw/kinder", pattern = "csv", full.names = T),
+    melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
     melody2 = NULL,
-    similarity_measures = c("ngram_ukkon", "rhythfuz"))
+    similarity_measures = c("ngram_ukkon"))
   #melsim('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv', similarity_algorithm = 'set_based')
 
 }
