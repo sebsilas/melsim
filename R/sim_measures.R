@@ -1,4 +1,4 @@
-sim_types <- c("set_based", "sequence_based", "geometric")
+sim_types <- c("set_based", "sequence_based", "vector_based")
 
 sim_transformations <- c("pitch",
                          "pc",
@@ -9,13 +9,14 @@ sim_transformations <- c("pitch",
                          "duration_class",
                          "implicit_harmonies",
                          "ngrams")
+
 sim_measures <- c("edit_distance", "ukkon", "sum_common", "count_distinct", "cosine",
                   "Jaccard", "Kulczynski1",  "Kulczynski2", "Mountford",
                   "Fager", "Russel", "Hamman", "Faith",
                   "Tanimoto", "Dice", "Phi", "Stiles", "Michael",
                   "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
                   "Braun-Blanquet")
-
+#'@export
 sim_measure_factory <- R6::R6Class("SimilarityMeasure",
                                private = list(
                                ),
@@ -103,44 +104,3 @@ sim_measure_factory <- R6::R6Class("SimilarityMeasure",
                                #end public
                                active = list())
 
-ngram_ukkon <- sim_measure_factory$new(full_name = "ngram-int-3-ukkon",
-                                       name = "ngrukkon",
-                                       type = "set_based",
-                                       transformation = "ngrams",
-                                       parameters = list(transformation = "int", ngram_length = 3),
-                                       sim_measure = "ukkon",
-                                       transposition_invariant = T,
-                                       tempo_invariant = T)
-
-ngram_jaccard <- sim_measure_factory$new(full_name = "ngram-int-3-jaccard",
-                                       name = "ngrjacc",
-                                       type = "set_based",
-                                       transformation = "ngrams",
-                                       parameters = list(transformation = "int", ngram_length = 3),
-                                       sim_measure = "Jaccard",
-                                       transposition_invariant = T,
-                                       tempo_invariant = T)
-
-harmcore <- sim_measure_factory$new(full_name = "implicit-harmonies-edit-distance",
-                                    name = "harmcore",
-                                    type = "sequence_based",
-                                    transformation = "implicit_harmonies",
-                                    parameters = list(),
-                                    sim_measure = "edit_distance",
-                                    transposition_invariant = T,
-                                    tempo_invariant = T)
-
-rhytfuz <- sim_measure_factory$new(full_name = "ioi-class-edit-distance",
-                                   name ="rhytfuz",
-                                   type = "sequence_based",
-                                   transformation = "ioi_class",
-                                   parameters = list(),
-                                   sim_measure = "edit_distance",
-                                   transposition_invariant = T,
-                                   tempo_invariant = T)
-
-similarity_measures <- list("ngram_ukkon" = ngram_ukkon,
-                            "ngram_jaccard" = ngram_jaccard,
-                            "harmcore" = harmcore,
-                            "rhythfuz" = rhytfuz)
-usethis::use_data(similarity_measures, overwrite = T)

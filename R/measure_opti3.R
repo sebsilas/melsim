@@ -32,7 +32,7 @@ sum_common <- function(x, y, na.rm = TRUE){
 proxy_simil <- function(x, y, proxy_method = "Jaccard", na.rm = T){
   #browser()
   if(!proxy::pr_DB$entry_exists(proxy_method)){
-    warning(sprintf("Method %s does not exist in pr_DB", proxy_method))
+    logging::logwarn(sprintf("Method %s does not exist in pr_DB", proxy_method))
   }
   if(na.rm){
     x <- na.omit(x)

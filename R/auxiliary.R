@@ -1,3 +1,11 @@
+edit_dist <- function(s, t){
+  adist(s,t)[1,1]
+}
+
+edit_sim <- function(s, t){
+  1 - edit_dist(s, t)/max(nchar(s), nchar(t))
+}
+
 file_extension <- function(file) strsplit(basename(file), ".", fixed = T)[[1]][-1]
 
 #find a list of candidates for best transpositions for two pitch vectors, based on basic stats
@@ -115,3 +123,30 @@ bootstrap_implicit_harmonies <- function(pitch_vec, segmentation = NULL, sample_
   best_key <- bs %>% dplyr::count(key) %>% dplyr::arrange(dplyr::desc(n)) %>% dplyr::pull(key)
   bs %>% dplyr::filter(key == best_key[1]) %>% head(1)
 }
+
+#' @export
+classify_duration <- Vectorize(
+  function(dur_vec, ref_duration = .5){
+    rel_dur <- dur_vec/ref_duration
+    rhythm_class <- rep(NA, length(rel_dur))
+    rhythm_class[rel_dur > 0 & !is.na(rel_dur)] <- -2
+    rhythm_class[rel_dur > 0.45] <- -1
+    rhythm_class[rel_dur > 0.9] <- 0
+    rhythm_class[rel_dur > 1.8] <- 1
+    rhythm_class[rel_dur > 3.3] <- 2
+    rhythm_class
+  })
+
+#' @export
+fuzzyint_class <- Vectorize(
+  function(x){
+    if(is.na(x)) return(NA)
+    class_vec <- list("0" = 0, "1" = 1, "2" = 1, "3" = 2, "4" = 2, "5" = 3, "6" = 3, "7" = 3)
+    s <- sign(x)
+    a <- abs(x)
+    if(a > 7){
+      return(s * 4)
+    }
+    return(s * class_vec[[as.character(a)]])
+
+  })

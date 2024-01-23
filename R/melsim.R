@@ -46,7 +46,7 @@ melsim <- function(melody1,
   ret <-
     map_dfr(similarity_measures, function(sim_algo){
       #browser()
-      message(sprintf("Testing: %s", sim_algo))
+      logging::loginfo(sprintf("Testing: %s", sim_algo))
       imap_dfr(melody1, function(m1, i){
         #browser()
         if(!("name" %in% names(m1$meta))){
@@ -61,7 +61,7 @@ melsim <- function(melody1,
             sim_algo_str <- sim_algo
             sim_algo <- melsim::similarity_measures[[sim_algo_str]]
             if(is.null(sim_algo)){
-              warning(sprintf("Unrecognized similarity measure: %s ", sim_algo_str))
+              logging::logwarn(sprintf("Unrecognized similarity measure: %s ", sim_algo_str))
             }
           }
           if(self_sim){
@@ -76,9 +76,9 @@ melsim <- function(melody1,
             }}
 
           if(is(sim_algo, "SimilarityMeasure")){
-            tictoc::tic(msg = sim_algo$name)
+            #tictoc::tic(msg = sim_algo$name)
             sim <- m1$similarity(m2, sim_algo)
-            tictoc::toc()
+            #tictoc::toc()
           }
           else{
             stop(sprintf("Similarity algorithm: '%s' not recognized.", as.character(sim_algo)))

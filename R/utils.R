@@ -45,21 +45,12 @@ is.scalar.integerlike <- function(x) {
   is.scalar(x) && is.integerlike(x)
 }
 
-expand.grid.unique <- function(x, y, include.equals = FALSE){
-
-  x <- unique(x)
-
-  y <- unique(y)
-
-  g <- function(i) {
-    z <- setdiff(y, x[seq_len(i-include.equals)])
-
-    if(length(z)) cbind(x[i], z, deparse.level=0)
-  }
-
-  do.call(rbind, lapply(seq_along(x), g))
+#' @export
+expand_grid_unique <- function(x, y, include_equals = FALSE){
+  tmp <- expand_grid(x = x, y = y)
+  if(include_equals) return(tmp %>% filter(x <= y))
+  tmp %>% filter(x < y)
 }
-
 
 #' @export
 value_to_vec <- function(value_str,
@@ -88,7 +79,10 @@ value_to_vec <- function(value_str,
 }
 
 
-remove_attributes <- function(x) {attributes(x) <- NULL; return(x)}
+remove_attributes <- function(x) {
+  attributes(x) <- NULL
+  return(x)
+}
 
 ticks_to_ms <- function(ticks, ppq, tempo) {
   us_per_quarter <- tempo # Tempo in latest Set Tempo event>

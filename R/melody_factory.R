@@ -1,4 +1,4 @@
-
+#'@export
 melody_factory <- R6::R6Class("Melody",
     private = list(
       .mel_data = tibble(onset = numeric(),
@@ -272,12 +272,12 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             else{
-              warning(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
+              logging::logwarn(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
               return(NULL)
             }
           }
           else{
-            warning(sprintf("Type: %s not implemented.", sm$type))
+            logging::logwarn(sprintf("Type: %s not implemented.", sm$type))
             return(NULL)
           }
 

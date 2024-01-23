@@ -1,7 +1,7 @@
 
 
 read_musicxml <- function(musicxml_file) {
-  # %>% %>% %>% %>% browser()
+  browser()
   data <- XML::xmlParse(musicxml_file)
   xml_data <- XML::xmlToList(data)
   part <- xml_data$part
