@@ -308,7 +308,6 @@ melody_factory <- R6::R6Class("Melody",
                           rename(algorithm = terms),
                         by = "algorithm")
             keep <- safe_get(sm$parameters, "keep_singles")
-            browser()
             combi_sim <-
               tibble(algorithm = sm$name,
                      full_name = sm$full_name,

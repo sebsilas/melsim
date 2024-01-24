@@ -186,12 +186,16 @@ sim_mat_factory <- R6::R6Class(
       else tmp <- as.dist(trafo(tmp))
       tmp
     },
-    as_wide = function(){
-      private$sim_df %>% pivot_wider(id_cols = c("melody1", "melody2"),
+    as_wide = function(only_similarities = F){
+      tmp <- private$sim_df %>% pivot_wider(id_cols = c("melody1", "melody2"),
                                      names_from = algorithm,
                                      names_prefix = "sim_",
                                      values_from = sim
       )
+      if(only_similarities){
+        tmp <- tmp %>% select(starts_with("sim_"))
+      }
+      tmp
     },
 
     make_symmetric = function(){

@@ -21,32 +21,44 @@ melsim <- function(melody1,
                    ),
                    name = "MELSIM") {
   # Instantiate melodies
-  if(any(!is(melody1, "Melody"))){
-    if(all(is.character(melody1))){
+  browser()
+  if(any(!is_class(melody1, "Melody"))){
+    if(all(is_class(melody1, "character"))){
       melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f)$add_meta("name", f))
     }
-  }
-  else{
-    stop("Melody1 must be vector of melody objects of valid filenames")
+    else{
+      stop("Melody1 must be vector of melody objects of valid filenames")
+    }
   }
   self_sim <- FALSE
   if(is.null(melody2)){
     self_sim <- TRUE
     melody2 <- melody1
   }
-  if(any(!is(melody2, "Melody"))){
-    if(all(is.character(melody2))){
+  if(any(!is_class(melody2, "Melody"))){
+    if(all(is_class(melody2, "character"))){
       melody2 <- lapply(melody2, function(f) melody_factory$new(fname = f))
     }
-  }
-  else{
-    stop("Melody2 must be vector of melody objects or valid filenames")
+    else{
+      stop("Melody2 must be vector of melody objects or valid filenames")
+    }
   }
   # Apply the similarity algorithm
+  if(all(is_class(similarity_measures, "SimilarityMeasure")) && !is.list(similarity_measures)){
+    similarity_measures <- list(similarity_measures)
+  }
+  if(!is.list(melody1)){
+    melody1 <- list(melody1)
+  }
+  if(!is.list(melody2)){
+    melody2 <- list(melody2)
+  }
+
   ret <-
     map_dfr(similarity_measures, function(sim_algo){
       #browser()
-      logging::loginfo(sprintf("Testing: %s", sim_algo))
+      logging::loginfo(sprintf("Testing: %s", ifelse(is(sim_algo, "SimilarityMeasure"), sim_algo$name, sim_algo)))
+
       imap_dfr(melody1, function(m1, i){
         #browser()
         if(!("name" %in% names(m1$meta))){
@@ -57,6 +69,7 @@ melsim <- function(melody1,
           if(!("name" %in% names(m2$meta)) && !self_sim){
             m2$add_meta("name", sprintf("SET2MEL%03d", j))
           }
+          #browser()
           if(is.character(sim_algo)){
             sim_algo_str <- sim_algo
             sim_algo <- melsim::similarity_measures[[sim_algo_str]]
@@ -108,7 +121,7 @@ test_melsim <- function(){
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
       melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
       melody2 = NULL,
-      similarity_measures = c( "rawed" )#, "pmi_ps",  "ngram_ukkon", "rhythfuz", "diffed", "harmcore")
+      similarity_measures = c( "ngram_tversky_auto", "ngrukkon" )#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
     )
   tictoc::toc()
   ret

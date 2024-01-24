@@ -45,6 +45,16 @@ is.scalar.integerlike <- function(x) {
   is.scalar(x) && is.integerlike(x)
 }
 
+is_class <- function(x, class){
+  if(is.vector(x)){
+    x <- as.list(x)
+  }
+  if(!is.list(x)){
+    x <- list(x)
+  }
+  sapply(x, function(z) is(z, class))
+}
+
 safe_get <- function(obj, field){
   if(field %in% names(obj)) {
     return(obj[[field]])
