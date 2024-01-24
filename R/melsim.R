@@ -19,9 +19,9 @@ melsim <- function(melody1,
                                           # "compression_distance_gzip",
                                           # "correlation",
                    ),
-                   name = "MELSIM") {
+                   name = "--") {
   # Instantiate melodies
-  browser()
+  #browser()
   if(any(!is_class(melody1, "Melody"))){
     if(all(is_class(melody1, "character"))){
       melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f)$add_meta("name", f))
@@ -102,6 +102,7 @@ melsim <- function(melody1,
       })
     }) %>%
     arrange(algorithm, melody1, melody2)
+  browser()
   ret <- sim_mat_factory$new(ret, name = name)
   if(self_sim){
 

@@ -62,6 +62,14 @@ safe_get <- function(obj, field){
   return(NULL)
 }
 
+safe_append <- function(x, y){
+  common_names <- intersect(names(x), names(y))
+  if(length(common_names) > 0){
+    names(y) <- sapply(names(y), function(n) ifelse(n %in% common_names, sprintf("%s.x", n), n))
+  }
+  append(x, y)
+}
+
 #' @export
 expand_grid_unique <- function(x, y, include_equals = FALSE){
   tmp <- expand_grid(x = x, y = y)

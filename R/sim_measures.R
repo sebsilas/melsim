@@ -116,14 +116,14 @@ sim_measure_factory <- R6::R6Class(
       cat("  Name: ", sprintf("%s (%s)", self$name, self$full_name), "\n", sep = "")
       cat("  Type: ", self$type, "\n", sep = "")
       cat("  Similarity measure: ", self$sim_measure, "\n", sep = "")
-      cat("  Invariances: \n", sprintf("    Transposition: %s, Tempo: %s",
+      cat("  Invariances: \n", sprintf("    Transposition: %s\n    Tempo: %s",
                                        self$transposition_invariant,
                                        self$tempo_invariant), "\n", sep = "")
       cat("  Cache:", self$cache, "\n")
       cat("  Tranformation:  ", "\n    ", self$transformation,"\n", sep = "")
       cat("    Parameters:  ", "\n")
-      cat(sprintf("      %s: %s", names(self$parameters), self$parameters),
-          "\n", sep = "\n")
+      cat(sprintf("      %s: %s\n", names(self$parameters), self$parameters),
+          sep = "")
       invisible(self)
     }),
   #end public

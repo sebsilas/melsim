@@ -9,12 +9,34 @@ ngrukkon:
   transposition_invariant: true
   tempo_invariant: true
 
+ngrukkon2:
+  full_name: ngram-int-2-ukkon
+  type: set_based
+  transformation: ngrams
+  parameters:
+    transformation: int
+    ngram_length: 2
+  sim_measure: ukkon
+  transposition_invariant: true
+  tempo_invariant: true
+
+ngrukkon1:
+  full_name: ngram-int-1-ukkon
+  type: set_based
+  transformation: ngrams
+  parameters:
+    transformation: int
+    ngram_length: 1
+  sim_measure: ukkon
+  transposition_invariant: true
+  tempo_invariant: true
+  
 opti3:
   full_name: opti3
   type:  linear_combination
   transformation: none
   parameters:
-    keep_singles: true
+    keep_singles: false
   sim_measure: "0.505 *  ngrukkon + 0.417  * rhytfuzz + 0.24  * harmcore - 0.146 * const"
   transposition_invariant: true
   tempo_invariant: true

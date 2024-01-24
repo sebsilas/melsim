@@ -320,7 +320,7 @@ sim_mat_factory <- R6::R6Class(
       cat("Similarity matrix: \n")
       cat("  Type: ", private$type, "\n", sep = "")
       cat("  Dim: ", sprintf("(%d, %s)", private$dim1, private$dim2), "\n", sep = "")
-      cat("  Properties: \n", sprintf("    Symmetric: %s, Diagonal: %s",
+      cat("  Properties: \n", sprintf("    Symmetric: %s\n    Diagonal: %s",
                                       private$symmetric,
                                       private$diagonal), "\n", sep = "")
 

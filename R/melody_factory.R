@@ -4,27 +4,27 @@ melody_factory <- R6::R6Class("Melody",
       .mel_data = tibble(onset = numeric(),
                          pitch = numeric()),
       .mel_meta = list(name = "melody"),
+      .mel_cache = list(),
       .mel_features = tibble()
     ),
 
     public = list(
       initialize = function(mel_data = tibble(onset = numeric(),
                                               pitch = numeric()),
-                            mel_meta = list(name = "melody"),
-                            fname = "") {
+                            mel_meta = NULL,
+                            fname = "",
+                            ...) {
+        mel_meta <- safe_append(mel_meta, list(...))
         if(nzchar(fname)){
           tmp <- self$read(fname)
           mel_data <- tmp$mel_data
-          mel_meta <- tmp$mel_meta
+          mel_meta <- tmp$mel_meta %>% safe_append(mel_meta)
         }
         stopifnot(self$validate_mel_data(mel_data))
         stopifnot(is.list(mel_meta))
-        private$.mel_data <- mel_data %>%
-          mutate(across(where(is.integer), as.numeric)) %>%
-          mutate(phrase_id = 1)
+        private$.mel_data <- mel_data
         private$.mel_meta <- mel_meta
         self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = FALSE)
-        self$add_meta("title", "<MELODY>")
       },
 
       validate_mel_data = function(mel_data){
@@ -33,12 +33,12 @@ melody_factory <- R6::R6Class("Melody",
 
       print = function(...) {
         cat("Melody: \n")
-        cat("  Num events: ", nrow(private$.mel_data), "\n", sep = "")
-        cat("  Metadata :  ", "\n",
-            sprintf("    %s: %s",
+        cat("  Number of notes: ", nrow(private$.mel_data), "\n", sep = "")
+        cat("  Metadata:  ", "\n",
+            sprintf("    %s: %s\n",
                     names(private$.mel_meta),
                     private$.mel_meta),
-            "\n", sep = "")
+            sep = "")
         invisible(self)
       },
 
@@ -149,8 +149,8 @@ melody_factory <- R6::R6Class("Melody",
         ih_id <- sprintf("%s_%s",
                          ifelse(is.null(segmentation), "none", segmentation),
                          ifelse(only_winner, "best", "full"))
-        if(cache && "implicit_harmonies" %in% names(private$.mel_meta)){
-          ih <- private$.mel_meta$implicit_harmonies[[ih_id]]
+        if(cache && "implicit_harmonies" %in% names(private$.mel_cache)){
+          ih <- private$.mel_cache$implicit_harmonies[[ih_id]]
           if(!is.null(ih)){
             return(ih)
           }
@@ -160,10 +160,10 @@ melody_factory <- R6::R6Class("Melody",
         }
         ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation, only_winner = only_winner)
         if(cache){
-          if(is.null(private$.mel_meta$implicit_harmonies)){
-            private$.mel_meta$implicit_harmonies <- list()
+          if(is.null(private$.mel_cache$implicit_harmonies)){
+            private$.mel_cache$implicit_harmonies <- list()
           }
-          private$.mel_meta$implicit_harmonies[[ih_id]] <- ih
+          private$.mel_cache$implicit_harmonies[[ih_id]] <- ih
         }
         return(ih)
       },
@@ -206,7 +206,7 @@ melody_factory <- R6::R6Class("Melody",
         sim_measure(v1, v2)
       },
       ngram_similarity = function(melody, N = 3, transform = "int", method = "ukkon", modify = TRUE, parameters = NULL){
-        stopifnot(N > 1, is(melody, "Melody"), transform %in% names(private$.mel_data))
+        stopifnot(N > 0, is(melody, "Melody"), transform %in% names(private$.mel_data))
         ngr <- sprintf("%s_ngram_%d", transform, N)
         if(self$has_not(ngr)){
           if(!modify){
