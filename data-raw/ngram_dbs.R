@@ -1,7 +1,7 @@
 library(tidyverse)
 
 make_berkowitz_bigram_stack <- function(N = 8){
-  vecs <- str_split(Berkowitz::phrase_item_bank$melody, ",")
+  vecs <- stringr::str_split(Berkowitz::phrase_item_bank$melody, ",")
   int_data <-
     map_dfr(1: nrow(Berkowitz::phrase_item_bank), function(i){
       vec <- c(vecs[[i]], NA)
@@ -27,7 +27,7 @@ make_berkowitz_bigram_stack <- function(N = 8){
            N = 1,
            bigram_id = sprintf("%s-0", bi_enc)) %>% ungroup() %>%
     bind_rows(bs) %>%
-    filter(!str_detect(value, "NA")) %>%
+    filter(!stringr::str_detect(value, "NA")) %>%
     mutate(idf = log(nrow(Berkowitz::phrase_item_bank)/DF))
 }
 

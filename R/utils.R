@@ -158,15 +158,15 @@ top_n <- function(x, n = 3){
 }
 
 parse_linear_combination <- function(lin_comb){
-  elts <- str_split(lin_comb, "[+-]")[[1]]
-  ops <- str_extract_all(lin_comb, "[+-]")[[1]]
+  elts <- stringr::str_split(lin_comb, "[+-]")[[1]]
+  ops <- stringr::str_extract_all(lin_comb, "[+-]")[[1]]
   if(nzchar(elts[[1]])){
     ops <- c("+", ops)
   }
   else{
     elts <- elts[2:length(elts)]
   }
-  elts <- str_split_fixed(elts, "[*]", 2)
+  elts <- stringr::str_split_fixed(elts, "[*]", 2)
 
   if(any(!nzchar(elts)) || any(is.na(suppressWarnings(as.numeric(elts[, 1]))))){
     logging::logerror(sprintf("Invalid linear combination: %s", lin_comb))

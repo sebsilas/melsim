@@ -1,0 +1,20 @@
+ngrukkon:
+  full_name: ngram-int-3-ukkon
+  type: set_based
+  transformation: ngrams
+  parameters:
+    transformation: int
+    ngram_length: 3
+  sim_measure: ukkon
+  transposition_invariant: true
+  tempo_invariant: true
+
+opti3:
+  full_name: opti3
+  type:  linear_combination
+  transformation: none
+  parameters:
+    keep_singles: true
+  sim_measure: "0.505 *  ngrukkon + 0.417  * rhytfuzz + 0.24  * harmcore - 0.146 * const"
+  transposition_invariant: true
+  tempo_invariant: true

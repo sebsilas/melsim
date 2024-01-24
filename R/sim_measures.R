@@ -84,8 +84,31 @@ sim_measure_factory <- R6::R6Class("SimilarityMeasure",
                                    self$tempo_invariant  <-  tempo_invariant
                                    self$cache <- cache
                                  },
-                                as.character = function(){
+                                as_character = function(){
                                   sprintf("%s (%s)", self$short, name, self$name)
+                                },
+                                as_list = function(){
+                                  x <- self %>% as.list()
+                                  x[c("name",
+                                      "full_name",
+                                      "type",
+                                      "transformation",
+                                      "parameters",
+                                      "sim_measure",
+                                      "transposition_invariant",
+                                      "tempo_invariant",
+                                      "cache"
+                                      )]
+
+                                },
+                                write_yaml = function(fname, fileEncoding ="UTF-8"){
+                                  l <- self$as_list()
+                                  name <- l$name
+                                  self$as_list()
+                                  l <- list(l)
+                                  names(l) <- name
+                                  browser()
+                                  yaml::write_yaml(l, fname)
                                 },
                                 print = function(){
                                   cat("Similarity measure: \n")

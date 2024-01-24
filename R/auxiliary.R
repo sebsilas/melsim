@@ -1,3 +1,32 @@
+#' sim_measures_from_yaml
+#' Read similarity measur definitions from a YAML and construct a list of SimilaryMeasure objects
+#' @param fname (character) Filename
+#'
+#' @return list of SimilarityMeasure objects
+#' @export
+#'
+#' @examples
+sim_measures_from_yaml <-  function(fname){
+  all <- yaml::read_yaml(fname)
+  if(is.null(all)){
+    logging::logerror(sprintf("%s not a YAML file", fname))
+  }
+  map(names(all), function(sim_id){
+    sm <- all[[sim_id]]
+    sim_measure_factory$new(
+      name = sim_id,
+      full_name = sm$full_name,
+      type = sm$type,
+      transformation = sm$transformation,
+      parameters = sm$parameters,
+      sim_measure = sm$sim_measure,
+      transposition_invariant = sm$transposition_invariant,
+      tempo_invariant = sm$tempo_invariant,
+      cache = T
+    )
+  })
+}
+
 edit_dist <- function(s, t){
   adist(s,t)[1,1]
 }
@@ -247,3 +276,4 @@ fuzzyint_class <- Vectorize(
     return(s * class_vec[[as.character(a)]])
 
   })
+
