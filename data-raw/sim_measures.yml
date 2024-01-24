@@ -20,14 +20,13 @@ ngrukkon2:
   transposition_invariant: true
   tempo_invariant: true
 
-ngrukkon1:
-  full_name: ngram-int-1-ukkon
-  type: set_based
-  transformation: ngrams
+opti2:
+  full_name: opti2
+  type:  linear_combination
+  transformation: none
   parameters:
-    transformation: int
-    ngram_length: 1
-  sim_measure: ukkon
+    keep_singles: false
+  sim_measure: "0.6 *  ngrukkon + 0.4  * rhytfuzz"
   transposition_invariant: true
   tempo_invariant: true
   

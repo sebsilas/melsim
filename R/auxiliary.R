@@ -96,29 +96,29 @@ optim_transposer <- function(query, target,
                              sim_measure = edit_sim_utf8,
                              strategy = c("all", "hints", "best"),
                              ...){
-    strategy <- match.arg(strategy)
-    # Run for all transpositions and pick the top
-    strategy <- match.arg(strategy)
+  strategy <- match.arg(strategy)
+  # Run for all transpositions and pick the top
+  strategy <- match.arg(strategy)
 
-    #query <- as.integer(query - median(query))
-    #target <- as.integer(target - median(target))
-    query <- query + 60 - min(c(query))
-    target <- target + 60 - min(c(target))
-    d <- median(target)  -  median(query)
-    if(strategy == "all"){
-      hints <- -5:6
-    }
-    else if(strategy == "hints" ){
-      hints <- get_transposition_hints(target, query )
-    }
-    else if(strategy == "best" ){
-      hints <- find_best_transposition(target, query)
-    }
-    purrr::map_dfr(union(d, hints), function(trans) {
-      #browser()
-      tibble(trans = trans, sim = sim_measure(query + trans, target))
-    }) %>%
-      slice_max(sim) %>% distinct(sim) %>% pull(sim)
+  #query <- as.integer(query - median(query))
+  #target <- as.integer(target - median(target))
+  query <- query + 60 - min(c(query))
+  target <- target + 60 - min(c(target))
+  d <- median(target)  -  median(query)
+  if(strategy == "all"){
+    hints <- -5:6
+  }
+  else if(strategy == "hints" ){
+    hints <- get_transposition_hints(target, query )
+  }
+  else if(strategy == "best" ){
+    hints <- find_best_transposition(target, query)
+  }
+  purrr::map_dfr(union(d, hints), function(trans) {
+    #browser()
+    tibble(trans = trans, sim = sim_measure(query + trans, target))
+  }) %>%
+    slice_max(sim) %>% distinct(sim) %>% pull(sim)
 
 
 }

@@ -110,7 +110,6 @@ melody_factory <- R6::R6Class("Melody",
         #print(to_keep)
         private$.mel_data <- private$.mel_data[, to_keep]
         invisible(self)
-
       },
       transpose = function(col, value){
         if(is.scalar.character(col) & self$has(col)){
@@ -119,6 +118,29 @@ melody_factory <- R6::R6Class("Melody",
           private$.mel_data  <- tmp
         }
         invisible(self)
+      },
+      split_by = function(segmentation, seg_prefix = "%s"){
+        if(self$has_not(segmentation)){
+          return(invisible(self))
+        }
+        segments <- unique(private$.mel_data[[segmentation]])
+        if(!("name" %in% names(private$.mel_meta))){
+          tmp_name <- "MELODY"
+          if("file_name" %in% names(private$.mel_meta)){
+            tmp_name <- tools::file_path_sans_ext(basename(private$.mel_meta$file_name))
+          }
+          self$add_meta("name", tmp_name)
+        }
+        name_template <- sprintf("%%s_%s", seg_prefix)
+        map(segments, function(seg_id){
+          melody_factory$new(mel_data = private$.mel_data %>%
+                               filter(!!sym(segmentation) == seg_id),
+                             mel_meta = private$.mel_meta,
+                             segment = seg_id)$add_meta("name",
+                                                        sprintf(name_template,
+                                                                private$.mel_meta$name,
+                                                                as.integer(seg_id)))
+        })
       },
       read = function(fname){
         ext <- file_extension(fname)
@@ -186,7 +208,11 @@ melody_factory <- R6::R6Class("Melody",
         }
         v1 <- private$.mel_data[[transform]] %>% na.omit() %>% unclass()
         v2 <- melody$data[[transform]] %>% na.omit() %>% unclass()
+        if(length(v1) == 0 || length(v2) == 0){
+          return(NA)
+        }
         if(is.numeric(v1) && is.numeric(v2)){
+
           v1 <- v1 - min(v1) + 1
           v2 <- v2 - min(v2) + 1
         }
@@ -205,7 +231,12 @@ melody_factory <- R6::R6Class("Melody",
         }
         sim_measure(v1, v2)
       },
-      ngram_similarity = function(melody, N = 3, transform = "int", method = "ukkon", modify = TRUE, parameters = NULL){
+      ngram_similarity = function(melody,
+                                  N = 3,
+                                  transform = "int",
+                                  method = "ukkon",
+                                  modify = TRUE,
+                                  parameters = NULL){
         stopifnot(N > 0, is(melody, "Melody"), transform %in% names(private$.mel_data))
         ngr <- sprintf("%s_ngram_%d", transform, N)
         if(self$has_not(ngr)){

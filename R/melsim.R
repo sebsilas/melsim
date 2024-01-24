@@ -102,7 +102,6 @@ melsim <- function(melody1,
       })
     }) %>%
     arrange(algorithm, melody1, melody2)
-  browser()
   ret <- sim_mat_factory$new(ret, name = name)
   if(self_sim){
 
