@@ -45,11 +45,31 @@ is.scalar.integerlike <- function(x) {
   is.scalar(x) && is.integerlike(x)
 }
 
+safe_get <- function(obj, field){
+  if(field %in% names(obj)) {
+    return(obj[[field]])
+  }
+  return(NULL)
+}
+
 #' @export
 expand_grid_unique <- function(x, y, include_equals = FALSE){
   tmp <- expand_grid(x = x, y = y)
   if(include_equals) return(tmp %>% filter(x <= y))
   tmp %>% filter(x < y)
+}
+
+pair_index <- function(x, y){
+  stopifnot(length(x) == length(y))
+  if(!is.integer(x)){
+    x <- as.integer(factor(x))
+  }
+  if(!is.integer(y)){
+    y <- as.integer(factor(y))
+  }
+  ret  <- sprintf("%s_%s", x, y)
+  ret[x > y] <- ret[x < y]
+  ret
 }
 
 #' @export
@@ -135,4 +155,34 @@ top_n <- function(x, n = 3){
   top_n <- top_n[!is.na(top_n)]
   as(names(top_n), class(x))
 
+}
+
+parse_linear_combination <- function(lin_comb){
+  elts <- str_split(lin_comb, "[+-]")[[1]]
+  ops <- str_extract_all(lin_comb, "[+-]")[[1]]
+  if(nzchar(elts[[1]])){
+    ops <- c("+", ops)
+  }
+  else{
+    elts <- elts[2:length(elts)]
+  }
+  elts <- str_split_fixed(elts, "[*]", 2)
+
+  if(any(!nzchar(elts)) || any(is.na(suppressWarnings(as.numeric(elts[, 1]))))){
+    logging::logerror(sprintf("Invalid linear combination: %s", lin_comb))
+    return(NULL)
+  }
+
+  tibble(terms =  trimws(elts[, 2]),
+         weights  = sprintf("%s%s", ops, trimws(elts[, 1])) %>% as.numeric())
+}
+
+validate_sim_measure <- function(sim_measure){
+  if(is(sim_measure, "SimilarityMeasure")){
+    return(TRUE)
+  }
+  if(!is.character(sim_measure)){
+    return(FALSE)
+  }
+  !is.null(parse_linear_combination(sim_measure))
 }

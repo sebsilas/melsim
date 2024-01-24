@@ -1,4 +1,4 @@
-sim_types <- c("set_based", "sequence_based", "vector_based", "linear_combibnation", "special")
+sim_types <- c("set_based", "sequence_based", "vector_based", "linear_combination", "special")
 
 sim_transformations <- c("pitch",
                          "pc",
@@ -8,14 +8,15 @@ sim_transformations <- c("pitch",
                          "fuzzy_int",
                          "duration_class",
                          "implicit_harmonies",
-                         "ngrams")
+                         "ngrams",
+                         "none")
 
 sim_measures <- c("edit_distance", "edit_sim_utf8", "ukkon", "sum_common", "count_distinct", "cosine",
                   "Jaccard", "Kulczynski1",  "Kulczynski2", "Mountford",
                   "Fager", "Russel", "Hamman", "Faith",
                   "Tanimoto", "Dice", "Phi", "Stiles", "Michael",
                   "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
-                  "Braun-Blanquet", "Tversky", "pmi")
+                  "Braun-Blanquet", "Tversky", "pmi", "const")
 #'@export
 sim_measure_factory <- R6::R6Class("SimilarityMeasure",
                                private = list(
@@ -69,7 +70,7 @@ sim_measure_factory <- R6::R6Class("SimilarityMeasure",
                                      }
 
                                    }
-                                   if(!(sim_measure %in% sim_measures)){
+                                   if(!(sim_measure %in% sim_measures) && !(validate_sim_measure(sim_measure))){
                                      stop(sprintf("Unrecognized similarity measure: %s", sim_measure))
                                    }
 

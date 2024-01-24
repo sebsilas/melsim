@@ -108,7 +108,7 @@ test_melsim <- function(){
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
       melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
       melody2 = NULL,
-      similarity_measures = c( "rawed", "pmi_ps",  "ngram_ukkon")#, "rhythfuz", "diffed", "harmcore")
+      similarity_measures = c( "rawed" )#, "pmi_ps",  "ngram_ukkon", "rhythfuz", "diffed", "harmcore")
     )
   tictoc::toc()
   ret

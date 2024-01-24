@@ -262,14 +262,13 @@ melody_factory <- R6::R6Class("Melody",
         }
       },
       similarity = function(melody, sim_measures){
-        #browser()
         if(!is.list(sim_measures)){
           sim_measures <- list(sim_measures)
         }
         stopifnot(is(melody, "Melody"),
-                  all(sapply(sim_measures, function(x) is(x, "SimilarityMeasure"))))
+                  all(sapply(sim_measures, validate_sim_measure)))
+
         imap_dfr(sim_measures, function(sm, i){
-          #browser()
           if(sm$type == "sequence_based"){
             #browser()
             sim <- self$edit_sim(melody,
@@ -290,14 +289,43 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             else{
-              logging::logwarn(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
+              logging::logwerror(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
               return(NULL)
             }
           }
+          else if (sm$type == "linear_combination"){
+            lin_comb <- parse_linear_combination(sm$sim_measure)
+            all_sm <- melsim::similarity_measures
+            missing_sm <- setdiff(lin_comb$terms, names(all_sm))
+            if(length(missing_sm) > 0){
+              logging::logerror(sprintf("Unrecognized similarity measures in linear combination: %s",
+                                        paste(missing_sm, collapse = ", ")))
+              return(NULL)
+            }
+            sms <- all_sm[lin_comb$terms]
+            single_sims <- self$similarity(melody, sms) %>%
+              left_join(lin_comb %>%
+                          rename(algorithm = terms),
+                        by = "algorithm")
+            keep <- safe_get(sm$parameters, "keep_singles")
+            browser()
+            combi_sim <-
+              tibble(algorithm = sm$name,
+                     full_name = sm$full_name,
+                     sim = sum(single_sims$sim * single_sims$weights))
+            if(keep){
+              ret <- single_sims %>%
+                select(-weights) %>%
+                bind_rows(combi_sim)
+            }
+            else{
+              ret <- combi_sim            }
+            #logging::logerror(sprintf("Linear combination failed to compute"))
+            return(ret)
+          }
           else if (sm$type == "special"){
-            if(sm$sim_measure == "pmi"){
-              sim <- pmi(private$.mel_data$pitch, melody$data$pitch)
-              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            if(sm$sim_measure == "const"){
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = 1.0))
             }
             logging::logwarn(sprintf("Special measure: %s not implemented.", sm$sim_measure))
             return(NULL)
