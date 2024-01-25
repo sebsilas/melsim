@@ -36,10 +36,16 @@ edit_sim <- function(s, t){
 }
 
 edit_dist_utf8 <- function(s, t){
+  s <- s - min(c(s, t)) + 128
+  t <- t - min(c(s, t)) + 128
   adist(intToUtf8(s),intToUtf8(t))[1,1]
 }
 
 edit_sim_utf8 <- function(s, t){
+  #s <- as.integer(s)
+  #t <- as.integer(s)
+  s <- s - min(c(s, t)) + 128
+  t <- t - min(c(s, t)) + 128
   edit_sim(intToUtf8(s),intToUtf8(t))
 }
 
@@ -58,7 +64,14 @@ pmi <- function(q, t) {
   sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
 }
 
-file_extension <- function(file) strsplit(basename(file), ".", fixed = T)[[1]][-1]
+file_ext <- function(file) {
+  tmp <- str_extract(file, "\\.[a-zA-Z0-9]+$")
+  ifelse(length(tmp), str_sub(tmp, 2), "")
+}
+
+read_melody <- function(f){
+  melody_factory$new(fname = f, name = tools::file_path_sans_ext(basename(f)))
+}
 
 #find a list of candidates for best transpositions for two pitch vectors, based on basic stats
 get_transposition_hints <- function(pitch_vec1, pitch_vec2){

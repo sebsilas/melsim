@@ -13,6 +13,7 @@ melody_factory <- R6::R6Class("Melody",
                                               pitch = numeric()),
                             mel_meta = NULL,
                             fname = "",
+                            override = F,
                             ...) {
         mel_meta <- safe_append(mel_meta, list(...))
         if(nzchar(fname)){
@@ -20,11 +21,16 @@ melody_factory <- R6::R6Class("Melody",
           mel_data <- tmp$mel_data
           mel_meta <- tmp$mel_meta %>% safe_append(mel_meta)
         }
-        stopifnot(self$validate_mel_data(mel_data))
+        if(!self$validate_mel_data(mel_data)){
+          browser()
+          logging::logerror(sprintf("Not valid melody data (fname = '%s')", fname))
+          stop()
+        }
         stopifnot(is.list(mel_meta))
         private$.mel_data <- mel_data
         private$.mel_meta <- mel_meta
-        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = FALSE)
+        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"),
+                           override = override)
       },
 
       validate_mel_data = function(mel_data){
@@ -136,6 +142,7 @@ melody_factory <- R6::R6Class("Melody",
           melody_factory$new(mel_data = private$.mel_data %>%
                                filter(!!sym(segmentation) == seg_id),
                              mel_meta = private$.mel_meta,
+                             override = T,
                              segment = seg_id)$add_meta("name",
                                                         sprintf(name_template,
                                                                 private$.mel_meta$name,
@@ -143,7 +150,7 @@ melody_factory <- R6::R6Class("Melody",
         })
       },
       read = function(fname){
-        ext <- file_extension(fname)
+        ext <- file_ext(fname)
         if(ext %in% c("csv", "mcsv")){
           return(self$read_mcsv(fname))
         }
@@ -212,9 +219,10 @@ melody_factory <- R6::R6Class("Melody",
           return(NA)
         }
         if(is.numeric(v1) && is.numeric(v2)){
-
-          v1 <- v1 - min(v1) + 1
-          v2 <- v2 - min(v2) + 1
+          #browser()
+          #offset <- min(c(v1, v2)) - 1
+          #v1 <- v1 - offset
+          #v2 <- v2 - offset
         }
         else if(is.character(v1) && is.character(v2)){
           common_elts <- levels(factor(union(v1, v2)))

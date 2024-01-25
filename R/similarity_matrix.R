@@ -278,7 +278,7 @@ sim_mat_factory <- R6::R6Class(
       q <- q + theme_bw()
       q <- q + theme(axis.text.x = element_text(angle = 45, hjust = 1))
       q <- q + scale_fill_viridis_c(option = "inferno")
-      if(length(unique(sim_df$algorithm)) > 1){
+      if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
         q <- q +facet_wrap(~algorithm)
       }
       q
