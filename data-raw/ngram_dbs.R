@@ -1,4 +1,4 @@
-library(tidyverse)
+#library(tidyverse)
 
 make_berkowitz_bigram_stack <- function(N = 8){
   vecs <- stringr::str_split(Berkowitz::phrase_item_bank$melody, ",")

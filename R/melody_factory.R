@@ -128,7 +128,7 @@ melody_factory <- R6::R6Class("Melody",
       transpose = function(col, value){
         if(is.scalar.character(col) & self$has(col)){
           tmp <- private$.mel_data
-          tmp[[col]] <- tmp[[col]] + as(value, class(tmp[[col]]))
+          tmp[[col]] <- tmp[[col]] + methods::as(value, class(tmp[[col]]))
           private$.mel_data  <- tmp
         }
         invisible(self)
@@ -169,7 +169,8 @@ melody_factory <- R6::R6Class("Melody",
           stop("Not implemented")
         }
         if(ext %in% c("xml", "mxl", "musicxml")){
-          list(mel_data = read_musicxml(fname), mel_meta = list(file_name = fname))
+          stop("Not implemented")
+          #list(mel_data = read_musicxml(fname), mel_meta = list(file_name = fname))
         }
       },
       read_mcsv = function(fname){
@@ -195,7 +196,7 @@ melody_factory <- R6::R6Class("Melody",
         if(self$has(segmentation)){
           segmentation <- private$.mel_data[[segmentation]]
         }
-        ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation, only_winner = only_winner)
+        ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation, only_winner = only_winner, fast_algorithm = T)
         if(cache){
           if(is.null(private$.mel_cache$implicit_harmonies)){
             private$.mel_cache$implicit_harmonies <- list()
@@ -253,7 +254,7 @@ melody_factory <- R6::R6Class("Melody",
                                   method = "ukkon",
                                   modify = TRUE,
                                   parameters = NULL){
-        stopifnot(N > 0, is(melody, "Melody"), transform %in% names(private$.mel_data))
+        stopifnot(N > 0, methods::is(melody, "Melody"), transform %in% names(private$.mel_data))
         ngr <- sprintf("%s_ngram_%d", transform, N)
         if(self$has_not(ngr)){
           if(!modify){
@@ -317,7 +318,7 @@ melody_factory <- R6::R6Class("Melody",
         if(!is.list(sim_measures)){
           sim_measures <- list(sim_measures)
         }
-        stopifnot(is(melody, "Melody"),
+        stopifnot(methods::is(melody, "Melody"),
                   all(sapply(sim_measures, validate_sim_measure)))
 
         imap_dfr(sim_measures, function(sm, i){
@@ -426,9 +427,9 @@ melody_factory <- R6::R6Class("Melody",
           stop("No melody data to plot")
         }
 
-        q <- private$.mel_data %>% ggplot(aes(x = onset, y = pitch))
-        q <- q + geom_segment(aes(xend = onset + ioi, yend = pitch))
-        q <- q + theme_bw()
+        q <- private$.mel_data %>% ggplot2::ggplot(aes(x = onset, y = pitch))
+        q <- q + ggplot2::geom_segment(aes(xend = onset + ioi, yend = pitch))
+        q <- q + ggplot2::theme_bw()
         q
       }
     ),

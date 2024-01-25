@@ -57,7 +57,8 @@ melsim <- function(melody1,
   ret <-
     map_dfr(similarity_measures, function(sim_algo){
       #browser()
-      logging::loginfo(sprintf("Testing: %s", ifelse(is(sim_algo, "SimilarityMeasure"), sim_algo$name, sim_algo)))
+      logging::loginfo(sprintf("Testing: %s", ifelse(methods::is(sim_algo, "SimilarityMeasure"),
+                                                     sim_algo$name, sim_algo)))
 
       imap_dfr(melody1, function(m1, i){
         #browser()
@@ -88,7 +89,7 @@ melsim <- function(melody1,
               return(NULL)
             }}
 
-          if(is(sim_algo, "SimilarityMeasure")){
+          if(methods::is(sim_algo, "SimilarityMeasure")){
             #tictoc::tic(msg = sim_algo$name)
             sim <- m1$similarity(m2, sim_algo)
             #tictoc::toc()

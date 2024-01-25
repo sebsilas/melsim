@@ -34,8 +34,8 @@ pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExentsio
   }
   # Run for all transpositions and pick the top
   #tictoc::tic()
-  query_pitch <- as.integer(query_pitch - median(query_pitch))
-  target_pitch <- as.integer(target_pitch - median(target_pitch))
+  query_pitch <- as.integer(query_pitch - stats::median(query_pitch))
+  target_pitch <- as.integer(target_pitch - stats::median(target_pitch))
   query_pitch <- query_pitch + 60 + min(c(query_pitch, target_pitch))
   target_pitch <- target_pitch + 60 + min(c(query_pitch, target_pitch))
 

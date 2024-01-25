@@ -18,7 +18,7 @@ add_ngrams <- function(mel_data, columns, N, override = FALSE) {
       ngrams <- get_all_ngrams(mel_data[[col]],
                                N,
                                keep_length = TRUE) %>%
-        pivot_wider(id_cols = start,
+        tidyr::pivot_wider(id_cols = start,
                     names_from = N,
                     names_prefix = sprintf("%s_ngram_", col),
                     values_from = value) %>%

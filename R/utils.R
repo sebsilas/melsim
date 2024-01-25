@@ -52,7 +52,7 @@ is_class <- function(x, class){
   if(!is.list(x)){
     x <- list(x)
   }
-  sapply(x, function(z) is(z, class))
+  sapply(x, function(z) methods::is(z, class))
 }
 
 safe_get <- function(obj, field){
@@ -72,7 +72,7 @@ safe_append <- function(x, y){
 
 #' @export
 expand_grid_unique <- function(x, y, include_equals = FALSE){
-  tmp <- expand_grid(x = x, y = y)
+  tmp <- tidyr::expand_grid(x = x, y = y)
   if(include_equals) return(tmp %>% filter(x <= y))
   tmp %>% filter(x < y)
 }
@@ -157,12 +157,12 @@ get_division_from_midi_file <- function(file){
 
 abs_mean <- function(x, ...) mean(abs(x), ...)
 abs_sd <- function(x, ...) sd(abs(x), ...)
-safe_entropy <- function(x, ...) suppressWarnings(entropy::entropy(na.omit(x)))
+#safe_entropy <- function(x, ...) suppressWarnings(entropy::entropy(na.omit(x)))
 
 modus <- function(x){
   # Little helper to calculate modus of simple vector
   t <- table(x)
-  as(names(t[t == max(t)]), class(x))
+  methods::as(names(t[t == max(t)]), class(x))
 
 }
 
@@ -171,7 +171,7 @@ top_n <- function(x, n = 3){
   t <- table(x)
   top_n <- sort(t, decreasing = T)[1:n]
   top_n <- top_n[!is.na(top_n)]
-  as(names(top_n), class(x))
+  methods::as(names(top_n), class(x))
 
 }
 
@@ -196,7 +196,7 @@ parse_linear_combination <- function(lin_comb){
 }
 
 validate_sim_measure <- function(sim_measure){
-  if(is(sim_measure, "SimilarityMeasure")){
+  if(methods::is(sim_measure, "SimilarityMeasure")){
     return(TRUE)
   }
   if(!is.character(sim_measure)){

@@ -2,10 +2,10 @@ Package: melsim
 Type: Package
 Title: Calculating melodic similarities
 Version: 0.5.7
-Author:  Sebastiatn Silas, Klaus Frieler
+Author:  Sebastian Silas, Klaus Frieler
 Maintainer: Klaus Frieler <klaus.frieler@ae.mpg.de>
 Description: Framework for calculatin tons of melodic similarities.
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
@@ -14,14 +14,17 @@ Imports:
     proxy,
     purrr,
     purrrlyr,
+    tidyr,
     R6,
-    tabr,
+    Biostrings,
     tibble,
     logging,
     yaml,
-    proxy,
     tictoc,
-    stringr
+    stringr,
+    methods,
+    stats,
+    utils
 RoxygenNote: 7.2.3
 URL: https://github.com/sebsilas/melsim
 BugReports: https://github.com/sebsilas/melsim/issues

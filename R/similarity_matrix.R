@@ -187,10 +187,10 @@ sim_mat_factory <- R6::R6Class(
       tmp
     },
     as_wide = function(only_similarities = F){
-      tmp <- private$sim_df %>% pivot_wider(id_cols = c("melody1", "melody2"),
-                                     names_from = algorithm,
-                                     names_prefix = "sim_",
-                                     values_from = sim
+      tmp <- private$sim_df %>% tidyr::pivot_wider(id_cols = c("melody1", "melody2"),
+                                                   names_from = algorithm,
+                                                   names_prefix = "sim_",
+                                                   values_from = sim
       )
       if(only_similarities){
         tmp <- tmp %>% select(starts_with("sim_"))
@@ -273,13 +273,13 @@ sim_mat_factory <- R6::R6Class(
       if(!is.null(algorithms)){
         sim_df <- sim_df %>% filter(algorithms %in% algorithm)
       }
-      q <- sim_df %>% ggplot(aes(x = melody1, y = melody2, fill = sim))
-      q <- q + geom_tile()
-      q <- q + theme_bw()
-      q <- q + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-      q <- q + scale_fill_viridis_c(option = "inferno")
+      q <- sim_df %>% ggplot2::ggplot(aes(x = melody1, y = melody2, fill = sim))
+      q <- q + ggplot2::geom_tile()
+      q <- q + ggplot2::theme_bw()
+      q <- q + ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
       if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
-        q <- q +facet_wrap(~algorithm)
+        q <- q + ggplot2::facet_wrap(~algorithm)
       }
       q
     },
@@ -298,10 +298,10 @@ sim_mat_factory <- R6::R6Class(
                                  paste(setdiff(algorithms, tmp$algorithm), collapse = ", ")))
         return(NULL)
       }
-      tmp <- tmp %>% pivot_wider(id_cols = c("melody1", "melody2"),
-                                 names_from = algorithm,
-                                 names_prefix = "sim_",
-                                 values_from = sim)
+      tmp <- tmp %>% tidyr::pivot_wider(id_cols = c("melody1", "melody2"),
+                                        names_from = algorithm,
+                                        names_prefix = "sim_",
+                                        values_from = sim)
       lin_sim <- (tmp %>% select(starts_with("sim")) %>% as.matrix()) %*% weights
       if(is.null(name) || !nzchar(name)){
         name <- sprintf("%.2f * %s", weights, algorithms) %>% paste(collapse = " + ")

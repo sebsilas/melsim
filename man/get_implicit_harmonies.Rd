@@ -8,11 +8,17 @@ get_implicit_harmonies(
   pitch_vec,
   segmentation = NULL,
   only_winner = TRUE,
-  fast_algorithm = FALSE
+  fast_algorithm = TRUE
 )
 }
 \arguments{
-\item{only_winner}{}
+\item{pitch_vec}{(integer) Pitch vector}
+
+\item{segmentation}{(factor) Segmentation as grouping variable}
+
+\item{only_winner}{(logical) Return only winning harmony}
+
+\item{fast_algorithm}{(logical) Use, fast matrix-base algorithm}
 }
 \description{
 get harmonies via the Krumhansl-Schmuckler algorithm
