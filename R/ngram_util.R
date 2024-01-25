@@ -19,7 +19,7 @@ add_ngrams <- function(mel_data, columns, N, override = FALSE) {
                                N,
                                keep_length = TRUE) %>%
         tidyr::pivot_wider(id_cols = start,
-                    names_from = N,
+                           names_from = N,
                     names_prefix = sprintf("%s_ngram_", col),
                     values_from = value) %>%
         select(-start)

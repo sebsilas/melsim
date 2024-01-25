@@ -1,50 +1,56 @@
-# read_musicxml <- function(musicxml_file) {
-#   data <- XML::xmlParse(musicxml_file)
-#   xml_data <- XML::xmlToList(data)
-#   part <- xml_data$part
-#   tempo <- part$measure$direction$sound["tempo"] %>% as.numeric()
-#
-#   if(length(tempo) == 0) {
-#     tempo <- 120
-#   }
-#   part <- part[names(part) == "measure"]
-#   notes <- lapply(part, function(measure) measure[names(measure) == "note"])
-#   notes <- unlist(notes, recursive = FALSE)
-#
-#   ret <- purrr::map_dfr(notes, function(note) {
-#
-#     # Pitches
-#     sci_no <- paste0(note$pitch$step, note$pitch$octave)
-#     midi_note <- as.integer(itembankr::sci_notation_to_midi(sci_no))
-#
-#     # Durations
-#     rel_bpm <- as.numeric(note$duration)
-#
-#         duration <- rel_bpm_to_seconds(rel_bpm, bpm = tempo)
-#
-#     tibble::tibble(pitch = midi_note,
-#                    duration = duration)
-#
-#   })
-#   ret %>% mutate(onset = cumsum(c(0, duration[1:(length(duration)-1)])))
-# }
-#
-#
-# rel_bpm_to_seconds <- function(v, bpm) {
-#   # Convert note lengths as relative numbers (i.e 4 = semibreve, 2 = minim, 1 = crotchet)
-#   # to abs values in seconds, based on a bpm
-#   seconds_per_beat <- bpm_to_seconds_per_beat(bpm)
-#   seconds_per_beat/v
-# }
-#
-# bpm_to_seconds_per_beat <- function(bpm) {
-#   seconds_in_a_minute <- 60
-#   seconds_per_beat <- seconds_in_a_minute/bpm
-# }
-#
-#
-# # t <- read_musicxml('data-raw/musicxml_test.musicxml')
-#
-#
-#
-#
+#' read_musicxml
+#' Simple reader for MusicXML files, works only in the simplest cases and only with most basic information
+#'
+#' @param musicxml_file (string)
+#' @return tibbel with pitch, onset, duration
+#' @export
+read_musicxml <- function(musicxml_file) {
+  data <- XML::xmlParse(musicxml_file)
+  xml_data <- XML::xmlToList(data)
+  parts <- xml_data[names(xml_data) == "part"]
+  if(length(parts) > 1){
+    logging::logwarn("MusicXML contains several parts, taking first one")
+  }
+  parts <- parts[[1]]
+  #browser()
+  measures <- parts[names(parts) == "measure"]
+  tempo <- measures[[1]]$direction$sound["tempo"] %>% as.numeric()
+  if(length(tempo) == 0 || is.na(tempo)) {
+    tempo <- measures[[1]]$sound$.attrs[["tempo"]] %>% as.numeric()
+    if(length(tempo) == 0 || is.na(tempo)){
+      logging::logwarn("Could not find tempo information, using 120 bpm")
+      tempo <- 120
+    }
+  }
+
+  beat_duration <- 60./tempo
+  division <- measures[[1]]$attributes$divisions %>% as.integer()
+  if(length(division) > 1){
+    logging::logwarn("MusicXML contains more than one division, using first one")
+    division <- division[[1]]
+
+  }
+  notes <- lapply(measures, function(m) m[names(m) == "note"])
+  notes <- unlist(notes, recursive = FALSE)
+  note_code <- c(9, 11, 0, 2, 4, 5, 7)
+  names(note_code) <- stringr::str_split(LETTERS[1:7], "")
+  ret <- purrr::map_dfr(notes, function(note) {
+    # Pitches
+    pc <- note_code[note$pitch$step]
+    if("alter" %in% names(note$pitch)){
+      pc <- pc + as.integer(note$pitch$alter)
+    }
+    pitch <- pc + (as.integer(note$pitch$octave) + 1) * 12
+
+    # Durations
+    duration_in_beats <- as.numeric(note$duration)/division
+    duration_in_secs <- duration_in_beats * beat_duration
+
+    tibble::tibble(pitch = pitch,
+                   duration = duration_in_secs)
+
+  })
+  ret %>% mutate(onset = cumsum(c(0, duration[1:(length(duration)-1)])))
+}
+
+

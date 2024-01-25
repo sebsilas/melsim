@@ -102,9 +102,11 @@ melody_factory <- R6::R6Class("Melody",
         }
         if("int_X_ioi_class" %in% transforms){
           if(override || self$has_not("int_X_ioi_class")){
-            private$.mel_data$int_X_ioi_class <- sprintf("(%s|%s)",
-                                                         c(diff(private$.mel_data$pitch), NA),
-                                                         classify_duration(c(diff(private$.mel_data$onset), NA)))
+            int_X_ioi_class <- sprintf("(%s|%s)",
+                                       c(diff(private$.mel_data$pitch), NA),
+                                       classify_duration(c(diff(private$.mel_data$onset), NA)))
+            int_X_ioi_class[str_detect(int_X_ioi_class, "NA")] <- NA
+            private$.mel_data$int_X_ioi_class <- int_X_ioi_class
           }
         }
         invisible(self)
@@ -168,9 +170,11 @@ melody_factory <- R6::R6Class("Melody",
         if(ext %in% c("mid", "midi")){
           stop("Not implemented")
         }
-        if(ext %in% c("xml", "mxl", "musicxml")){
-          stop("Not implemented")
-          #list(mel_data = read_musicxml(fname), mel_meta = list(file_name = fname))
+        if(ext %in% c("xml",  "musicxml")){
+          #stop("Not implemented")
+          list(mel_data = read_musicxml(fname),
+               mel_meta = list(file_name = fname,
+                               name = tools::file_path_sans_ext(basename(fname))))
         }
       },
       read_mcsv = function(fname){
@@ -179,7 +183,7 @@ melody_factory <- R6::R6Class("Melody",
                              sep = ";",
                              stringsAsFactors = FALSE) %>%
           as_tibble()
-        mel_meta <- list(file_name =  fname)
+        mel_meta <- list(file_name =  fname, name = tools::file_path_sans_ext(basename(fname)))
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
       get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE){
