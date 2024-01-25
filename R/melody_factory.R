@@ -29,7 +29,7 @@ melody_factory <- R6::R6Class("Melody",
         stopifnot(is.list(mel_meta))
         private$.mel_data <- mel_data
         private$.mel_meta <- mel_meta
-        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"),
+        self$add_tranforms(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class", "int_X_ioi_class"),
                            override = override)
       },
 
@@ -60,7 +60,8 @@ melody_factory <- R6::R6Class("Melody",
         invisible(self)
       },
 
-      add_tranforms = function(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class"), override = TRUE){
+      add_tranforms = function(transforms = c("int", "fuzzy_int", "parsons", "pc", "ioi", "ioi_class", "int_X_ioi_class"),
+                               override = TRUE){
         if(length(transforms) == 1  && is.function(transforms)){
           tmp <- transforms(private$.mel_data)
           if(intersect(names(private$.mel_data), names(tmp)) == names(private$.mel_data) &&
@@ -97,6 +98,13 @@ melody_factory <- R6::R6Class("Melody",
         if("ioi_class" %in% transforms){
           if(override || self$has_not("ioi_class")){
             private$.mel_data$ioi_class <- classify_duration(c(diff(private$.mel_data$onset), NA))
+          }
+        }
+        if("int_X_ioi_class" %in% transforms){
+          if(override || self$has_not("int_X_ioi_class")){
+            private$.mel_data$int_X_ioi_class <- sprintf("(%s|%s)",
+                                                         c(diff(private$.mel_data$pitch), NA),
+                                                         classify_duration(c(diff(private$.mel_data$onset), NA)))
           }
         }
         invisible(self)
@@ -283,7 +291,10 @@ melody_factory <- R6::R6Class("Melody",
           sum_common(ngrams1, ngrams2)
         }
         else if(method == "ukkon"){
-          ukkon_similarity(ngrams1, ngrams2)
+          ukkon(ngrams1, ngrams2)
+        }
+        else if(method == "dist_sim"){
+          dist_sim(ngrams1, ngrams2)
         }
         else if(method == "Tversky"){
           tversky_sim(ngrams1,
@@ -297,7 +308,9 @@ melody_factory <- R6::R6Class("Melody",
           proxy_simil(ngrams1, ngrams2, method)
         }
         else{
-          stop("Similarity function not defined")
+          browser()
+          loggin::logerror("Similarity function %s not defined", method)
+          retunr(NA)
         }
       },
       similarity = function(melody, sim_measures){

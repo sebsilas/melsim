@@ -1,46 +1,4 @@
-ukkon_similarity <- function (x, y, na.rm = TRUE){
-  if(na.rm){
-    x <- na.omit(x)
-    y <- na.omit(y)
-  }
-  joint <- c(x, y) %>% table()
-  tx <- factor(x, levels = names(joint)) %>% table()
-  ty <- factor(y, levels = names(joint)) %>% table()
-  1 - sum(abs(tx - ty))/(length(x) + length(y))
-}
 
-count_distinct <- function(x, y, na.rm = TRUE){
-  if(na.rm){
-    x <- na.omit(x)
-    y <- na.omit(y)
-  }
-  length(intersect(x, y))/max(length(x), length(y))
-}
-
-sum_common <- function(x, y, na.rm = TRUE){
-  if(na.rm){
-    x <- na.omit(x)
-    y <- na.omit(y)
-  }
-  joint <- c(x, y) %>% table()
-  tx <- factor(x, levels = names(joint)) %>% table()
-  ty <- factor(y, levels = names(joint)) %>% table()
-  is <- intersect(names(tx[tx > 0]), names(ty[ty > 0]))
-  sum(tx[is] + ty[is])/(length(x) + length(y))
-}
-
-proxy_simil <- function(x, y, proxy_method = "Jaccard", na.rm = T){
-  #browser()
-  if(!proxy::pr_DB$entry_exists(proxy_method)){
-    logging::logwarn(sprintf("Method %s does not exist in pr_DB", proxy_method))
-  }
-  if(na.rm){
-    x <- na.omit(x)
-    y <- na.omit(y)
-  }
-  xy <- union(x, y)
-  proxy::simil(rbind(xy %in%  x, xy %in%  y), method = proxy_method) %>% as.numeric()
-}
 #' An ngrukkon wrapper to produce warnings and return NAs rather than stop if one entry is too short
 #'
 #' @param x
