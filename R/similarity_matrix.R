@@ -90,14 +90,17 @@ sim_mat_factory <- R6::R6Class(
           private$diagonal <- F
         }
       }
-      else if(length(union(m1, m2)) == l_u1 ||
-              length(union(m1, m2)) == l_u2){
+      else if(length(union(m1, m2)) == l_u1 + 1 ||
+              length(union(m1, m2)) == l_u2 + 1){
         if(l_m1 == l_u1 * (l_u1 - 1)/2){
           private$type <- "half-no-diag"
           private$has_diagonal <- F
         } else if(l_m1 == l_u1 * (l_u1 + 1)/2){
           private$type <- "half-diag"
-          private$diagonal <- T
+          private$dim1 <- l_u1 + 1
+          private$dim2 <- l_u2 + 1
+          private$diagonal <- F
+          private$symmetric <- T
         }
         else{
           private$type <- "general"
@@ -207,7 +210,7 @@ sim_mat_factory <- R6::R6Class(
       private$type <- "full-diag"
       private$diagonal <- T
       private$symmetric < T
-      invisible(self)
+      self
     },
 
     get_symmetric = function(with_diagonal = T){
@@ -293,7 +296,7 @@ sim_mat_factory <- R6::R6Class(
                 is.vector(algorithms), is.vector(weights))
       tmp <- private$sim_df %>% filter(algorithm %in% algorithms)
       if(length(unique(tmp$algorithm)) != length(algorithms)){
-        browser()
+        #browser()
         logging::logwarn(sprintf("Found unknown algorithms: %s",
                                  paste(setdiff(algorithms, tmp$algorithm), collapse = ", ")))
         return(NULL)

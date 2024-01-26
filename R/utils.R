@@ -97,14 +97,14 @@ value_to_vec <- function(value_str,
                          simplify = T){
   type <- match.arg(type)
   if(type == "integer"){
-    ret <- stringr::str_extract_all(value_str, "[0-9]+") %>% lapply(as.integer)
+    ret <- stringr::str_extract_all(value_str, "[+-]?[0-9]+") %>% lapply(as.integer)
     if(length(value_str) == 1  && simplify){
       ret <- ret[[1]]
     }
     return(ret)
   }
   else if(type == "double"){
-    ret <- stringr::str_extract_all(value_str, "[0-9\\.]+") %>% lapply(as.numeric)
+    ret <- stringr::str_extract_all(value_str, "[+-]?[0-9\\.]+") %>% lapply(as.numeric)
     if(length(value_str) == 1 && simplify){
       ret <- ret[[1]]
     }

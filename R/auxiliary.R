@@ -36,17 +36,17 @@ edit_sim <- function(s, t){
 }
 
 edit_dist_utf8 <- function(s, t){
-  s <- s - min(c(s, t)) + 128
-  t <- t - min(c(s, t)) + 128
+  offset <- min(c(s, t))
+  s <- s -  offset + 128
+  t <- t -  offset  + 128
   utils::adist(intToUtf8(s),intToUtf8(t))[1,1]
 }
 
 edit_sim_utf8 <- function(s, t){
-  #s <- as.integer(s)
-  #t <- as.integer(s)
-  s <- s - min(c(s, t)) + 128
-  t <- t - min(c(s, t)) + 128
-  edit_sim(intToUtf8(s),intToUtf8(t))
+  offset <- min(c(s, t))
+  s <- s -  offset + 128
+  t <- t -  offset  + 128
+  1 - utils::adist(intToUtf8(s),intToUtf8(t))[1,1]/max(length(s), length(t))
 }
 
 dist_sim <- function(x, y){
