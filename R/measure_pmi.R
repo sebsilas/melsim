@@ -10,7 +10,7 @@
 #' @export
 #'
 #' @examples
-pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExentsion = 6) {
+pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExension = 6) {
 
   # They use a gap opening penalty of 12 and a gap extension penalty of 6 as parameters.
 
@@ -21,7 +21,7 @@ pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExentsio
                                              intToUtf8(t),
                                              type = "global", # i.e., Needleman-Wunsch
                                              gapOpening = gapOpening,
-                                             gapExtension = gapExentsion)
+                                             gapExtension = gapExension)
 
     q_aligned <- utf8ToInt(as.character(aligned@pattern))
     t_aligned <- utf8ToInt(as.character(aligned@subject))
