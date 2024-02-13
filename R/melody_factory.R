@@ -22,8 +22,7 @@ melody_factory <- R6::R6Class("Melody",
           mel_meta <- tmp$mel_meta %>% safe_append(mel_meta)
         }
         if(!self$validate_mel_data(mel_data)){
-          browser()
-          logging::logerror(sprintf("Not valid melody data (fname = '%s')", fname))
+          logging::logerror(sprintf("Invalid melody data (fname = '%s')", fname))
           stop()
         }
         stopifnot(is.list(mel_meta))
@@ -187,7 +186,6 @@ melody_factory <- R6::R6Class("Melody",
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
       get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE){
-        #browser()
         ih_id <- sprintf("%s_%s",
                          ifelse(is.null(segmentation), "none", segmentation),
                          ifelse(only_winner, "best", "full"))
@@ -199,6 +197,10 @@ melody_factory <- R6::R6Class("Melody",
         }
         if(self$has(segmentation)){
           segmentation <- private$.mel_data[[segmentation]]
+        }
+        else{
+          logging::logwarn(sprintf("Requested segmentation '%s' not found, using const", segmentation))
+          segmentation <- rep(1, nrow(private$.mel_data))
         }
         ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation, only_winner = only_winner, fast_algorithm = T)
         if(cache){
@@ -259,6 +261,7 @@ melody_factory <- R6::R6Class("Melody",
                                   modify = TRUE,
                                   parameters = NULL){
         stopifnot(N > 0, methods::is(melody, "Melody"), transform %in% names(private$.mel_data))
+        #browser()
         ngr <- sprintf("%s_ngram_%d", transform, N)
         if(self$has_not(ngr)){
           if(!modify){
@@ -325,7 +328,7 @@ melody_factory <- R6::R6Class("Melody",
         stopifnot(methods::is(melody, "Melody"),
                   all(sapply(sim_measures, validate_sim_measure)))
 
-        imap_dfr(sim_measures, function(sm, i){
+        purrr::imap_dfr(sim_measures, function(sm, i){
           if(sm$type == "sequence_based"){
             #browser()
             sim <- self$edit_sim(melody,

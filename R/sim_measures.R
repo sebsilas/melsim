@@ -111,7 +111,6 @@ sim_measure_factory <- R6::R6Class(
       self$as_list()
       l <- list(l)
       names(l) <- name
-      browser()
       yaml::write_yaml(l, fname)
     },
     print = function(){

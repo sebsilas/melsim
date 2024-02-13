@@ -42,10 +42,54 @@ edit_dist_utf8 <- function(s, t){
   utils::adist(intToUtf8(s),intToUtf8(t))[1,1]
 }
 
+diss_NCD <- function(s, t, method = "gz"){
+  s <- as.character(na.omit(s))
+  t <- as.character(na.omit(t))
+  st <- as.character(na.omit(sprintf("%s%s", s, t)))
+  s_c <-   lapply(s, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  t_c <-   lapply(t, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  st_c <-   lapply(st, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  #browser()
+  d_NCD <- TSclust::diss.NCD(lapply(s, charToRaw) %>% unlist()  %>% as.numeric(),
+                             lapply(t, charToRaw) %>% unlist()  %>% as.numeric(),
+                             type = method)
+  #d_NCD <- TSclust::diss.NCD(s, t)
+  #comp <- TSclust:::.compression.lengths(s, t, method)
+  #d_NCD <- (comp$cxy - min(comp$cx, comp$cy))/max(comp$cx, comp$cy)
+  #d_ncd <- st_c - min(s_c, t_c)/max(s_c, t_c)
+  d_NCD
+}
+compression_ratio <- function(s, t, method = "gz"){
+  s <- as.character(na.omit(s))
+  t <- as.character(na.omit(t))
+  st <- as.character(na.omit(sprintf("%s%s", s, t)))
+  s_r <- lapply(s, charToRaw) %>% unlist() %>% length()
+  t_r <- lapply(t, charToRaw) %>% unlist() %>% length()
+  st_r <- lapply(st, charToRaw) %>% unlist() %>% length()
+  s_c <-   lapply(s, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  t_c <-   lapply(t, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  st_c <-   lapply(st, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  overhead <- length(memCompress(raw(0), method))
+  #browser()
+  comp_r_raw <- (s_c - overhead + t_c - overhead)/(s_r + t_r)
+  comp_r_cat <- (st_c - offset)/st_r
+  logging::loginfo(sprintf("Raw %.3f, combined: %.3f, var1: %.3f", comp_r_raw, comp_r_cat, (st_c - overhead)/(s_c - offset + t_c - overhead)))
+  return(2*(1-comp_r_cat/comp_r_raw))
+}
+na.omit <- function(x){
+  x[!is.na(x)]
+}
 edit_sim_utf8 <- function(s, t){
+  if(!is.numeric(s) || !is.numeric(t)){
+    logging::logerror("Called edit_sim_utf8 with non-numeric vectors")
+    stop()
+  }
+  s <- s[!is.na(s)]
+  t <- t[!is.na(t)]
+
   offset <- min(c(s, t))
-  s <- s -  offset + 128
-  t <- t -  offset  + 128
+  s <- s -  offset + 256
+  t <- t -  offset  + 256
   1 - utils::adist(intToUtf8(s),intToUtf8(t))[1,1]/max(length(s), length(t))
 }
 
@@ -223,6 +267,7 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, only_winner =
 
   if(!is.null(segmentation)){
     if(length(segmentation) != length(pitch_vec)){
+      browser()
       stop("Segmentation must be of same length as pitch")
     }
     s <- unique(segmentation)
@@ -231,7 +276,7 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, only_winner =
       pitch_freq_vec <- sapply(s, function(x) table(pitch_vec[segmentation == x]) %>% scale() %>% as.numeric())
       ks_cor <- t(pitch_freq_vec) %*% ks_mat
       ret <-
-        imap_dfr(s, function(seg, i){
+        purrr::imap_dfr(s, function(seg, i){
           if(only_winner){
             winner <- ks_cor[i, ] %>% which.max()
             tibble(segment = seg,

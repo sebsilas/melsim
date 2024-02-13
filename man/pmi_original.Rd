@@ -4,7 +4,7 @@
 \alias{pmi_original}
 \title{PMI similarity measure}
 \usage{
-pmi_original(query_pitch, target_pitch, gapOpening = 12, gapExentsion = 6)
+pmi_original(query_pitch, target_pitch, gapOpening = 12, gapExension = 6)
 }
 \arguments{
 \item{query_pitch}{(integer vector) query pitch sequence}

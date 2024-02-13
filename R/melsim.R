@@ -11,8 +11,8 @@
 #' @examples
 melsim <- function(melody1,
                    melody2 = NULL,
-                   similarity_measures = c("ngram_ukkon",
-                                          "rhythfuz",
+                   similarity_measures = c("ngrukkon",
+                                          "rhytfuzz",
                                           "harmcore"
                                           # "opti3",
                                           # "needleman_wunsch",
@@ -60,12 +60,12 @@ melsim <- function(melody1,
       logging::loginfo(sprintf("Testing: %s", ifelse(methods::is(sim_algo, "SimilarityMeasure"),
                                                      sim_algo$name, sim_algo)))
 
-      imap_dfr(melody1, function(m1, i){
+      purrr::imap_dfr(melody1, function(m1, i){
         #browser()
         if(!("name" %in% names(m1$meta))){
           m1$add_meta("name", sprintf("SET1MEL%03d", i))
         }
-        imap_dfr(melody2, function(m2, j){
+        purrr::imap_dfr(melody2, function(m2, j){
 
           if(!("name" %in% names(m2$meta)) && !self_sim){
             m2$add_meta("name", sprintf("SET2MEL%03d", j))
@@ -122,7 +122,7 @@ test_melsim <- function(){
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
       melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
       melody2 = NULL,
-      similarity_measures = c( "ngram_tversky_auto", "ngrukkon" )#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
+      similarity_measures = c( "ngramukkondyn", "ngrukkon" )#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
     )
   tictoc::toc()
   ret

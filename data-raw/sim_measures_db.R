@@ -65,7 +65,7 @@ similarity_measures <- list(
                                              type = "sequence_based",
                                              transformation = "implicit_harmonies",
                                              parameters = list(),
-                                             sim_measure = "edit_sim_utf8",
+                                             sim_measure = "edit_sim",
                                              transposition_invariant = T,
                                              tempo_invariant = T),
 
