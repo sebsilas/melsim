@@ -159,6 +159,10 @@ abs_mean <- function(x, ...) mean(abs(x), ...)
 abs_sd <- function(x, ...) sd(abs(x), ...)
 #safe_entropy <- function(x, ...) suppressWarnings(entropy::entropy(na.omit(x)))
 
+squeeze <- function(x, min_val = 0, max_val = 1){
+  pmax(pmin(x, max_val), min_val)
+}
+
 modus <- function(x){
   # Little helper to calculate modus of simple vector
   t <- table(x)
@@ -185,10 +189,18 @@ parse_linear_combination <- function(lin_comb){
     elts <- elts[2:length(elts)]
   }
   elts <- stringr::str_split_fixed(elts, "[*]", 2)
-
   if(any(!nzchar(elts)) || any(is.na(suppressWarnings(as.numeric(elts[, 1]))))){
-    logging::logerror(sprintf("Invalid linear combination: %s", lin_comb))
-    return(NULL)
+    to_fix <- which(apply(elts, 1, function(x) nzchar(x[[1]]) & !nzchar(x[[2]])))
+    for(i in to_fix){
+      elts[i, 2] <- elts[i, 1]
+      elts[i, 1] <- "1"
+    }
+    if(any(!nzchar(elts)) || any(is.na(suppressWarnings(as.numeric(elts[, 1]))))){
+      logging::logerror(sprintf("Invalid linear combination: %s", lin_comb))
+      return(NULL)
+    }
+    logging::logwarn(sprintf("Fixed terms with no coefficient (%s)", lin_comb))
+    #return(NULL)
   }
 
   tibble(terms =  trimws(elts[, 2]),

@@ -45,19 +45,26 @@ edit_dist_utf8 <- function(s, t){
 diss_NCD <- function(s, t, method = "gz"){
   s <- as.character(na.omit(s))
   t <- as.character(na.omit(t))
+  #browser()
+  if(all(s == t)) return(0)
   st <- as.character(na.omit(sprintf("%s%s", s, t)))
   s_c <-   lapply(s, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
   t_c <-   lapply(t, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
   st_c <-   lapply(st, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
   #browser()
-  d_NCD <- TSclust::diss.NCD(lapply(s, charToRaw) %>% unlist()  %>% as.numeric(),
-                             lapply(t, charToRaw) %>% unlist()  %>% as.numeric(),
-                             type = method)
+  # d_NCD <- TSclust::diss.NCD(lapply(s, charToRaw) %>% unlist()  %>% as.numeric(),
+  #                            lapply(t, charToRaw) %>% unlist()  %>% as.numeric(),
+  #                            type = method)
   #d_NCD <- TSclust::diss.NCD(s, t)
   #comp <- TSclust:::.compression.lengths(s, t, method)
   #d_NCD <- (comp$cxy - min(comp$cx, comp$cy))/max(comp$cx, comp$cy)
-  #d_ncd <- st_c - min(s_c, t_c)/max(s_c, t_c)
-  d_NCD
+  d_ncd <- (st_c - min(s_c, t_c))/max(s_c, t_c)
+  d_ncd
+}
+sim_NCD <- function(s, t, method = "gz"){
+  #browser()
+  d <- diss_NCD(s, t, method)
+  1 - d
 }
 compression_ratio <- function(s, t, method = "gz"){
   s <- as.character(na.omit(s))
@@ -177,11 +184,16 @@ read_melody <- function(f){
   melody_factory$new(fname = f, name = tools::file_path_sans_ext(basename(f)))
 }
 
+#' update_melodies
+#' Updates a list of melody objects to the current version of the melody object (as R6 objects keep their bindings, once created)
+#' @param mel_list list of Melody objects
+#' @param force (logical) Do it no matter what, otherwise only if version of melsim has changed
+#'@export
 update_melodies <- function(mel_list, force = T){
   current_version <- melody_factory$new()$version
   map(mel_list, function(x){
     if(force || is.null(x$version) || x$version != current_version){
-      melody_factory$new(mel_data = x$data, mel_meta = x$meta)
+      melody_factory$new(mel_data = x$data, mel_meta = x$meta, override = TRUE)
     }
     else{
       x

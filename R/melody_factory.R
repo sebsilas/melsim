@@ -331,7 +331,6 @@ melody_factory <- R6::R6Class("Melody",
 
         purrr::imap_dfr(sim_measures, function(sm, i){
           if(sm$type == "sequence_based"){
-            #browser()
             sim <- self$edit_sim(melody,
                                  sm$transformation,
                                  sim_measure = eval(parse(text = sm$sim_measure)),
@@ -372,7 +371,8 @@ melody_factory <- R6::R6Class("Melody",
             combi_sim <-
               tibble(algorithm = sm$name,
                      full_name = sm$full_name,
-                     sim = sum(single_sims$sim * single_sims$weights))
+                     sim = squeeze(sum(single_sims$sim * single_sims$weights), 0, 1))
+
             if(keep){
               ret <- single_sims %>%
                 select(-weights) %>%
@@ -386,6 +386,16 @@ melody_factory <- R6::R6Class("Melody",
           else if (sm$type == "special"){
             if(sm$sim_measure == "const"){
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = 1.0))
+            }
+            if(sm$sim_measure == "sim_NCD"){
+              #browser()
+              stopifnot(methods::is(melody, "Melody"),
+                        sm$transformation %in% names(self$data),
+                        sm$transformation %in% names(melody$data))
+
+              sim <- sim_NCD(paste(na.omit(self$data[[sm$transformation]]), collapse = ""),
+                             paste(na.omit(melody$data[[sm$transformation]]), collapse = ""))
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             logging::logwarn(sprintf("Special measure: %s not implemented.", sm$sim_measure))
             return(NULL)

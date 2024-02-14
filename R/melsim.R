@@ -64,16 +64,15 @@ melsim <- function(melody1,
       purrr::imap_dfr(melody1, function(m1, i){
         #browser()
         if(!("name" %in% names(m1$meta))){
-          m1$add_meta("name", sprintf("SET1MEL%03d", i))
+          m1$add_meta("name", sprintf("SET1MEL%04d", i))
         }
         purrr::imap_dfr(melody2, function(m2, j){
           if(paired && i != j){
             return(NULL)
           }
           if(!("name" %in% names(m2$meta)) && !self_sim){
-            m2$add_meta("name", sprintf("SET2MEL%03d", j))
+            m2$add_meta("name", sprintf("SET2MEL%04d", j))
           }
-          #browser()
           if(is.character(sim_algo)){
             sim_algo_str <- sim_algo
             sim_algo <- melsim::similarity_measures[[sim_algo_str]]
@@ -83,11 +82,20 @@ melsim <- function(melody1,
           }
           if(self_sim){
             if(i == j){
-              return(tibble(melody1 = m1$meta$name,
-                            melody2 = m2$meta$name,
-                            algorithm = sim_algo$name,
-                            full_name = sim_algo$full_name,
-                            sim = 1.0))
+              #if sim_alog is a linear combination and we keep single we have to add all of them
+              terms <- sim_algo$name
+              if(!is.null(sim_algo$parameters$keep_singles) && sim_algo$parameters$keep_singles){
+                terms <- c(terms, parse_linear_combination(sim_algo$sim_measure) %>% pull(terms))
+
+              }
+              ret <- map_dfr(terms, function(t){
+                tibble(melody1 = m1$meta$name,
+                       melody2 = m2$meta$name,
+                       algorithm = melsim::similarity_measures[[t]]$name,
+                       full_name = melsim::similarity_measures[[t]]$full_name,
+                       sim = 1.0)
+              })
+              return(ret)
             } else if (j < i){
               return(NULL)
             }}
@@ -106,8 +114,8 @@ melsim <- function(melody1,
       })
     }) %>%
     arrange(algorithm, melody1, melody2)
+
   ret <- sim_mat_factory$new(ret, name = name, paired = paired)
-  browser()
   if(self_sim){
     ret <- ret$make_symmetric()
   }
@@ -118,14 +126,16 @@ melsim <- function(melody1,
 # t <- list.files('data-raw', full.names = TRUE) %>%
 #   melsim_many_to_many_multiple_algorithms()
 
-test_melsim <- function(){
+test_melsim <- function(N = 20){
   tictoc::tic()
+  kinder_full <- update_melodies(kinder_full)
   ret <-
     melsim(
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
-      melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
+      #melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
+      melody1 = kinder_full[sample(1:length(kinder_full), N)],
       melody2 = NULL,
-      similarity_measures = c( "ngramukkondyn", "ngrukkon" )#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
+      similarity_measures = c( "opti3", "ncdintioi", "diffed" )#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
     )
   tictoc::toc()
   ret

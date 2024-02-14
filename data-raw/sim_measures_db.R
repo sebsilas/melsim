@@ -131,6 +131,15 @@ similarity_measures <- list(
                                           transposition_invariant = T,
                                           tempo_invariant = T),
 
+  ncdintioi = melsim::sim_measure_factory$new(full_name = "NCD-int_X_ioiclass",
+                                              name = "ncdintioi",
+                                              type = "special",
+                                              transformation = "int_X_ioi_class",
+                                              parameters = list(),
+                                              sim_measure = "sim_NCD",
+                                              transposition_invariant = T,
+                                              tempo_invariant = F),
+
   const = melsim::sim_measure_factory$new(full_name = "const",
                                           name = "const",
                                           type = "special",

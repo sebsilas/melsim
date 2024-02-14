@@ -19,7 +19,8 @@ sim_measures <- c("edit_sim_utf8", "edit_sim",
                   "Fager", "Russel", "Hamman", "Faith",
                   "Tanimoto", "Dice", "Phi", "Stiles", "Michael",
                   "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
-                  "Braun-Blanquet", "Tversky", "pmi", "const")
+                  "Braun-Blanquet", "Tversky", "pmi", "const",
+                  "sim_NCD")
 #'@export
 sim_measure_factory <- R6::R6Class(
   "SimilarityMeasure",
