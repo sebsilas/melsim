@@ -13,11 +13,11 @@ sim_mat_factory <- R6::R6Class(
   ),
   #end private
   public = list(
-    initialize = function(similarity_df, name = ""){
+    initialize = function(similarity_df, name = "", paired = FALSE){
       #browser()
       private$sim_df <- similarity_df
       private$meta$name <- name
-      if(!self$validate(similarity_df)){
+      if(!self$validate(similarity_df, paired = paired)){
         logging::logwarn("Similarity matrix invalid or in wrong format")
       }
     },
@@ -28,14 +28,14 @@ sim_mat_factory <- R6::R6Class(
         return(FALSE)
       }
       if(sim_df %>% count(algorithm) %>% count(nn = n) %>% nrow() != 1){
-        logging::logwarn("Similarity no homogenuous in regard to different algorithms")
+        logging::logwarn("Similarity not homogenuous in regard to different algorithms")
         return(FALSE)
       }
       singles <- sim_df %>% group_split(algorithm) %>% lapply(function(x) x %>% select(melody1, melody2))
       if(length(singles) > 1){
         for(i in 1:(length(singles) - 1)){
           if(!identical(singles[[i]], singles[[i + 1]])){
-            logging::logwarn("Similarity no homogenuous in regard to different algorithms")
+            logging::logwarn("Similarity not homogenuous in regard to different algorithms")
             return(FALSE)
           }
         }
@@ -43,7 +43,7 @@ sim_mat_factory <- R6::R6Class(
       }
       return(TRUE)
     },
-    validate = function(similarity_df){
+    validate = function(similarity_df, paired = F){
       #browser()
       private$type <- "invalid"
       if(!is.data.frame(similarity_df)){
@@ -58,6 +58,13 @@ sim_mat_factory <- R6::R6Class(
       if(any(na.omit(similarity_df$sim) > 1) || any(na.omit(similarity_df$sim) < 0)){
         logging::logwarn("Similarity values not in range [0-1]")
         return(FALSE)
+      }
+      if(paired){
+        private$type <- "paired"
+        private$dim1 <- length(unique(similarity_df$melody1))
+        private$dim2 <- length(unique(similarity_df$melody2))
+
+        return(TRUE)
       }
       if(!self$check_homogenity(similarity_df)){
         return(FALSE)

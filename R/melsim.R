@@ -19,6 +19,7 @@ melsim <- function(melody1,
                                           # "compression_distance_gzip",
                                           # "correlation",
                    ),
+                   paired = FALSE,
                    name = "--") {
   # Instantiate melodies
   #browser()
@@ -66,7 +67,9 @@ melsim <- function(melody1,
           m1$add_meta("name", sprintf("SET1MEL%03d", i))
         }
         purrr::imap_dfr(melody2, function(m2, j){
-
+          if(paired && i != j){
+            return(NULL)
+          }
           if(!("name" %in% names(m2$meta)) && !self_sim){
             m2$add_meta("name", sprintf("SET2MEL%03d", j))
           }
@@ -103,9 +106,9 @@ melsim <- function(melody1,
       })
     }) %>%
     arrange(algorithm, melody1, melody2)
-  ret <- sim_mat_factory$new(ret, name = name)
+  ret <- sim_mat_factory$new(ret, name = name, paired = paired)
+  browser()
   if(self_sim){
-
     ret <- ret$make_symmetric()
   }
   ret

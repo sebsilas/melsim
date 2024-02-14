@@ -8,6 +8,7 @@ melsim(
   melody1,
   melody2 = NULL,
   similarity_measures = c("ngrukkon", "rhytfuzz", "harmcore"),
+  paired = FALSE,
   name = "--"
 )
 }

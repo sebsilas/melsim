@@ -177,6 +177,17 @@ read_melody <- function(f){
   melody_factory$new(fname = f, name = tools::file_path_sans_ext(basename(f)))
 }
 
+update_melodies <- function(mel_list, force = T){
+  current_version <- melody_factory$new()$version
+  map(mel_list, function(x){
+    if(force || is.null(x$version) || x$version != current_version){
+      melody_factory$new(mel_data = x$data, mel_meta = x$meta)
+    }
+    else{
+      x
+    }
+  })
+}
 #find a list of candidates for best transpositions for two pitch vectors, based on basic stats
 get_transposition_hints <- function(pitch_vec1, pitch_vec2){
   ih1 <- get_implicit_harmonies(pitch_vec1, only_winner = TRUE)

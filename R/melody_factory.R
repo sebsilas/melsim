@@ -5,7 +5,8 @@ melody_factory <- R6::R6Class("Melody",
                          pitch = numeric()),
       .mel_meta = list(name = "melody"),
       .mel_cache = list(),
-      .mel_features = tibble()
+      .mel_features = tibble(),
+      .version = packageVersion("melsim")
     ),
 
     public = list(
@@ -479,6 +480,15 @@ melody_factory <- R6::R6Class("Melody",
       },
       onset = function(){
         private$.mel_data$onset
+      },
+      version = function(value){
+        if(missing(value)){
+          private$.version
+        } else{
+          if(is.scalar.character(value)){
+            private$.version <- value
+          }
+        }
       }
     )
 )
