@@ -21,6 +21,16 @@ sim_measures <- c("edit_sim_utf8", "edit_sim",
                   "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
                   "Braun-Blanquet", "Tversky", "pmi", "const",
                   "sim_NCD")
+#' @export
+get_sim_measures <- function(){
+  sapply(melsim::similarity_measures, function(x) x$name) %>% as.character() %>% sort()
+}
+
+#'@export
+is_sim_measure <- function(names){
+  names %in% get_sim_measures()
+}
+
 #'@export
 sim_measure_factory <- R6::R6Class(
   "SimilarityMeasure",

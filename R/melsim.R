@@ -28,7 +28,8 @@ melsim <- function(melody1,
       melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f)$add_meta("name", f))
     }
     else{
-      stop("Melody1 must be vector of melody objects of valid filenames")
+      logging::lorerror("Melody1 must be vector of melody objects or valid filenames")
+      return(NULL)
     }
   }
   self_sim <- FALSE
@@ -41,10 +42,17 @@ melsim <- function(melody1,
       melody2 <- lapply(melody2, function(f) melody_factory$new(fname = f))
     }
     else{
-      stop("Melody2 must be vector of melody objects or valid filenames")
+      logging::lorerror("Melody2 must be vector of melody objects or valid filenames")
+      return(NULL)
     }
   }
-  # Apply the similarity algorithm
+  sim_algo_strs <- similarity_measures[is.character(similarity_measures)]
+  if(!all(is_sim_measure(sim_algo_strs))){
+    sim_algo_str <- paste(sim_algo_strs[!is_sim_measure((sim_algo_strs))], collapse = ", ")
+    logging::logerror(sprintf("Unrecognized similarity measures: %s ", sim_algo_str))
+    return(NULL)
+  }
+  #prepare for using, all must be lists
   if(all(is_class(similarity_measures, "SimilarityMeasure")) && !is.list(similarity_measures)){
     similarity_measures <- list(similarity_measures)
   }
@@ -55,6 +63,7 @@ melsim <- function(melody1,
     melody2 <- list(melody2)
   }
 
+  # Apply the similarity algorithm
   ret <-
     map_dfr(similarity_measures, function(sim_algo){
       #browser()
@@ -78,6 +87,7 @@ melsim <- function(melody1,
             sim_algo <- melsim::similarity_measures[[sim_algo_str]]
             if(is.null(sim_algo)){
               logging::logwarn(sprintf("Unrecognized similarity measure: %s ", sim_algo_str))
+              return(NULL)
             }
           }
           if(self_sim){
@@ -135,8 +145,8 @@ test_melsim <- function(N = 20){
       #melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
       melody1 = kinder_full[sample(1:length(kinder_full), N)],
       melody2 = NULL,
-      similarity_measures = c( "opti3", "ncdintioi", "diffed" )#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
+      similarity_measures = c("opti3", "ncdintioi", "diffed")#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
     )
   tictoc::toc()
-  ret
+  invisible(ret)
 }
