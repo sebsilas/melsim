@@ -23,7 +23,8 @@ sim_measures <- c("edit_sim_utf8", "edit_sim",
                   "sim_NCD")
 #' @export
 get_sim_measures <- function(){
-  sapply(melsim::similarity_measures, function(x) x$name) %>% as.character() %>% sort()
+  #sapply(melsim::similarity_measures, function(x) x$name) %>% as.character()
+  names(similarity_measures)
 }
 
 #'@export

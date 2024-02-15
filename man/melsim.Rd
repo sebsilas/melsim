@@ -9,6 +9,9 @@ melsim(
   melody2 = NULL,
   similarity_measures = c("ngrukkon", "rhytfuzz", "harmcore"),
   paired = FALSE,
+  verbose = T,
+  with_progress = TRUE,
+  with_checks = TRUE,
   name = "--"
 )
 }

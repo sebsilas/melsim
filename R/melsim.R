@@ -20,39 +20,49 @@ melsim <- function(melody1,
                                           # "correlation",
                    ),
                    paired = FALSE,
+                   verbose = T,
+                   with_progress = TRUE,
+                   with_checks = TRUE,
                    name = "--") {
   # Instantiate melodies
   #browser()
-  if(any(!is_class(melody1, "Melody"))){
-    if(all(is_class(melody1, "character"))){
-      melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f)$add_meta("name", f))
-    }
-    else{
-      logging::lorerror("Melody1 must be vector of melody objects or valid filenames")
-      return(NULL)
-    }
-  }
   self_sim <- FALSE
   if(is.null(melody2)){
     self_sim <- TRUE
     melody2 <- melody1
   }
-  if(any(!is_class(melody2, "Melody"))){
-    if(all(is_class(melody2, "character"))){
-      melody2 <- lapply(melody2, function(f) melody_factory$new(fname = f))
+
+  if(with_checks){
+    if(any(!is_class(melody1, "Melody"))){
+      if(all(is_class(melody1, "character"))){
+        melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f)$add_meta("name", f))
+      }
+      else{
+        logging::logerror("Melody1 must be vector of melody objects or valid filenames")
+        return(NULL)
+      }
     }
-    else{
-      logging::lorerror("Melody2 must be vector of melody objects or valid filenames")
+    if(any(!is_class(melody2, "Melody"))){
+      if(all(is_class(melody2, "character"))){
+        melody2 <- lapply(melody2, function(f) melody_factory$new(fname = f))
+      }
+      else{
+        logging::logerror("Melody2 must be vector of melody objects or valid filenames")
+        return(NULL)
+      }
+    }
+    sim_algo_strs <- similarity_measures[is.character(similarity_measures)]
+    if(!all(is_sim_measure(sim_algo_strs))){
+      sim_algo_str <- paste(sim_algo_strs[!is_sim_measure((sim_algo_strs))], collapse = ", ")
+      logging::logerror(sprintf("Unrecognized similarity measures: '%s', bailing out.", sim_algo_str))
       return(NULL)
     }
   }
-  sim_algo_strs <- similarity_measures[is.character(similarity_measures)]
-  if(!all(is_sim_measure(sim_algo_strs))){
-    sim_algo_str <- paste(sim_algo_strs[!is_sim_measure((sim_algo_strs))], collapse = ", ")
-    logging::logerror(sprintf("Unrecognized similarity measures: %s ", sim_algo_str))
-    return(NULL)
-  }
+  sim_measures <- similarity_measures
+  sim_measures[is.character(sim_measures)] <- melsim::similarity_measures[sim_measures[is.character(sim_measures)]]
+  sim_measures <- sim_measures[!is.null(sim_measures)]
   #prepare for using, all must be lists
+
   if(all(is_class(similarity_measures, "SimilarityMeasure")) && !is.list(similarity_measures)){
     similarity_measures <- list(similarity_measures)
   }
@@ -62,15 +72,22 @@ melsim <- function(melody1,
   if(!is.list(melody2)){
     melody2 <- list(melody2)
   }
-
   # Apply the similarity algorithm
   ret <-
-    map_dfr(similarity_measures, function(sim_algo){
+    map_dfr(sim_measures, function(sim_algo){
       #browser()
-      logging::loginfo(sprintf("Testing: %s", ifelse(methods::is(sim_algo, "SimilarityMeasure"),
-                                                     sim_algo$name, sim_algo)))
-
+      if(verbose) {
+        logging::loginfo(sprintf("Testing: %s",
+                                 ifelse(methods::is(sim_algo, "SimilarityMeasure"),
+                                        sim_algo$name,
+                                        sim_algo)))
+      }
+      if(with_progress) {
+        total_length <- ifelse(paired, length(melody1), length(melody1) * (length(melody2) - 1)/2)
+        cli::cli_progress_bar("Calculating similarities", total = length(melody1), .envir = globalenv())
+      }
       purrr::imap_dfr(melody1, function(m1, i){
+        if(with_progress) cli::cli_progress_update(.envir = globalenv())
         #browser()
         if(!("name" %in% names(m1$meta))){
           m1$add_meta("name", sprintf("SET1MEL%04d", i))
@@ -85,10 +102,6 @@ melsim <- function(melody1,
           if(is.character(sim_algo)){
             sim_algo_str <- sim_algo
             sim_algo <- melsim::similarity_measures[[sim_algo_str]]
-            if(is.null(sim_algo)){
-              logging::logwarn(sprintf("Unrecognized similarity measure: %s ", sim_algo_str))
-              return(NULL)
-            }
           }
           if(self_sim){
             if(i == j){
@@ -125,6 +138,8 @@ melsim <- function(melody1,
     }) %>%
     arrange(algorithm, melody1, melody2)
 
+  if(with_progress) cli::cli_progress_done()
+
   ret <- sim_mat_factory$new(ret, name = name, paired = paired)
   if(self_sim){
     ret <- ret$make_symmetric()
@@ -136,16 +151,17 @@ melsim <- function(melody1,
 # t <- list.files('data-raw', full.names = TRUE) %>%
 #   melsim_many_to_many_multiple_algorithms()
 
-test_melsim <- function(N = 20){
+test_melsim <- function(N = 20, sim_measure = c("ngrukkon")){
   tictoc::tic()
   kinder_full <- update_melodies(kinder_full)
   ret <-
     melsim(
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
       #melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
-      melody1 = kinder_full[sample(1:length(kinder_full), N)],
+      #melody1 = kinder_full[sample(1:length(kinder_full), N)],
+      melody1 = kinder_full[1:N],
       melody2 = NULL,
-      similarity_measures = c("opti3", "ncdintioi", "diffed")#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
+      similarity_measures = sim_measure#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
     )
   tictoc::toc()
   invisible(ret)

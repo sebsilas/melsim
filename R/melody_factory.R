@@ -1,5 +1,6 @@
 #'@export
 melody_factory <- R6::R6Class("Melody",
+
     private = list(
       .mel_data = tibble(onset = numeric(),
                          pitch = numeric()),
@@ -111,22 +112,27 @@ melody_factory <- R6::R6Class("Melody",
         }
         invisible(self)
       },
+
       add_ngrams = function(columns, N, override = T){
         private$.mel_data <- add_ngrams(private$.mel_data, columns = columns, N = N, override = override)
         invisible(self)
       },
+
       has = function(col_name){
         col_name %in% names(private$.mel_data)
       },
+
       has_not = function(col_name){
         !(col_name %in% names(private$.mel_data))
       },
+
       remove_columns = function(col_names){
         to_keep <- union(c("onset", "pitch"), setdiff(names(private$.mel_data), col_names))
         #print(to_keep)
         private$.mel_data <- private$.mel_data[, to_keep]
         invisible(self)
       },
+
       transpose = function(col, value){
         if(is.scalar.character(col) & self$has(col)){
           tmp <- private$.mel_data
@@ -135,6 +141,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         invisible(self)
       },
+
       split_by = function(segmentation, seg_prefix = "%s"){
         if(self$has_not(segmentation)){
           return(invisible(self))
@@ -159,6 +166,7 @@ melody_factory <- R6::R6Class("Melody",
                                                                 as.integer(seg_id)))
         })
       },
+
       read = function(fname){
         ext <- file_ext(fname)
         if(ext %in% c("csv", "mcsv")){
@@ -177,6 +185,7 @@ melody_factory <- R6::R6Class("Melody",
                                name = tools::file_path_sans_ext(basename(fname))))
         }
       },
+
       read_mcsv = function(fname){
         mel_data <- read.csv(fname,
                              header = TRUE,
@@ -212,6 +221,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         return(ih)
       },
+
       edit_sim = function(melody, transform = "int", sim_measure = edit_sim_utf8, optimizer = NULL){
         if(transform == "implicit_harmonies"){
           ih1 <- self$get_implicit_harmonies() %>% pull(key)
@@ -255,6 +265,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         sim_measure(v1, v2)
       },
+
       ngram_similarity = function(melody,
                                   N = 3,
                                   transform = "int",
@@ -322,6 +333,7 @@ melody_factory <- R6::R6Class("Melody",
           retunr(NA)
         }
       },
+
       similarity = function(melody, sim_measures){
         if(!is.list(sim_measures)){
           sim_measures <- list(sim_measures)
@@ -349,7 +361,7 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             else{
-              logging::logwerror(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
+              logging::logerror(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
               return(NULL)
             }
           }
@@ -406,8 +418,8 @@ melody_factory <- R6::R6Class("Melody",
           }
 
         })
-
       },
+
       add_features = function(columns = c("pitch", "int", "fuzzy_int"),
                               func_list = list(mean = mean,
                                                abs_mean = abs_mean,
@@ -440,6 +452,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         invisible((self))
       },
+
       plot = function(){
         if(self$length == 0 ){
           stop("No melody data to plot")
@@ -464,6 +477,7 @@ melody_factory <- R6::R6Class("Melody",
           private$.mel_data <- value
         }
       },
+
       meta = function(value){
         if(missing(value)){
           private$.mel_meta
@@ -473,6 +487,7 @@ melody_factory <- R6::R6Class("Melody",
           }
         }
       },
+
       features = function(value){
         if(missing(value)){
           private$.mel_features
@@ -482,15 +497,19 @@ melody_factory <- R6::R6Class("Melody",
           }
         }
       },
+
       length =  function(){
         nrow(private$.mel_data)
       },
+
       pitch = function(){
         private$.mel_data$pitch
       },
+
       onset = function(){
         private$.mel_data$onset
       },
+
       version = function(value){
         if(missing(value)){
           private$.version

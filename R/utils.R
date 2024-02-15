@@ -77,16 +77,12 @@ expand_grid_unique <- function(x, y, include_equals = FALSE){
   tmp %>% filter(x < y)
 }
 
-pair_index <- function(x, y){
-  stopifnot(length(x) == length(y))
-  if(!is.integer(x)){
-    x <- as.integer(factor(x))
-  }
-  if(!is.integer(y)){
-    y <- as.integer(factor(y))
-  }
-  ret  <- sprintf("%s_%s", x, y)
-  ret[x > y] <- ret[x < y]
+#' @export
+pair_index <- function(s1, s2, sep = "_"){
+  stopifnot(length(s1) == length(s2))
+  ret <- vector("character", length(s1))
+  ret[s1 <= s2] <- sprintf("%s%s%s", s1[s1 <= s2], sep, s2[s1 <= s2])
+  ret[s1 > s2] <- sprintf("%s%s%s", s2[s1 > s2], sep, s1[s1 > s2])
   ret
 }
 
