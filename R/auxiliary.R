@@ -61,11 +61,18 @@ diss_NCD <- function(s, t, method = "gz"){
   d_ncd <- (st_c - min(s_c, t_c))/max(s_c, t_c)
   d_ncd
 }
+
 sim_NCD <- function(s, t, method = "gz"){
   #browser()
   d <- diss_NCD(s, t, method)
   1 - d
 }
+
+sim_emd <- function(mel1, mel2, beta = 1){
+  emdist::emd(mel1 %>% select(duration, onset, pitch) %>% as.matrix(),
+              mel2 %>% select(duration, onset, pitch) %>% as.matrix()) %>% (function(x){exp(-beta *x)})
+}
+
 compression_ratio <- function(s, t, method = "gz"){
   s <- as.character(na.omit(s))
   t <- as.character(na.omit(t))

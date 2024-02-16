@@ -171,6 +171,14 @@ similarity_measures <- list(
                                   sim_measure = "sim_NCD",
                                   transposition_invariant = T,
                                   tempo_invariant = F),
+  melsim::sim_measure_factory$new(full_name = "earth-mover-distance",
+                                  name = "emd",
+                                  type = "special",
+                                  transformation = "none",
+                                  parameters = list(beta = 2),
+                                  sim_measure = "sim_emd",
+                                  transposition_invariant = T,
+                                  tempo_invariant = F),
 
   melsim::sim_measure_factory$new(full_name = "const",
                                   name = "const",
@@ -191,5 +199,7 @@ similarity_measures <- list(
                                   tempo_invariant = T))
 
 names(similarity_measures) <- sapply(similarity_measures, function(x) x$name) %>% as.character()
-
+if(length(unique(names(similarity_measures))) != length(names(similarity_measures))){
+  logging::logerror("Duplicate similarity measure")
+}
 usethis::use_data(similarity_measures, overwrite = T)

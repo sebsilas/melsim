@@ -394,8 +394,7 @@ melody_factory <- R6::R6Class("Melody",
               ret <- combi_sim            }
             #logging::logerror(sprintf("Linear combination failed to compute"))
             return(ret)
-          }
-          else if (sm$type == "special"){
+          } else if (sm$type == "special"){
             if(sm$sim_measure == "const"){
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = 1.0))
             }
@@ -407,6 +406,15 @@ melody_factory <- R6::R6Class("Melody",
 
               sim <- sim_NCD(paste(na.omit(self$data[[sm$transformation]]), collapse = ""),
                              paste(na.omit(melody$data[[sm$transformation]]), collapse = ""))
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+            if(sm$sim_measure == "sim_emd"){
+              #browser()
+              stopifnot(methods::is(melody, "Melody"))
+
+              sim <- sim_emd(mel1 = private$.mel_data,
+                             mel2 = melody$data,
+                             beta = sm$parameters$beta)
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             logging::logwarn(sprintf("Special measure: %s not implemented.", sm$sim_measure))

@@ -20,7 +20,7 @@ sim_measures <- c("edit_sim_utf8", "edit_sim",
                   "Tanimoto", "Dice", "Phi", "Stiles", "Michael",
                   "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
                   "Braun-Blanquet", "Tversky", "pmi", "const",
-                  "sim_NCD")
+                  "sim_NCD", "sim_emd")
 #' @export
 get_sim_measures <- function(){
   #sapply(melsim::similarity_measures, function(x) x$name) %>% as.character()
