@@ -77,7 +77,7 @@ melsim <- function(melody1,
     map_dfr(sim_measures, function(sim_algo){
       #browser()
       if(verbose) {
-        logging::loginfo(sprintf("Testing: %s",
+        logging::loginfo(sprintf("Calculating: %s",
                                  ifelse(methods::is(sim_algo, "SimilarityMeasure"),
                                         sim_algo$name,
                                         sim_algo)))
