@@ -154,7 +154,18 @@ sim_mat_factory <- R6::R6Class(
       private$sim_df <- private$sim_df %>% filter(!(algorithm %in% !!algorithm))
       invisible(self)
     },
-
+    filter_clone = function(melody1, melody2){
+      if(private$type != "paired"){
+        logging::logerror("Filter melodies not implemented for non paired sim matrices")
+        return(invisible(self))
+      }
+      browser()
+      keep_ids <- pair_index(melody1, melody2)
+      sim_df <- private$sim_df %>%
+        mutate(pair_id = pair_index(melody1, melody2)) %>%
+        filter(pair_id %in% keep_ids) %>% select(-pair_id)
+      sim_mat_factory$new(sim_df, paired = TRUE)
+    },
     as_matrix = function(algorithm = NULL){
       if(!self$is_valid){
         return(NULL)
@@ -244,6 +255,7 @@ sim_mat_factory <- R6::R6Class(
         self$symmetrize(sim_algo, with_diagonal, modify = F)
       })
     },
+
     symmetrize = function(algorithm, with_diagonal = T, modify = F){
       stopifnot(is.scalar.character(algorithm))
       sim_df <- private$sim_df %>%
@@ -288,6 +300,7 @@ sim_mat_factory <- R6::R6Class(
       }
       sim_df
     },
+
     fuse = function(sim_mat){
       if(!is_class(sim_mat, "SimilarityMatrix") || sim_mat$mat_type != private$type){
         logging::logerror("Similarities matrices not compatible")
@@ -311,10 +324,11 @@ sim_mat_factory <- R6::R6Class(
       private$sim_df <- bind_rows(private$sim_df, sim_mat$data %>% filter(algorithm %in% new_algos))
       return(invisible(self))
     },
+
     plot = function(algorithms = NULL){
       sim_df <- private$sim_df
       if(!is.null(algorithms)){
-        sim_df <- sim_df %>% filter(algorithms %in% algorithm)
+        sim_df <- sim_df %>% filter(algorithm %in% algorithms)
       }
       if(private$type == "paired"){
         q <- sim_df %>% ggplot2::ggplot(aes(x = sim, y = after_stat(count), fill = algorithm))
@@ -323,14 +337,17 @@ sim_mat_factory <- R6::R6Class(
         if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
           q <- q + ggplot2::facet_wrap(~algorithm)
         }
-        q <- q + ggplot2::scale_fill_viridis_d(option = "inferno")
+        #q <- q + ggplot2::scale_fill_viridis_d(option = "inferno")
+        q <- q + ggplot2::scale_fill_brewer(palette = "Set1")
+
         return(q)
       }
       q <- sim_df %>% ggplot2::ggplot(aes(x = melody1, y = melody2, fill = sim))
       q <- q + ggplot2::geom_tile()
       q <- q + ggplot2::theme_bw()
       q <- q + ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
-      q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
+      #q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
+      q <- q + ggplot2::scale_fill_brewer(palette = "Set1")
       if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
         q <- q + ggplot2::facet_wrap(~algorithm)
       }

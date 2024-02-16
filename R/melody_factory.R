@@ -209,7 +209,7 @@ melody_factory <- R6::R6Class("Melody",
           segmentation <- private$.mel_data[[segmentation]]
         }
         else{
-          logging::logwarn(sprintf("Requested segmentation '%s' not found, using const", segmentation))
+          #logging::logwarn(sprintf("Requested segmentation '%s' not found, using const", segmentation))
           segmentation <- rep(1, nrow(private$.mel_data))
         }
         ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation, only_winner = only_winner, fast_algorithm = T)
