@@ -207,6 +207,24 @@ update_melodies <- function(mel_list, force = T){
     }
   })
 }
+
+#' update_sim_mat
+#' Updates a SimilarityMatrix object
+#' @param sim_mat SimilarityMatrix object
+#' @param force (logical) Do it no matter what, otherwise only if version of melsim has changed
+#'
+#'@export
+update_sim_mat <- function(sim_mat, force = T){
+  ret <- sim_mat_factory$new(sim_mat$data, paired = sim_mat$mat_type == "paired")
+  current_version <- ret$version
+  if(force || is.null(sim_mat$version) || sim_mat$version != current_version){
+    ret
+  }
+  else{
+    sim_mat
+  }
+}
+
 #find a list of candidates for best transpositions for two pitch vectors, based on basic stats
 get_transposition_hints <- function(pitch_vec1, pitch_vec2){
   ih1 <- get_implicit_harmonies(pitch_vec1, only_winner = TRUE)
@@ -264,6 +282,35 @@ optim_transposer <- function(query, target,
   purrr::map_dfr(union(d, hints), function(trans) {
     #browser()
     tibble(trans = trans, sim = sim_measure(query + trans, target))
+  }) %>%
+    slice_max(sim) %>% distinct(sim) %>% pull(sim)
+
+
+}
+
+optim_transposer_emd <- function(mel1, mel2,
+                                 beta = .5,
+                                 strategy = c("all", "hints", "best")){
+  strategy <- match.arg(strategy)
+  # Run for all transpositions and pick the top
+  strategy <- match.arg(strategy)
+
+  #query <- as.integer(query - median(query))
+  #target <- as.integer(target - median(target))
+  mel1$pitch <- mel1$pitch + 60 - min(c(mel1$pitch))
+  mel2$pitch <- mel2$pitch + 60 - min(c(mel2$pitch))
+  d <- stats::median(mel2$pitch)  -  stats::median(mel1$pitch)
+  if(strategy == "all"){
+    hints <- -5:6
+  }
+  else if(strategy == "hints" ){
+    hints <- get_transposition_hints(mel2$pitch, mel1$pitch )
+  }
+  else if(strategy == "best" ){
+    hints <- find_best_transposition(mel2$pitch, mel1$pitch)
+  }
+  ret <- purrr::map_dfr(union(d, hints), function(trans) {
+    tibble(trans = trans, sim = sim_emd(mel1 %>% mutate(pitch = pitch + trans), mel2))
   }) %>%
     slice_max(sim) %>% distinct(sim) %>% pull(sim)
 

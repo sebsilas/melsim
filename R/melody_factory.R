@@ -195,6 +195,7 @@ melody_factory <- R6::R6Class("Melody",
         mel_meta <- list(file_name =  fname, name = tools::file_path_sans_ext(basename(fname)))
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
+
       get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE){
         ih_id <- sprintf("%s_%s",
                          ifelse(is.null(segmentation), "none", segmentation),
@@ -328,7 +329,6 @@ melody_factory <- R6::R6Class("Melody",
           proxy_simil(ngrams1, ngrams2, method)
         }
         else{
-          browser()
           loggin::logerror("Similarity function %s not defined", method)
           retunr(NA)
         }
@@ -342,6 +342,14 @@ melody_factory <- R6::R6Class("Melody",
                   all(sapply(sim_measures, validate_sim_measure)))
 
         purrr::imap_dfr(sim_measures, function(sm, i){
+          if(is.scalar.character(sm)){
+            sm_str <- sm
+            sm <- similarity_measures[[sm_str]]
+            if(is.null(sm)){
+              logging::logerror(sprintf("Unknown similarity measure: %s", sm_str))
+              return(NULL)
+            }
+          }
           if(sm$type == "sequence_based"){
             sim <- self$edit_sim(melody,
                                  sm$transformation,
@@ -411,6 +419,12 @@ melody_factory <- R6::R6Class("Melody",
             if(sm$sim_measure == "sim_emd"){
               #browser()
               stopifnot(methods::is(melody, "Melody"))
+              if(!is.null(sm$parameters$optimizer)){
+                sim <- optim_transposer_emd(private$.mel_data,
+                                            melody$data,
+                                            beta = sm$parameters$beta, strategy = "all")
+                return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+              }
 
               sim <- sim_emd(mel1 = private$.mel_data,
                              mel2 = melody$data,
