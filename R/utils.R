@@ -195,7 +195,7 @@ parse_linear_combination <- function(lin_comb){
       logging::logerror(sprintf("Invalid linear combination: %s", lin_comb))
       return(NULL)
     }
-    logging::logwarn(sprintf("Fixed terms with no coefficient (%s)", lin_comb))
+    #logging::logwarn(sprintf("Fixed terms with no coefficient (%s)", lin_comb))
     #return(NULL)
   }
 

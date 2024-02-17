@@ -109,7 +109,6 @@ melsim <- function(melody1,
               terms <- sim_algo$name
               if(!is.null(sim_algo$parameters$keep_singles) && sim_algo$parameters$keep_singles){
                 terms <- c(terms, parse_linear_combination(sim_algo$sim_measure) %>% pull(terms))
-
               }
               ret <- map_dfr(terms, function(t){
                 tibble(melody1 = m1$meta$name,
