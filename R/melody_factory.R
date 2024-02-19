@@ -431,6 +431,14 @@ melody_factory <- R6::R6Class("Melody",
                              beta = sm$parameters$beta)
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
+            if(sm$sim_measure == "sim_dtw"){
+              stopifnot(methods::is(melody, "Melody"))
+              sim <- sim_dtw(private$.mel_data,
+                             melody$data,
+                             beta = sm$parameters$beta)
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+
             logging::logwarn(sprintf("Special measure: %s not implemented.", sm$sim_measure))
             return(NULL)
           }

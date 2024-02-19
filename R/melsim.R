@@ -152,7 +152,7 @@ melsim <- function(melody1,
 
 test_melsim <- function(N = 20, sim_measure = c("ngrukkon")){
   tictoc::tic()
-  kinder_full <- update_melodies(kinder_full)
+  kinder_full <- update_melodies(kinder_full, force = T)
   ret <-
     melsim(
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
@@ -162,6 +162,30 @@ test_melsim <- function(N = 20, sim_measure = c("ngrukkon")){
       melody2 = NULL,
       similarity_measures = sim_measure#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
     )
+  tictoc::toc()
+  invisible(ret)
+}
+
+test_dtw <- function(N = 20){
+  tictoc::tic()
+  kinder_full <- update_melodies(kinder_full, force = T)
+  ret <-
+    map_dfr(1:N, function(i){
+    map_dfr(1:N, function(j){
+      if(j <= i){
+        return(NULL)
+      }
+      DTW <- dtw::dtw(kinder_full[[i]]$data$onset, kinder_full[[j]]$data$onset)
+      #browser()
+      tibble(i = i, j = j,
+             l1 = kinder_full[[i]]$length, l2 = kinder_full[[j]]$length,
+             dist = DTW$distance,
+             normed_dist = DTW$normalizedDistance,
+             N = DTW$N,
+             M = DTW$M,
+             steps = sum(DTW$stepsTaken))
+    })
+  })
   tictoc::toc()
   invisible(ret)
 }

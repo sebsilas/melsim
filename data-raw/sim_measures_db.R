@@ -7,6 +7,7 @@ similarity_measures <- list(
                                   sim_measure = "ukkon",
                                   transposition_invariant = T,
                                   tempo_invariant = T),
+
   melsim::sim_measure_factory$new(full_name = "ngram-int-2-ukkon",
                                   name = "ngrukko2",
                                   type = "set_based",
@@ -15,6 +16,7 @@ similarity_measures <- list(
                                   sim_measure = "ukkon",
                                   transposition_invariant = T,
                                   tempo_invariant = T),
+
   melsim::sim_measure_factory$new(full_name = "ngram-int-1-ukkon",
                                   name = "ngrukko1",
                                   type = "set_based",
@@ -23,6 +25,7 @@ similarity_measures <- list(
                                   sim_measure = "ukkon",
                                   transposition_invariant = T,
                                   tempo_invariant = T),
+
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-sum-common",
                                   name = "ngrsumc",
                                   type = "set_based",
@@ -31,6 +34,7 @@ similarity_measures <- list(
                                   sim_measure = "sum_common",
                                   transposition_invariant = T,
                                   tempo_invariant = T),
+
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-count-distinct",
                                   name = "ngrcoord",
                                   type = "set_based",
@@ -75,6 +79,7 @@ similarity_measures <- list(
                                   sim_measure = "dist_sim",
                                   transposition_invariant = T,
                                   tempo_invariant = T),
+
   melsim::sim_measure_factory$new(full_name = "ngram-ioi_cass-2-distribution-similarity",
                                   name = "ngram_ioi_class_dist2",
                                   type = "set_based",
@@ -83,6 +88,7 @@ similarity_measures <- list(
                                   sim_measure = "dist_sim",
                                   transposition_invariant = T,
                                   tempo_invariant = T),
+
   melsim::sim_measure_factory$new(full_name = "ngram-ioi_cass-1-distribution-similarity",
                                   name = "ngram_ioi_class_dist1",
                                   type = "set_based",
@@ -171,6 +177,7 @@ similarity_measures <- list(
                                   sim_measure = "sim_NCD",
                                   transposition_invariant = T,
                                   tempo_invariant = F),
+
   melsim::sim_measure_factory$new(full_name = "earth-mover-distance",
                                   name = "emd",
                                   type = "special",
@@ -178,6 +185,15 @@ similarity_measures <- list(
                                   parameters = list(beta = .5,
                                                     optimizer = "transpose"),
                                   sim_measure = "sim_emd",
+                                  transposition_invariant = T,
+                                  tempo_invariant = F),
+
+  melsim::sim_measure_factory$new(full_name = "dtw_normed_dist",
+                                  name = "dtw",
+                                  type = "special",
+                                  transformation = "none",
+                                  parameters = list(beta = 0),
+                                  sim_measure = "sim_dtw",
                                   transposition_invariant = T,
                                   tempo_invariant = F),
 

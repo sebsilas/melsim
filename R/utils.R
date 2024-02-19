@@ -212,3 +212,35 @@ validate_sim_measure <- function(sim_measure){
   }
   !is.null(parse_linear_combination(sim_measure))
 }
+
+plot_dtw_alignment <- function(x, y = NULL, beta = .5){
+  if(class(x) == "dtw"){
+    d <- x
+    x <- d$query %>% as.vector()
+    y <- d$reference %>% as.vector()
+  }
+  else{
+    if(is.null(y)){
+      stop("y must have value")
+    }
+    d <- dtw::dtw(x, y, keep.internals = T)
+  }
+  plot_df <- bind_rows(tibble(x = x, type = "query"), tibble(x = y, type = "reference"))
+  plot_df2 <- tibble(x = x[d$index1], y = y[d$index2]) %>% mutate(d = x - y)
+
+  #browser()
+  q <- plot_df %>% ggplot(aes(x = x, y  = type, colour = type)) + geom_point(size = 5)
+  q <- q + geom_segment(data = plot_df2,
+                        aes(x = x, y = "query", xend = y, yend = "reference"),
+                        colour = "black",
+                        arrow = arrow(length = unit(0.30, "cm"),
+                                      ends = "last",
+                                      type = "closed"))
+  q <- q + theme_minimal()
+  q <- q + labs(x = "Time (s)", title = sprintf("DTW: dist = %.2f, norm = %.2f, d = %.2f, sim(d) = %.2f",
+                                                d$distance, d$normalizedDistance,
+                                                mean(plot_df2$d), exp(-beta * d$normalizedDistance)))
+  q <- q + theme(legend.title = element_blank())
+  q
+
+}

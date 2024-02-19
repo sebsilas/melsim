@@ -358,8 +358,8 @@ sim_mat_factory <- R6::R6Class(
       q <- q + ggplot2::geom_tile()
       q <- q + ggplot2::theme_bw()
       q <- q + ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
-      #q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
-      q <- q + ggplot2::scale_fill_brewer(palette = "Set1")
+      q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
+      #q <- q + ggplot2::scale_fill_brewer(palette = "Set1")
       if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
         q <- q + ggplot2::facet_wrap(~algorithm)
       }

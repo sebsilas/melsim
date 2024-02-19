@@ -73,6 +73,15 @@ sim_emd <- function(mel1, mel2, beta = 1){
               mel2 %>% select(duration, onset, pitch) %>% as.matrix()) %>% (function(x){exp(-beta *x)})
 }
 
+sim_dtw <- function(mel1, mel2, beta = 1){
+  dist <- dtw::dtw(mel1$onset, mel2$onset)
+  if(is.null(beta) || !is.numeric(beta) || beta <= 0){
+    print(dist$normalizedDistance)
+    return(1 -dist$normalizedDistance)
+  }
+  dist$normalizedDistance %>% (function(x){exp(-beta *x)})
+}
+
 compression_ratio <- function(s, t, method = "gz"){
   s <- as.character(na.omit(s))
   t <- as.character(na.omit(t))
