@@ -337,11 +337,11 @@ optim_transposer_emd <- function(mel1, mel2,
 #' @export
 #'
 #' @examples
-get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, only_winner = TRUE, fast_algorithm = TRUE){
-  #warning('Segmentation format must be as segment ID')
+get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NULL, only_winner = TRUE, fast_algorithm = TRUE){
+  # warning('Segmentation format must be as segment ID')
   # Krumhansl-Schmuckler algorithm
   ks_weights_major <- c(6.33, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
-  ks_weights_minor <- c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
+  ks_weights_minor <- c(6.35, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
   pc_labels_flat <- c("C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B")
 
   ks_weights_major_z <- scale(ks_weights_major) %>% as.numeric()
@@ -392,13 +392,25 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, only_winner =
         tidyr::tibble(segment = x) %>%
           bind_cols(get_implicit_harmonies(pv, NULL,
                                            only_winner = only_winner,
-                                           fast_algorithm = fast_algorithm )
+                                           fast_algorithm = fast_algorithm,
+                                           weights = weights)
                     )
       })
     )
 
   }
-  pitch_freq <- table(factor(pitch_vec %% 12, levels = 0:11)) %>% scale() %>% as.numeric()
+  if(!is.null(weights)){
+    if(length(weights) != length(pitch_vec)){
+      logging::logerror("Weights must have same length as pitches")
+      stop()
+    }
+    tab <- table(factor(pitch_vec %% 12, levels = 0:11), weights)
+    pitch_freq <- tab  %*% as.numeric(colnames(tab))  %>% scale() %>% as.numeric()
+  }
+  else{
+    pitch_freq <- table(factor(pitch_vec %% 12, levels = 0:11)) %>% scale() %>% as.numeric()
+
+  }
   if(fast_algorithm){
     ks_cor <- pitch_freq %*% ks_mat
 

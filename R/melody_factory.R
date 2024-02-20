@@ -197,8 +197,9 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE){
+        browser()
         ih_id <- sprintf("%s_%s",
-                         ifelse(is.null(segmentation), "none", segmentation),
+                         ifelse(is.null(segmentation), "global", segmentation),
                          ifelse(only_winner, "best", "full"))
         if(cache && "implicit_harmonies" %in% names(private$.mel_cache)){
           ih <- private$.mel_cache$implicit_harmonies[[ih_id]]
@@ -213,7 +214,12 @@ melody_factory <- R6::R6Class("Melody",
           #logging::logwarn(sprintf("Requested segmentation '%s' not found, using const", segmentation))
           segmentation <- rep(1, nrow(private$.mel_data))
         }
-        ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation, only_winner = only_winner, fast_algorithm = T)
+        weights <- 2^(private$.mel_data$ioi_class - 1)
+        ih <- get_implicit_harmonies(private$.mel_data$pitch,
+                                     segmentation,
+                                     only_winner = only_winner,
+                                     weights = weights,
+                                     fast_algorithm = T)
         if(cache){
           if(is.null(private$.mel_cache$implicit_harmonies)){
             private$.mel_cache$implicit_harmonies <- list()
@@ -505,6 +511,16 @@ melody_factory <- R6::R6Class("Melody",
         } else{
           stopifnot(self$validate_data(value))
           private$.mel_data <- value
+        }
+      },
+
+      cache = function(value){
+        if(missing(value)){
+          private$.mel_cache
+        } else{
+          if(is.list(cache)){
+            private$.mel_cache <- value
+          }
         }
       },
 
