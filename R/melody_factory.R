@@ -6,7 +6,7 @@ melody_factory <- R6::R6Class("Melody",
                          pitch = numeric()),
       .mel_meta = list(name = "melody"),
       .mel_cache = list(),
-      .mel_features = tibble(),
+      .mel_features = list(),
       .version = packageVersion("melsim")
     ),
 
@@ -119,7 +119,7 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       has = function(col_name){
-        col_name %in% names(private$.mel_data)
+        !is.null(col_name) && col_name %in% names(private$.mel_data)
       },
 
       has_not = function(col_name){
@@ -197,7 +197,6 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE){
-        browser()
         ih_id <- sprintf("%s_%s",
                          ifelse(is.null(segmentation), "global", segmentation),
                          ifelse(only_winner, "best", "full"))
@@ -214,7 +213,12 @@ melody_factory <- R6::R6Class("Melody",
           #logging::logwarn(sprintf("Requested segmentation '%s' not found, using const", segmentation))
           segmentation <- rep(1, nrow(private$.mel_data))
         }
-        weights <- 2^(private$.mel_data$ioi_class - 1)
+        if(self$has("ioi_class")){
+          weights <- 2^(private$.mel_data$ioi_class - 1)
+        }
+        else{
+          weights <- NULL
+        }
         ih <- get_implicit_harmonies(private$.mel_data$pitch,
                                      segmentation,
                                      only_winner = only_winner,
@@ -456,11 +460,30 @@ melody_factory <- R6::R6Class("Melody",
         })
       },
 
-      add_features = function(columns = c("pitch", "int", "fuzzy_int"),
+      add_difficulty_features = function(segmentation = NULL,
+                                         override = TRUE){
+        if(!is.null(segmentation) && self$has(segmentation)){
+          tmp <- private$.mel_data %>%
+            group_by(!!sym(segmentation)) %>%
+            summarise(across(int, interval_difficulty), .groups = "drop") %>%
+            unnest(int)
+        }
+        else{
+          segmentation <- "global"
+          tmp <- private$.mel_data %>%
+            summarise(across(int, interval_difficulty), .groups = "drop") %>%
+            unnest(int)
+        }
+        self$.add_features(tmp, segmentation, override)
+        invisible((self))
+      },
+
+      add_simple_features = function(columns = c("pitch", "int", "fuzzy_int"),
                               func_list = list(mean = mean,
                                                abs_mean = abs_mean,
                                                sd = sd,
-                                               abs_sd = abs_sd),
+                                               abs_sd = abs_sd,
+                                               entropy  = entropy_wrapper),
                               segmentation = NULL,
                               override = TRUE) {
         common_cols <- intersect(names(private$.mel_data), columns)
@@ -470,20 +493,51 @@ melody_factory <- R6::R6Class("Melody",
             summarise(across(all_of(common_cols), func_list, na.rm = TRUE), .groups = "drop")
         }
         else{
-          tmp <- private$.mel_data %>% summarise(across(all_of(common_cols), func_list, na.rm = TRUE))
+          segmentation <- "global"
+          tmp <- private$.mel_data %>%
+            summarise(across(all_of(common_cols),
+                             func_list, na.rm = TRUE), .groups = "drop")
         }
-        if(nrow(private$.mel_features) == 0){
-          private$.mel_features <- tmp
+        self$.add_features(tmp, segmentation, override)
+        invisible((self))
+      },
+      add_tonal_features = function(segmentation = NULL, override = T){
+        browser()
+        ih_id <- sprintf("%s_full",
+                         ifelse(is.null(segmentation), "global", segmentation))
+        ih <- NULL
+        if("implicit_harmonies" %in% names(private$.mel_cache)){
+          ih <- private$.mel_cache$implicit_harmonies[[ih_id]]
+        }
+        if(is.null(ih)){
+          ih <- self$get_implicit_harmonies(segmentation = segmentation,
+                                            cache = T,
+                                            only_winner = F)
+        }
+        tf <- get_tonal_features(ih) %>% rename(!!segmentation := segment)
+        self$.add_features(tf, segmentation, override)
+
+      },
+      .add_features  = function(features, segmentation = NULL, override = T){
+        if(is.null(segmentation)){
+          segmentation <- "global"
+        }
+        if(is.null(private$.mel_features[[segmentation]]) ||
+           nrow(private$.mel_features[[segmentation]]) == 0){
+          private$.mel_features[[segmentation]] <- features
         }
         else {
           if(override){
-            feature_cols <- names(tmp)
+            feature_cols <- names(features)
+            private$.mel_features[[segmentation]] <- private$.mel_features[[segmentation]] %>%
+              select(-all_of(feature_cols))
           }
           else{
-            feature_cols <- setdiff(names(tmp), names(private$.mel_features))
+            feature_cols <- setdiff(names(features), names(private$.mel_features[[segmentation]]))
           }
           if(length(feature_cols) > 0) {
-            private$.mel_features <- bind_cols(private$.mel_features, tmp[,feature_cols])
+            private$.mel_features[[segmentation]] <- bind_cols(private$.mel_features[[segmentation]],
+                                               features[,feature_cols])
           }
         }
         invisible((self))

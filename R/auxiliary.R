@@ -496,3 +496,81 @@ fuzzyint_class <- Vectorize(
 
   })
 
+entropy_wrapper <- function(vec, norm = FALSE, domain = NULL, na.rm = TRUE){
+  norm_factor <- 1
+  if(na.rm){
+    vec <- vec[!is.na(vec)]
+  }
+  if(norm){
+    if(is.null(domain)){
+      domain <- vec
+    }
+    norm_factor <- 1/log2(length(unique(domain)))
+  }
+  norm_factor * entropy::entropy(table(vec), unit = "log2")
+}
+
+interval_difficulty <- function(int_vec, na.rm = T){
+
+  if(is.list(int_vec)){
+    return(purrr::map_dfr(int_vec, interval_difficulty))
+  }
+
+  if(na.rm){
+    int_vec <- int_vec[!is.na(int_vec)]
+  }
+
+  if(length(int_vec) <= 1){
+    return(tidyr::tibble(mean_abs_int = NA,
+                         int_range = NA,
+                         mean_dir_change = NA,
+                         int_variety = NA,
+                         pitch_variety = NA,
+                         mean_run_length = NA))
+  }
+
+  mean_abs_int <- mean(abs(int_vec))
+
+  int_range <- max(abs(int_vec))
+
+  l <- length(int_vec)
+  r <- rle(sign(int_vec))
+  dir_change <- length(r$values) - 1
+  mean_dir_change <- (length(r$values) - 1)/(l - 1)
+  mean_run_length <- 1 - mean(r$lengths)/l
+
+  int_variety <- dplyr::n_distinct(int_vec)/l
+  pitch_variety <- dplyr::n_distinct(c(0, cumsum(int_vec)))/(l + 1)
+
+  res <- tidyr::tibble(mean_abs_int = mean_abs_int,
+                       int_range = int_range,
+                       mean_dir_change = mean_dir_change,
+                       int_variety = int_variety,
+                       pitch_variety = pitch_variety,
+                       mean_run_length = mean_run_length)
+  res$mean_dir_change[!is.finite(res$mean_dir_change)] <- NA
+  res
+}
+
+get_tonal_features <- function(implicit_harmonies) {
+  if(!is.null(implicit_harmonies[["segment"]])){
+    ret <- map_dfr(unique(implicit_harmonies[["segment"]]), function(seg){
+      get_tonal_features(implicit_harmonies %>% filter(segment == seg) %>% select(-segment)) %>%
+        mutate(segment = seg)
+    })
+    return(ret)
+  }
+  implicit_harmonies <- implicit_harmonies %>% arrange(desc(match))
+  A0 <- implicit_harmonies$match[1]
+  A1 <- implicit_harmonies$match[2]
+  tonal_spike <- A0 / sum(implicit_harmonies$match[implicit_harmonies$match > 0])
+  mode <- str_split_fixed(implicit_harmonies %>% slice(1) %>% pull(key), "-", 2)[,2]
+
+  tibble(tonalness = A0,
+         tonal_clarity = A0/A1,
+         tonal_spike,
+         mode)
+
+
+}
+
