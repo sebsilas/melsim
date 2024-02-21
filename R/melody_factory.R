@@ -474,11 +474,11 @@ melody_factory <- R6::R6Class("Melody",
             summarise(across(int, interval_difficulty), .groups = "drop") %>%
             unnest(int)
         }
-        self$.add_features(tmp, segmentation, override)
+        self$.add_features(tmp, segmentation, override, prefix = "DIFF")
         invisible((self))
       },
 
-      add_simple_features = function(columns = c("pitch", "int", "fuzzy_int"),
+      add_basic_features = function(columns = c("pitch", "int", "fuzzy_int"),
                               func_list = list(mean = mean,
                                                abs_mean = abs_mean,
                                                sd = sd,
@@ -486,6 +486,7 @@ melody_factory <- R6::R6Class("Melody",
                                                entropy  = entropy_wrapper),
                               segmentation = NULL,
                               override = TRUE) {
+
         common_cols <- intersect(names(private$.mel_data), columns)
         if(!is.null(segmentation) && self$has(segmentation)){
           tmp <- private$.mel_data %>%
@@ -498,13 +499,15 @@ melody_factory <- R6::R6Class("Melody",
             summarise(across(all_of(common_cols),
                              func_list, na.rm = TRUE), .groups = "drop")
         }
-        self$.add_features(tmp, segmentation, override)
+        self$.add_features(tmp, segmentation, override, prefix = "BASE")
         invisible((self))
       },
+
       add_tonal_features = function(segmentation = NULL, override = T){
-        browser()
-        ih_id <- sprintf("%s_full",
-                         ifelse(is.null(segmentation), "global", segmentation))
+        if(is.null(segmentation)){
+          segmentation <- "global"
+        }
+        ih_id <- sprintf("%s_full", segmentation)
         ih <- NULL
         if("implicit_harmonies" %in% names(private$.mel_cache)){
           ih <- private$.mel_cache$implicit_harmonies[[ih_id]]
@@ -515,12 +518,15 @@ melody_factory <- R6::R6Class("Melody",
                                             only_winner = F)
         }
         tf <- get_tonal_features(ih) %>% rename(!!segmentation := segment)
-        self$.add_features(tf, segmentation, override)
+        self$.add_features(tf, segmentation, override, prefix ="TON")
 
       },
-      .add_features  = function(features, segmentation = NULL, override = T){
+      .add_features  = function(features, segmentation = NULL, override = T, prefix = ""){
         if(is.null(segmentation)){
           segmentation <- "global"
+        }
+        if(nzchar(prefix)){
+          features <- features %>% set_names(sprintf("%s.%s", prefix, names(.)))
         }
         if(is.null(private$.mel_features[[segmentation]]) ||
            nrow(private$.mel_features[[segmentation]]) == 0){
@@ -529,8 +535,12 @@ melody_factory <- R6::R6Class("Melody",
         else {
           if(override){
             feature_cols <- names(features)
-            private$.mel_features[[segmentation]] <- private$.mel_features[[segmentation]] %>%
-              select(-all_of(feature_cols))
+            del_cols <- intersect(names(private$.mel_features[[segmentation]]), feature_cols)
+            if(length(del_cols) > 0){
+              private$.mel_features[[segmentation]] <-
+                private$.mel_features[[segmentation]] %>%
+                select(-all_of(del_cols))
+            }
           }
           else{
             feature_cols <- setdiff(names(features), names(private$.mel_features[[segmentation]]))
@@ -572,7 +582,7 @@ melody_factory <- R6::R6Class("Melody",
         if(missing(value)){
           private$.mel_cache
         } else{
-          if(is.list(cache)){
+          if(is.list(value)){
             private$.mel_cache <- value
           }
         }
@@ -582,7 +592,7 @@ melody_factory <- R6::R6Class("Melody",
         if(missing(value)){
           private$.mel_meta
         } else{
-          if(is.list(meta)){
+          if(is.list(value)){
             private$.mel_data <- value
           }
         }
@@ -592,7 +602,7 @@ melody_factory <- R6::R6Class("Melody",
         if(missing(value)){
           private$.mel_features
         } else{
-          if(is.list(meta)){
+          if(is.list(value)){
             private$.mel_features <- value
           }
         }
