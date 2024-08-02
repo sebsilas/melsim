@@ -106,7 +106,7 @@ melody_factory <- R6::R6Class("Melody",
             int_X_ioi_class <- sprintf("(%s|%s)",
                                        c(diff(private$.mel_data$pitch), NA),
                                        classify_duration(c(diff(private$.mel_data$onset), NA)))
-            int_X_ioi_class[str_detect(int_X_ioi_class, "NA")] <- NA
+            int_X_ioi_class[stringr::str_detect(int_X_ioi_class, "NA")] <- NA
             private$.mel_data$int_X_ioi_class <- int_X_ioi_class
           }
         }
@@ -517,7 +517,8 @@ melody_factory <- R6::R6Class("Melody",
                                             cache = T,
                                             only_winner = F)
         }
-        tf <- get_tonal_features(ih) %>% rename(!!segmentation := segment)
+        tf <- get_tonal_features(ih) %>%
+        if(segmentation != "global")  tf <- tf %>% rename(!!segmentation := segment)
         self$.add_features(tf, segmentation, override, prefix ="TON")
 
       },

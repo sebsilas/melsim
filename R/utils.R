@@ -62,6 +62,7 @@ safe_get <- function(obj, field){
   return(NULL)
 }
 
+#' @export
 safe_append <- function(x, y){
   common_names <- intersect(names(x), names(y))
   if(length(common_names) > 0){

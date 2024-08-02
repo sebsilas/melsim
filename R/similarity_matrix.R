@@ -9,7 +9,6 @@ sim_mat_factory <- R6::R6Class(
     symmetric = F,
     type = "invalid",
     diagonal = F,
-    .version = packageVersion("melsim"),
     melodies = list()
   ),
   #end private
@@ -305,22 +304,15 @@ sim_mat_factory <- R6::R6Class(
       sim_df
     },
 
-    fuse = function(sim_mat, overwrite = F){
+    fuse = function(sim_mat){
       if(!is_class(sim_mat, "SimilarityMatrix") || sim_mat$mat_type != private$type){
         logging::logerror("Similarities matrices not compatible")
         return(invisible(self))
       }
       new_algos <- setdiff(sim_mat$data$algorithm, private$sim_df$algorithm)
       if(length(new_algos) == 0){
-        if(!overwrite){
-          logging::logwarn("No new similarity algorithms found")
-          return(invisible(self))
-        }
-        else{
-          new_algos = sim_mat$algorithms
-          logging::logwarn(sprintf("overwriting algorithms: %s", paste(new_algos, collapse = ", ")))
-          private$sim_df <- private$sim_df %>% filter(!(algorithm %in% new_algos))
-        }
+        logging::logwarn("No new similarity algorithms found")
+        return(invisible(self))
       }
 
       m1 <- c(private$sim_df$melody1,
@@ -358,8 +350,8 @@ sim_mat_factory <- R6::R6Class(
       q <- q + ggplot2::geom_tile()
       q <- q + ggplot2::theme_bw()
       q <- q + ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
-      q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
-      #q <- q + ggplot2::scale_fill_brewer(palette = "Set1")
+      #q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
+      q <- q + ggplot2::scale_fill_brewer(palette = "Set1")
       if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
         q <- q + ggplot2::facet_wrap(~algorithm)
       }
@@ -435,15 +427,6 @@ sim_mat_factory <- R6::R6Class(
     },
     has_pair_index = function(){
       "sim_id" %in% names(private$sim_df)
-    },
-    version = function(value){
-      if(missing(value)){
-        private$.version
-      } else{
-        if(is.scalar.character(value)){
-          private$.version <- value
-        }
-      }
     },
     data = function(similarity_df){
       if(missing(similarity_df)){

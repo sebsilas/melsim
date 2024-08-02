@@ -1,8 +1,8 @@
 Package: melsim
 Type: Package
 Title: Calculating melodic similarities
-Version: 0.5.22
-Author:  Sebastian Silas, Klaus Frieler
+Version: 0.5.23
+Author: Sebastian Silas, Klaus Frieler
 Maintainer: Klaus Frieler <klaus.frieler@ae.mpg.de>
 Description: Framework for calculatin tons of melodic similarities.
 License: MIT + file LICENSE
@@ -27,7 +27,7 @@ Imports:
     utils,
     emdist,
     dtw
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 URL: https://github.com/sebsilas/melsim
 BugReports: https://github.com/sebsilas/melsim/issues
 Depends: 
