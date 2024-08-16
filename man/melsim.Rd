@@ -7,7 +7,7 @@
 melsim(
   melody1,
   melody2 = NULL,
-  similarity_measures = c("ngrukkon", "rhytfuzz", "harmcore"),
+  similarity_measures = get_sim_measures(),
   paired = FALSE,
   verbose = T,
   with_progress = TRUE,
