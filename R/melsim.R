@@ -18,6 +18,8 @@ melsim <- function(melody1,
                    with_checks = TRUE,
                    name = "--") {
 
+  similarity_measures <- match.arg(similarity_measures)
+
   # Instantiate melodies
 
   self_sim <- FALSE
@@ -142,12 +144,10 @@ melsim <- function(melody1,
 }
 
 
-# t <- list.files('data-raw', full.names = TRUE) %>%
-#   melsim_many_to_many_multiple_algorithms()
 
 test_melsim <- function(N = 20, sim_measure = c("ngrukkon")){
   tictoc::tic()
-  kinder_full <- update_melodies(kinder_full, force = T)
+  kinder_full <- update_melodies(kinder_full, force = TRUE)
   ret <-
     melsim(
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
@@ -171,7 +171,6 @@ test_dtw <- function(N = 20){
         return(NULL)
       }
       DTW <- dtw::dtw(kinder_full[[i]]$data$onset, kinder_full[[j]]$data$onset)
-      #browser()
       tibble(i = i, j = j,
              l1 = kinder_full[[i]]$length, l2 = kinder_full[[j]]$length,
              dist = DTW$distance,
