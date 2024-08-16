@@ -11,22 +11,17 @@
 #' @examples
 melsim <- function(melody1,
                    melody2 = NULL,
-                   similarity_measures = c("ngrukkon",
-                                          "rhytfuzz",
-                                          "harmcore"
-                                          # "opti3",
-                                          # "needleman_wunsch",
-                                          # "compression_distance_gzip",
-                                          # "correlation",
-                   ),
+                   similarity_measures = get_sim_measures(),
                    paired = FALSE,
                    verbose = T,
                    with_progress = TRUE,
                    with_checks = TRUE,
                    name = "--") {
+
   # Instantiate melodies
-  #browser()
+
   self_sim <- FALSE
+
   if(is.null(melody2)){
     self_sim <- TRUE
     melody2 <- melody1
