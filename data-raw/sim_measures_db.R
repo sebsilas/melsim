@@ -1,3 +1,4 @@
+
 similarity_measures <- list(
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-ukkon",
                                   name = "ngrukkon",
@@ -5,7 +6,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 3),
                                   sim_measure = "ukkon",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-2-ukkon",
@@ -14,7 +15,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 2),
                                   sim_measure = "ukkon",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-1-ukkon",
@@ -23,7 +24,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 1),
                                   sim_measure = "ukkon",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-sum-common",
@@ -32,7 +33,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 3),
                                   sim_measure = "sum_common",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-count-distinct",
@@ -41,7 +42,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 3),
                                   sim_measure = "count_distinct",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-jaccard",
@@ -50,7 +51,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 3),
                                   sim_measure = "Jaccard",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-distribution-similarity",
@@ -59,7 +60,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 3),
                                   sim_measure = "dist_sim",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int|ioi_cass-3-distribution-similarity",
@@ -68,8 +69,8 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int_X_ioi_class", ngram_length = 3),
                                   sim_measure = "dist_sim",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "ngram-ioi_cass-3-distribution-similarity",
                                   name = "ngram_ioi_class_dist",
@@ -77,8 +78,8 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "ioi_class", ngram_length = 3),
                                   sim_measure = "dist_sim",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "ngram-ioi_cass-2-distribution-similarity",
                                   name = "ngram_ioi_class_dist2",
@@ -86,7 +87,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "ioi_class", ngram_length = 2),
                                   sim_measure = "dist_sim",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-ioi_cass-1-distribution-similarity",
@@ -95,7 +96,7 @@ similarity_measures <- list(
                                   transformation = "ngrams",
                                   parameters = list(transformation = "ioi_class", ngram_length = 1),
                                   sim_measure = "dist_sim",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "implicit-harmonies-edit-distance",
@@ -104,8 +105,8 @@ similarity_measures <- list(
                                   transformation = "implicit_harmonies",
                                   parameters = list(),
                                   sim_measure = "edit_sim",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "ioi-class-edit-distance",
                                   name ="rhytfuzz",
@@ -113,7 +114,7 @@ similarity_measures <- list(
                                   transformation = "ioi_class",
                                   parameters = list(),
                                   sim_measure = "edit_sim_utf8",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "int-edit-distance",
@@ -122,7 +123,7 @@ similarity_measures <- list(
                                   transformation = "int",
                                   parameters = list(),
                                   sim_measure = "edit_sim_utf8",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = T),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-tversky",
@@ -135,8 +136,8 @@ similarity_measures <- list(
                                                     alpha = 1,
                                                     beta = 1),
                                   sim_measure = "Tversky",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-tversky",
                                   name = "ngrtvera",
@@ -148,8 +149,8 @@ similarity_measures <- list(
                                                     alpha = "auto",
                                                     beta = "auto"),
                                   sim_measure = "Tversky",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "pat_savage_pmi",
                                   name = "pmips",
@@ -157,8 +158,8 @@ similarity_measures <- list(
                                   transformation = "pitch",
                                   parameters = list(optimizer = "transpose"),
                                   sim_measure = "pmi",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "pitch-edit-distance",
                                   name = "rawed",
@@ -166,8 +167,8 @@ similarity_measures <- list(
                                   transformation = "pitch",
                                   parameters = list(optimizer = "transpose"),
                                   sim_measure = "edit_sim_utf8",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "NCD-int_X_ioiclass",
                                   name = "ncdintioi",
@@ -175,7 +176,7 @@ similarity_measures <- list(
                                   transformation = "int_X_ioi_class",
                                   parameters = list(),
                                   sim_measure = "sim_NCD",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = F),
 
   melsim::sim_measure_factory$new(full_name = "earth-mover-distance",
@@ -185,7 +186,7 @@ similarity_measures <- list(
                                   parameters = list(beta = .5,
                                                     optimizer = "transpose"),
                                   sim_measure = "sim_emd",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = F),
 
   melsim::sim_measure_factory$new(full_name = "dtw_normed_dist",
@@ -194,7 +195,7 @@ similarity_measures <- list(
                                   transformation = "none",
                                   parameters = list(beta = 0),
                                   sim_measure = "sim_dtw",
-                                  transposition_invariant = T,
+                                  transposition_invariant = TRUE,
                                   tempo_invariant = F),
 
   melsim::sim_measure_factory$new(full_name = "const",
@@ -203,17 +204,18 @@ similarity_measures <- list(
                                   transformation = "none",
                                   parameters = list(),
                                   sim_measure = "const",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T),
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE),
 
   melsim::sim_measure_factory$new(full_name = "opti3",
                                   name = "opti3",
                                   type = "linear_combination",
                                   transformation = "none",
-                                  parameters = list(keep_singles = T),
+                                  parameters = list(keep_singles = TRUE),
                                   sim_measure = "0.505 *  ngrukkon + 0.417  * rhytfuzz + 0.24  * harmcore - 0.146 * const",
-                                  transposition_invariant = T,
-                                  tempo_invariant = T))
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE)
+  )
 
 names(similarity_measures) <- sapply(similarity_measures, function(x) x$name) %>% as.character()
 if(length(unique(names(similarity_measures))) != length(names(similarity_measures))){

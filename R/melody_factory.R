@@ -15,7 +15,7 @@ melody_factory <- R6::R6Class("Melody",
                                               pitch = numeric()),
                             mel_meta = NULL,
                             fname = "",
-                            override = F,
+                            override = FALSE,
                             ...) {
         mel_meta <- safe_append(mel_meta, list(...))
         if(nzchar(fname)){

@@ -1,0 +1,96 @@
+
+
+```{r}
+
+
+library(tidyverse)
+
+
+```
+
+
+```{r}
+
+
+similarity_grid <- expand_grid(sim_types, 
+                               sim_transformations, 
+                               sim_transformations2 = sim_transformations,
+                               sim_measures, 
+                               ngram_length = 1:3,
+                               transposition_invariant = c(TRUE, FALSE),
+                               tempo_invariant = c(TRUE, FALSE))
+
+
+use_data(similarity_grid, overwrite = TRUE)
+
+
+```
+
+
+
+```{r}
+
+similarity_grid_without_special_and_linear_combination <- similarity_grid %>% 
+  filter(sim_types %in% c("set_based", "sequence_based", "vector_based"))
+         
+```
+
+
+```{r}
+
+
+combinatoric_sim_measures <- similarity_grid_without_special_and_linear_combination %>% 
+  mutate(id = row_number() ) %>% 
+  pmap(function(sim_types, 
+                sim_transformations, 
+                sim_transformations2, 
+                sim_measures, 
+                ngram_length, 
+                transposition_invariant,
+                tempo_invariant,
+                id) {
+    
+    logging::loginfo("Creating sim measure %s/%s", id, nrow(similarity_grid_without_special_and_linear_combination))
+    
+    sim_name <- paste0(c(sim_types, sim_transformations, sim_transformations2, sim_measures, ngram_length), collapse = "-")
+    
+    pars <- list(transformation = sim_transformations2,
+                 ngram_length = ngram_length)
+    
+    if(sim_measures == "Tversky") {
+      
+      pars <- c(
+        pars,
+          list(
+          ngram_db = "melsim::int_ngrams_berkowitz",
+          alpha = "auto",
+          beta = "auto"
+        )
+      )
+      
+    }
+      
+      
+      
+    
+    melsim::sim_measure_factory$new(full_name = sim_name,
+                                    name = sim_name,
+                                    type = sim_types,
+                                    transformation = sim_transformations,
+                                    parameters = pars,
+                                    sim_measure = sim_measures,
+                                    transposition_invariant = transposition_invariant,
+                                    tempo_invariant = tempo_invariant)
+    
+  })
+
+use_data(combinatoric_sim_measures)
+
+```
+
+
+```{r}
+
+
+```
+

@@ -1,9 +1,13 @@
-#' Compute the melodic similarity two melodies
+#' Compute the melodic similarity between melodies
 #'
 #' @param melody1 Vector of melody objects or file names - for comparison.
 #' @param melody2 Vector of melody objects or file names - for comparison.
-#' @param similarity_algorithm Which similarity algorithm to use.
-#' @param ngram_length For set-based similarity, the N-gram length.
+#' @param similarity_measures Which similarity algorithm(s) to use.
+#' @param paired
+#' @param verbose
+#' @param with_progress
+#' @param with_checks
+#' @param name
 #'
 #' @return
 #' @export
@@ -13,12 +17,10 @@ melsim <- function(melody1,
                    melody2 = NULL,
                    similarity_measures = get_sim_measures(),
                    paired = FALSE,
-                   verbose = T,
+                   verbose = TRUE,
                    with_progress = TRUE,
                    with_checks = TRUE,
                    name = "--") {
-
-  similarity_measures <- match.arg(similarity_measures)
 
   # Instantiate melodies
 
@@ -29,7 +31,7 @@ melsim <- function(melody1,
     melody2 <- melody1
   }
 
-  if(with_checks){
+  if(with_checks) {
     if(any(!is_class(melody1, "Melody"))){
       if(all(is_class(melody1, "character"))){
         melody1 <- lapply(melody1, function(f) melody_factory$new(fname = f)$add_meta("name", f))
@@ -56,9 +58,14 @@ melsim <- function(melody1,
     }
   }
   sim_measures <- similarity_measures
-  sim_measures[is.character(sim_measures)] <- melsim::similarity_measures[sim_measures[is.character(sim_measures)]]
-  sim_measures <- sim_measures[!is.null(sim_measures)]
-  #prepare for using, all must be lists
+
+  #sim_measures[is.character(sim_measures)] <- melsim::similarity_measures[sim_measures[is.character(sim_measures)]]
+  # Seb: didn't understand what this was for. is.character would just return a logical. Was this meant to be as.character? Confused.
+
+  # This also fails if you just send in your own sim_measures
+  # sim_measures <- sim_measures[!is.null(sim_measures)]
+
+  # Prepare for using, all must be lists
 
   if(all(is_class(similarity_measures, "SimilarityMeasure")) && !is.list(similarity_measures)){
     similarity_measures <- list(similarity_measures)
@@ -69,9 +76,12 @@ melsim <- function(melody1,
   if(!is.list(melody2)){
     melody2 <- list(melody2)
   }
+  if(methods::is(sim_measures, "SimilarityMeasure")) {
+    sim_measures <- list(sim_measures)
+  }
   # Apply the similarity algorithm
   ret <-
-    map_dfr(sim_measures, function(sim_algo){
+    map_dfr(sim_measures, function(sim_algo) {
       #browser()
       if(verbose) {
         logging::loginfo(sprintf("Calculating: %s",
@@ -100,24 +110,27 @@ melsim <- function(melody1,
             sim_algo_str <- sim_algo
             sim_algo <- melsim::similarity_measures[[sim_algo_str]]
           }
-          if(self_sim){
-            if(i == j){
+          if(self_sim) {
+            if(i == j) {
               #if sim_alog is a linear combination and we keep single we have to add all of them
               terms <- sim_algo$name
-              if(!is.null(sim_algo$parameters$keep_singles) && sim_algo$parameters$keep_singles){
+              if(!is.null(sim_algo$parameters$keep_singles) && sim_algo$parameters$keep_singles) {
                 terms <- c(terms, parse_linear_combination(sim_algo$sim_measure) %>% pull(terms))
               }
-              ret <- map_dfr(terms, function(t){
+              ret <- map_dfr(terms, function(t) {
                 tibble(melody1 = m1$meta$name,
                        melody2 = m2$meta$name,
-                       algorithm = melsim::similarity_measures[[t]]$name,
-                       full_name = melsim::similarity_measures[[t]]$full_name,
+                       # algorithm = melsim::similarity_measures[[t]]$name,
+                       # full_name = melsim::similarity_measures[[t]]$full_name,
+                       algorithm = sim_algo$name,
+                       full_name = sim_algo$full_name,
                        sim = 1.0)
               })
               return(ret)
             } else if (j < i){
               return(NULL)
-            }}
+            }
+          }
 
           if(methods::is(sim_algo, "SimilarityMeasure")){
             #tictoc::tic(msg = sim_algo$name)
@@ -163,7 +176,7 @@ test_melsim <- function(N = 20, sim_measure = c("ngrukkon")){
 
 test_dtw <- function(N = 20){
   tictoc::tic()
-  kinder_full <- update_melodies(kinder_full, force = T)
+  kinder_full <- update_melodies(kinder_full, force = TRUE)
   ret <-
     map_dfr(1:N, function(i){
     map_dfr(1:N, function(j){

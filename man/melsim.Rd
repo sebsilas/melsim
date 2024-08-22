@@ -2,14 +2,14 @@
 % Please edit documentation in R/melsim.R
 \name{melsim}
 \alias{melsim}
-\title{Compute the melodic similarity two melodies}
+\title{Compute the melodic similarity between melodies}
 \usage{
 melsim(
   melody1,
   melody2 = NULL,
   similarity_measures = get_sim_measures(),
   paired = FALSE,
-  verbose = T,
+  verbose = TRUE,
   with_progress = TRUE,
   with_checks = TRUE,
   name = "--"
@@ -20,10 +20,10 @@ melsim(
 
 \item{melody2}{Vector of melody objects or file names - for comparison.}
 
-\item{similarity_algorithm}{Which similarity algorithm to use.}
+\item{similarity_measures}{Which similarity algorithm(s) to use.}
 
-\item{ngram_length}{For set-based similarity, the N-gram length.}
+\item{name}{}
 }
 \description{
-Compute the melodic similarity two melodies
+Compute the melodic similarity between melodies
 }

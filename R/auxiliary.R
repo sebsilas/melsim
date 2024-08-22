@@ -22,7 +22,7 @@ sim_measures_from_yaml <-  function(fname){
       sim_measure = sm$sim_measure,
       transposition_invariant = sm$transposition_invariant,
       tempo_invariant = sm$tempo_invariant,
-      cache = T
+      cache = TRUE
     )
   })
 }
@@ -205,7 +205,7 @@ read_melody <- function(f){
 #' @param mel_list list of Melody objects
 #' @param force (logical) Do it no matter what, otherwise only if version of melsim has changed
 #'@export
-update_melodies <- function(mel_list, force = T){
+update_melodies <- function(mel_list, force = TRUE){
   current_version <- melody_factory$new()$version
   map(mel_list, function(x){
     if(force || is.null(x$version) || x$version != current_version){

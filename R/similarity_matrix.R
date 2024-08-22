@@ -6,9 +6,9 @@ sim_mat_factory <- R6::R6Class(
     meta = list(name = ""),
     dim1 = 0,
     dim2 = 0,
-    symmetric = F,
+    symmetric = FALSE,
     type = "invalid",
-    diagonal = F,
+    diagonal = FALSE,
     melodies = list()
   ),
   #end private
@@ -150,7 +150,7 @@ sim_mat_factory <- R6::R6Class(
       invisible(self)
     },
 
-    remove_algorithm = function(algorithm = "const"){
+    remove_algorithm = function(algorithm = "const") {
       private$sim_df <- private$sim_df %>% filter(!(algorithm %in% !!algorithm))
       invisible(self)
     },
