@@ -6,7 +6,7 @@
 #' @export
 #'
 #' @examples
-sim_measures_from_yaml <-  function(fname){
+sim_measures_from_yaml <-  function(fname) {
   all <- yaml::read_yaml(fname)
   if(is.null(all)){
     logging::logerror(sprintf("%s not a YAML file", fname))
@@ -27,22 +27,34 @@ sim_measures_from_yaml <-  function(fname){
   })
 }
 
-edit_dist <- function(s, t){
+edit_dist <- function(s, t) {
   utils::adist(s,t)[1,1]
 }
 
-edit_sim <- function(s, t){
+edit_sim <- function(s, t) {
   1 - edit_dist(s, t)/max(nchar(s), nchar(t))
 }
 
-edit_dist_utf8 <- function(s, t){
+edit_dist_utf8 <- function(s, t) {
   offset <- min(c(s, t))
   s <- s -  offset + 128
   t <- t -  offset  + 128
   utils::adist(intToUtf8(s),intToUtf8(t))[1,1]
 }
 
-diss_NCD <- function(s, t, method = "gz"){
+utf8_convert <- function(s, t) {
+  s <- na.omit(s)
+  t <- na.omit(t)
+  s <- s %>% as.factor() %>% as.integer()
+  t <- t %>% as.factor() %>% as.integer()
+  offset <- min(c(s, t))
+  s <- s -  offset + 128
+  t <- t -  offset  + 128
+  list(s = intToUtf8(s),
+       t = intToUtf8(t))
+}
+
+diss_NCD <- function(s, t, method = "gz") {
   s <- as.character(na.omit(s))
   t <- as.character(na.omit(t))
   #browser()
@@ -62,27 +74,27 @@ diss_NCD <- function(s, t, method = "gz"){
   d_ncd
 }
 
-sim_NCD <- function(s, t, method = "gz"){
+sim_NCD <- function(s, t, method = "gz") {
   #browser()
   d <- diss_NCD(s, t, method)
   1 - d
 }
 
-sim_emd <- function(mel1, mel2, beta = 1){
+sim_emd <- function(mel1, mel2, beta = 1) {
   emdist::emd(mel1 %>% select(duration, onset, pitch) %>% as.matrix(),
-              mel2 %>% select(duration, onset, pitch) %>% as.matrix()) %>% (function(x){exp(-beta *x)})
+              mel2 %>% select(duration, onset, pitch) %>% as.matrix()) %>% (function(x){ exp(-beta *x) })
 }
 
-sim_dtw <- function(mel1, mel2, beta = 1){
+sim_dtw <- function(mel1, mel2, beta = 1) {
   dist <- dtw::dtw(mel1$onset, mel2$onset)
-  if(is.null(beta) || !is.numeric(beta) || beta <= 0){
+  if(is.null(beta) || !is.numeric(beta) || beta <= 0) {
     #print(dist$normalizedDistance)
     return(exp( - 2*dist$normalizedDistance))
   }
   dist$normalizedDistance %>% (function(x){exp(-beta *x)})
 }
 
-compression_ratio <- function(s, t, method = "gz"){
+compression_ratio <- function(s, t, method = "gz") {
   s <- as.character(na.omit(s))
   t <- as.character(na.omit(t))
   st <- as.character(na.omit(sprintf("%s%s", s, t)))
@@ -99,10 +111,12 @@ compression_ratio <- function(s, t, method = "gz"){
   logging::loginfo(sprintf("Raw %.3f, combined: %.3f, var1: %.3f", comp_r_raw, comp_r_cat, (st_c - overhead)/(s_c - offset + t_c - overhead)))
   return(2*(1-comp_r_cat/comp_r_raw))
 }
-na.omit <- function(x){
+
+na.omit <- function(x) {
   x[!is.na(x)]
 }
-edit_sim_utf8 <- function(s, t){
+
+edit_sim_utf8 <- function(s, t) {
   if(!is.numeric(s) || !is.numeric(t)){
     logging::logerror("Called edit_sim_utf8 with non-numeric vectors")
     stop()
@@ -128,12 +142,11 @@ dist_sim <- function(x, y){
   ty <- ty/sum(ty)
   tv <- 1 - .5 * sum(abs(tx - ty))
   if(tv < 0 || tv > 1){
-    browser()
   }
   tv
 }
 
-ukkon <- function (x, y, na.rm = TRUE){
+ukkon <- function (x, y, na.rm = TRUE) {
   if(na.rm){
     x <- na.omit(x)
     y <- na.omit(y)
@@ -144,7 +157,7 @@ ukkon <- function (x, y, na.rm = TRUE){
   1 - sum(abs(tx - ty))/(length(x) + length(y))
 }
 
-count_distinct <- function(x, y, na.rm = TRUE){
+count_distinct <- function(x, y, na.rm = TRUE) {
   if(na.rm){
     x <- na.omit(x)
     y <- na.omit(y)
@@ -152,7 +165,7 @@ count_distinct <- function(x, y, na.rm = TRUE){
   length(intersect(x, y))/max(length(x), length(y))
 }
 
-sum_common <- function(x, y, na.rm = TRUE){
+sum_common <- function(x, y, na.rm = TRUE) {
   if(na.rm){
     x <- na.omit(x)
     y <- na.omit(y)
@@ -164,18 +177,76 @@ sum_common <- function(x, y, na.rm = TRUE){
   sum(tx[is] + ty[is])/(length(x) + length(y))
 }
 
-proxy_simil <- function(x, y, proxy_method = "Jaccard", na.rm = T){
-  #browser()
-  if(!proxy::pr_DB$entry_exists(proxy_method)){
-    logging::logwarn(sprintf("Method %s does not exist in pr_DB", proxy_method))
+proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, rescale_independently = TRUE, ...) {
+
+  if(!proxy::pr_DB$entry_exists(proxy_method)) {
+    logging::logwarn(sprintf("Method %s does not exist in proxy::pr_DB", proxy_method))
   }
-  if(na.rm){
+
+  if((is.character(x) || is.character(y)) && proxy_method != "Levenshtein") {
+    x <- as.factor(x)
+    y <- as.factor(y)
+  }
+
+  # We do this in two steps so we can cover the different use cases
+
+  if(is.factor(x) || is.factor(y)) {
+    x <- as.integer(x)
+    y <- as.integer(y)
+  }
+
+
+  if(na.rm) {
     x <- na.omit(x)
     y <- na.omit(y)
   }
-  xy <- union(x, y)
-  proxy::simil(rbind(xy %in%  x, xy %in%  y), method = proxy_method) %>% as.numeric()
+
+  proxy_type <- get_proxy_sim_measure_type(proxy_method)
+
+
+  if(proxy_method == "fJaccard") {
+    rescaled_vs <- rescale_vectors(x, y, rescale_independently)
+    x <- rescaled_vs$x_rescaled
+    y <- rescaled_vs$y_rescaled
+  }
+
+
+  if(proxy_method == "Levenshtein") {
+
+    stopifnot(is.character(x) && is.character(y))
+
+    res <- proxy::dist(x, y, method = "Levenshtein", ...) %>%
+      as.numeric()
+
+    return(res)
+
+  } else if(proxy_type == "binary") {
+
+    xy <- union(x, y)
+    input <- rbind(xy %in%  x, xy %in%  y)
+
+  } else if(proxy_type %in% c("metric", "nominal", "mixed")) {
+
+    input <- rbind(x, y)
+
+  } else {
+    stop("proxy_type not recognised.")
+  }
+
+  if(is_distance_measure(proxy_method)) {
+    res <- proxy::dist(input, method = proxy_method, ...) %>%
+      proxy::pr_dist2simil()
+  } else {
+    res <- proxy::simil(input, method = proxy_method, ...)
+  }
+
+  res %>%
+    as.numeric()
+
+
 }
+
+
 pmi <- function(q, t) {
   q_l <- length(q)
   t_l <- length(t)
@@ -196,7 +267,12 @@ file_ext <- function(file) {
   ifelse(length(tmp), str_sub(tmp, 2), "")
 }
 
-read_melody <- function(f){
+create_corpus_from_csvs <- function(f) {
+  list.files(f, pattern = "csv", full.names = TRUE) %>%
+    purrr::map(read_melody)
+}
+
+read_melody <- function(f) {
   melody_factory$new(fname = f, name = tools::file_path_sans_ext(basename(f)))
 }
 
@@ -223,13 +299,12 @@ update_melodies <- function(mel_list, force = TRUE){
 #' @param force (logical) Do it no matter what, otherwise only if version of melsim has changed
 #'
 #'@export
-update_sim_mat <- function(sim_mat, force = T){
+update_sim_mat <- function(sim_mat, force = TRUE) {
   ret <- sim_mat_factory$new(sim_mat$data, paired = sim_mat$mat_type == "paired")
   current_version <- ret$version
   if(force || is.null(sim_mat$version) || sim_mat$version != current_version){
     ret
-  }
-  else{
+  } else{
     sim_mat
   }
 }
@@ -255,78 +330,20 @@ get_transposition_hints <- function(pitch_vec1, pitch_vec2){
   unique(ret) %>% sort()
 
 }
-#finds transposition that maximize raw edit distance of two pitch vectors
-#transposition in semitone of the *second* melody
+# Finds transposition that maximize raw edit distance of two pitch vectors
+# Transposition in semitone of the *second* melody
 find_best_transposition <- function(pitch_vec1, pitch_vec2){
   trans_hints <- get_transposition_hints(pitch_vec1, pitch_vec2)
-  sims <- purrr::map_dfr(trans_hints, function(x){
+  sims <- purrr::map_dfr(trans_hints, function(x) {
     tidyr::tibble(transposition = x,
                   dist = edit_dist(intToUtf8(pitch_vec1), intToUtf8(pitch_vec2 + x)))
   })
   sims %>% dplyr::arrange(dist, abs(transposition)) %>% utils::head(1) %>% dplyr::pull(transposition)
 }
 
-optim_transposer <- function(query, target,
-                             sim_measure = edit_sim_utf8,
-                             strategy = c("all", "hints", "best"),
-                             ...){
-  strategy <- match.arg(strategy)
-  # Run for all transpositions and pick the top
-  strategy <- match.arg(strategy)
-
-  #query <- as.integer(query - median(query))
-  #target <- as.integer(target - median(target))
-  query <- query + 60 - min(c(query))
-  target <- target + 60 - min(c(target))
-  d <- stats::median(target)  -  stats::median(query)
-  if(strategy == "all"){
-    hints <- -5:6
-  }
-  else if(strategy == "hints" ){
-    hints <- get_transposition_hints(target, query )
-  }
-  else if(strategy == "best" ){
-    hints <- find_best_transposition(target, query)
-  }
-  purrr::map_dfr(union(d, hints), function(trans) {
-    #browser()
-    tibble(trans = trans, sim = sim_measure(query + trans, target))
-  }) %>%
-    slice_max(sim) %>% distinct(sim) %>% pull(sim)
 
 
-}
-
-optim_transposer_emd <- function(mel1, mel2,
-                                 beta = .5,
-                                 strategy = c("all", "hints", "best")){
-  strategy <- match.arg(strategy)
-  # Run for all transpositions and pick the top
-  strategy <- match.arg(strategy)
-
-  #query <- as.integer(query - median(query))
-  #target <- as.integer(target - median(target))
-  mel1$pitch <- mel1$pitch + 60 - min(c(mel1$pitch))
-  mel2$pitch <- mel2$pitch + 60 - min(c(mel2$pitch))
-  d <- stats::median(mel2$pitch)  -  stats::median(mel1$pitch)
-  if(strategy == "all"){
-    hints <- -5:6
-  }
-  else if(strategy == "hints" ){
-    hints <- get_transposition_hints(mel2$pitch, mel1$pitch )
-  }
-  else if(strategy == "best" ){
-    hints <- find_best_transposition(mel2$pitch, mel1$pitch)
-  }
-  ret <- purrr::map_dfr(union(d, hints), function(trans) {
-    tibble(trans = trans, sim = sim_emd(mel1 %>% mutate(pitch = pitch + trans), mel2))
-  }) %>%
-    slice_max(sim) %>% distinct(sim) %>% pull(sim)
-
-
-}
-
-#' get harmonies via the Krumhansl-Schmuckler algorithm
+#' Get harmonies via the Krumhansl-Schmuckler algorithm
 #'
 #' @param pitch_vec (integer) Pitch vector
 #' @param segmentation (factor) Segmentation as grouping variable
@@ -337,12 +354,12 @@ optim_transposer_emd <- function(mel1, mel2,
 #' @export
 #'
 #' @examples
-get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NULL, only_winner = TRUE, fast_algorithm = TRUE){
+get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NULL, only_winner = TRUE, fast_algorithm = TRUE) {
+
   # warning('Segmentation format must be as segment ID')
   # Krumhansl-Schmuckler algorithm
   ks_weights_major <- c(6.33, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
   ks_weights_minor <- c(6.35, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
-  pc_labels_flat <- c("C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B")
 
   ks_weights_major_z <- scale(ks_weights_major) %>% as.numeric()
   ks_weights_minor_z <- scale(ks_weights_minor) %>% as.numeric()
@@ -351,19 +368,18 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
   ks_weights_minor_mat <- sapply(0:11, function(t) ks_weights_minor_z[((0:11 - t) %% 12) + 1])
   ks_mat <- cbind(ks_weights_major_mat, ks_weights_minor_mat)
 
-  if(!is.null(segmentation)){
-    if(length(segmentation) != length(pitch_vec)){
-      browser()
+  if(!is.null(segmentation)) {
+    if(length(segmentation) != length(pitch_vec)) {
       stop("Segmentation must be of same length as pitch")
     }
     s <- unique(segmentation)
-    if(fast_algorithm){
+    if(fast_algorithm) {
       pitch_vec <- factor(pitch_vec %% 12, levels = 0:11)
       pitch_freq_vec <- sapply(s, function(x) table(pitch_vec[segmentation == x]) %>% scale() %>% as.numeric())
       ks_cor <- t(pitch_freq_vec) %*% ks_mat
       ret <-
-        purrr::imap_dfr(s, function(seg, i){
-          if(only_winner){
+        purrr::imap_dfr(s, function(seg, i) {
+          if(only_winner) {
             winner <- ks_cor[i, ] %>% which.max()
             tibble(segment = seg,
                    key_pc = (winner - 1) %% 12,
@@ -372,8 +388,7 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
                                  pc_labels_flat[key_pc + 1], substr(type, 1, 3)),
                    match = ks_cor[i, winner] %>% as.numeric()
                    )
-          }
-          else{
+          } else{
             tibble(
               segment = seg,
               key_pc = rep(0:11, 2),
@@ -387,33 +402,30 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
       return(ret)
     }
     return(
-      purrr::map_dfr(s, function(x){
+      purrr::map_dfr(s, function(x) {
         pv <- pitch_vec[segmentation == x]
         tidyr::tibble(segment = x) %>%
-          bind_cols(get_implicit_harmonies(pv, NULL,
-                                           only_winner = only_winner,
-                                           fast_algorithm = fast_algorithm,
-                                           weights = weights)
-                    )
+          get_implicit_harmonies(pv, NULL,
+                                 only_winner = only_winner,
+                                 fast_algorithm = fast_algorithm,
+                                 weights = weights) %>% bind_cols()
       })
     )
 
   }
-  if(!is.null(weights)){
-    if(length(weights) != length(pitch_vec)){
+  if(!is.null(weights)) {
+    if(length(weights) != length(pitch_vec)) {
       logging::logerror("Weights must have same length as pitches")
       stop()
     }
     tab <- table(factor(pitch_vec %% 12, levels = 0:11), weights)
     pitch_freq <- tab  %*% as.numeric(colnames(tab))  %>% scale() %>% as.numeric()
-  }
-  else{
+  } else{
     pitch_freq <- table(factor(pitch_vec %% 12, levels = 0:11)) %>% scale() %>% as.numeric()
 
   }
-  if(fast_algorithm){
+  if(fast_algorithm) {
     ks_cor <- pitch_freq %*% ks_mat
-
     correlations <- tibble(key_pc = rep(0:11, 2),
                            type = rep(c("major", "minor"), each = 12),
                            key = sprintf("%s-%s",
@@ -421,8 +433,8 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
                            match = ks_cor %>% as.numeric()) %>%
       dplyr::arrange(desc(match))
   }
-  else{
-    correlations <- purrr::map_dfr(0:11, function(t){
+  else {
+    correlations <- purrr::map_dfr(0:11, function(t) {
       w_major <- stats::cor.test(pitch_freq,
                           ks_weights_major_mat[, t + 1])$estimate
       w_minor <- stats::cor.test(pitch_freq,
@@ -438,17 +450,17 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
     }) %>%
       dplyr::arrange(desc(match))
   }
-  if(only_winner){
+  if(only_winner) {
     return(correlations[1,])
   }
   correlations
 }
 
 bootstrap_implicit_harmonies <- function(pitch_vec, segmentation = NULL, sample_frac = .8, size = 10) {
-  if(!is.null(segmentation)){
+  if(!is.null(segmentation)) {
     segments <- unique(segmentation)
     ret <-
-      purrr::map_dfr(segments, function(seg){
+      purrr::map_dfr(segments, function(seg) {
         bootstrap_implicit_harmonies(pitch_vec[segmentation == seg],
                                      NULL,
                                      sample_frac = sample_frac,
@@ -457,12 +469,12 @@ bootstrap_implicit_harmonies <- function(pitch_vec, segmentation = NULL, sample_
       })
     return(ret)
   }
-  l <-length(pitch_vec)
+  l <- length(pitch_vec)
   sample_size <- max(1, round(sample_frac * l))
 
   bs <-
-    purrr::map_dfr(1:size, function(x){
-      pv <- sample(pitch_vec, replace = T, sample_size)
+    purrr::map_dfr(1:size, function(x) {
+      pv <- sample(pitch_vec, replace = TRUE, sample_size)
       get_implicit_harmonies(pitch_vec = pv,  only_winner = TRUE)
     })
   best_key <- bs %>% dplyr::count(key) %>% dplyr::arrange(dplyr::desc(n)) %>% dplyr::pull(key)
@@ -496,9 +508,9 @@ fuzzyint_class <- Vectorize(
 
   })
 
-entropy_wrapper <- function(vec, norm = FALSE, domain = NULL, na.rm = TRUE){
+entropy_wrapper <- function(vec, norm = FALSE, domain = NULL, na.rm = TRUE) {
   norm_factor <- 1
-  if(na.rm){
+  if(na.rm) {
     vec <- vec[!is.na(vec)]
   }
   if(norm){
@@ -510,17 +522,17 @@ entropy_wrapper <- function(vec, norm = FALSE, domain = NULL, na.rm = TRUE){
   norm_factor * entropy::entropy(table(vec), unit = "log2")
 }
 
-interval_difficulty <- function(int_vec, na.rm = T){
+interval_difficulty <- function(int_vec, na.rm = TRUE) {
 
-  if(is.list(int_vec)){
+  if(is.list(int_vec)) {
     return(purrr::map_dfr(int_vec, interval_difficulty))
   }
 
-  if(na.rm){
+  if(na.rm) {
     int_vec <- int_vec[!is.na(int_vec)]
   }
 
-  if(length(int_vec) <= 1){
+  if(length(int_vec) <= 1) {
     return(tidyr::tibble(mean_abs_int = NA,
                          int_range = NA,
                          mean_dir_change = NA,
@@ -553,8 +565,8 @@ interval_difficulty <- function(int_vec, na.rm = T){
 }
 
 get_tonal_features <- function(implicit_harmonies) {
-  if(!is.null(implicit_harmonies[["segment"]])){
-    ret <- map_dfr(unique(implicit_harmonies[["segment"]]), function(seg){
+  if(!is.null(implicit_harmonies[["segment"]])) {
+    ret <- map_dfr(unique(implicit_harmonies[["segment"]]), function(seg) {
       get_tonal_features(implicit_harmonies %>% filter(segment == seg) %>% select(-segment)) %>%
         mutate(segment = seg)
     })

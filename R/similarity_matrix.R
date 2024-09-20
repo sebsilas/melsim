@@ -14,7 +14,6 @@ sim_mat_factory <- R6::R6Class(
   #end private
   public = list(
     initialize = function(similarity_df, name = "", paired = FALSE){
-      #browser()
       private$sim_df <- similarity_df
       private$meta$name <- name
       if(!self$validate(similarity_df, paired = paired)){
@@ -46,7 +45,6 @@ sim_mat_factory <- R6::R6Class(
     },
 
     validate = function(similarity_df, paired = F){
-      #browser()
       private$type <- "invalid"
       if(!is.data.frame(similarity_df)){
         logging::logwarn("No data frame")
@@ -56,12 +54,11 @@ sim_mat_factory <- R6::R6Class(
         logging::logwarn("Wrong column names")
         return(FALSE)
       }
-      #browser()
       if(any(na.omit(similarity_df$sim) > 1) || any(na.omit(similarity_df$sim) < 0)){
         logging::logwarn("Similarity values not in range [0-1]")
         return(FALSE)
       }
-      if(paired){
+      if(paired) {
         private$type <- "paired"
         private$dim1 <- length(unique(similarity_df$melody1))
         private$dim2 <- length(unique(similarity_df$melody2))
@@ -88,7 +85,7 @@ sim_mat_factory <- R6::R6Class(
       private$dim1 <- l_u1
       private$dim2 <- l_u2
 
-      if(length(union(m1, m2)) == length(intersect(m1, m2))){
+      if(length(union(m1, m2)) == length(intersect(m1, m2))) {
         private$symmetric <- T
         if(nrow(diag_df) == l_u1){
           private$type <- ifelse(l_m1 == l_u1 * l_u1, "full-diag", "half-diag")
@@ -107,8 +104,8 @@ sim_mat_factory <- R6::R6Class(
           private$type <- "half-diag"
           private$dim1 <- l_u1 + 1
           private$dim2 <- l_u2 + 1
-          private$diagonal <- F
-          private$symmetric <- T
+          private$diagonal <- FALSE
+          private$symmetric <- TRUE
         }
         else{
           private$type <- "general"
@@ -126,7 +123,7 @@ sim_mat_factory <- R6::R6Class(
       return(TRUE)
     },
 
-    melody_names = function(idx = 1){
+    melody_names = function(idx = 1) {
       idx <- as.numeric(idx)
       stopifnot(length(idx) > 0)
       idx <- idx[[1]]
@@ -155,8 +152,8 @@ sim_mat_factory <- R6::R6Class(
       invisible(self)
     },
 
-    filter_clone = function(melody1, melody2){
-      if(private$type != "paired"){
+    filter_clone = function(melody1, melody2) {
+      if(private$type != "paired") {
         logging::logerror("Filter melodies not implemented for non paired sim matrices")
         return(invisible(self))
       }
@@ -177,7 +174,7 @@ sim_mat_factory <- R6::R6Class(
       nc <- private$dim2
       sim_df <- private$sim_df
       if(private$type != "general"){
-        sim_df <- self$get_symmetric(with_diagonal = T) %>%
+        sim_df <- self$get_symmetric(with_diagonal = TRUE) %>%
           arrange(algorithm, melody1, melody2)
         nr <- nc <- length(unique(sim_df$melody1))
       }
@@ -333,7 +330,7 @@ sim_mat_factory <- R6::R6Class(
       if(!is.null(algorithms)){
         sim_df <- sim_df %>% filter(algorithm %in% algorithms)
       }
-      if(private$type == "paired"){
+      if(private$type == "paired") {
         q <- sim_df %>% ggplot2::ggplot(aes(x = sim, y = after_stat(count), fill = algorithm))
         q <- q + ggplot2::geom_histogram(color = "black")
         q <- q + ggplot2::theme_bw()

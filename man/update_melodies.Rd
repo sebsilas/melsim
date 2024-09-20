@@ -5,7 +5,7 @@
 \title{update_melodies
 Updates a list of melody objects to the current version of the melody object (as R6 objects keep their bindings, once created)}
 \usage{
-update_melodies(mel_list, force = T)
+update_melodies(mel_list, force = TRUE)
 }
 \arguments{
 \item{mel_list}{list of Melody objects}

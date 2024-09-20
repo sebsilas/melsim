@@ -1,0 +1,507 @@
+
+
+```{r}
+
+library(tidyverse)
+
+load_all() # Assuming you are in the melsim package
+
+```
+
+
+# Minor/stylistic updates
+
+I'll note the small things first:
+
+- I restructured if elses to be like this:
+
+```{r}
+
+if(condition) {
+
+} else {
+  
+}
+
+```
+
+rather than 
+
+```{r}
+
+
+if(condition) {
+
+} 
+else {
+  
+}
+
+```
+
+This is in line with tidyverse recommendations. (I do like the other format, but I decided to adopt the tidyverse recommendations for consistency)
+
+I also added spacing before curly brackets and  made sure all logicals were explicitly written out (e.g., TRUE rather than T), again which improves readability.
+
+
+# Larger updates
+
+I factored a lot of code inside the grand `melsim` function e.g., into `conduct_checks`, `handle_verbose`, `give_progress`.
+
+
+I removed the `sim_type` argument from `melsim` (which had possible values such as `set_based`, `sequence_based` etc). These shouldn't need to be known by the user and can be determined from the `sim_measure` being used internally, so I set things up to work like that e.g.,:
+
+```{r}
+
+get_sim_type('correlation')
+get_sim_type('Jaccard')
+
+```
+
+Similarly, the properties of `tempo_invariant` and `transposition_invariant` can be determined programmatically and shouldn't be required as entry from the user (see `is_tempo_invariant` and `is_transposition`). Actually, please check this carefully and the underlying object `invariance_table` I defined to determine this. 
+
+
+NB: TODO: We still need to add some handling for linear combinations here.
+
+# Vector-based measure support and general wider coverage of integration with the proxy package
+
+As far as I understood, it looked like we only assumed binary data support for integration with the `proxy` package here in `melsim`. This was the main call inside our function, `proxy_simil`:
+
+```{r}
+
+res <- proxy::simil(rbind(xy %in%  x, xy %in%  y), 
+                    method = proxy_method) %>%
+  as.numeric()
+
+```
+
+
+`r (xy %in%  x, xy %in%  y)` thus only handling binary data.
+
+
+I've now replaced this function with `proxy_pkg_handler` in `melsim`, which handles various input types for `proxy::dist` or `proxy::simil` based on types. Inspect the inner workings of that function for more information.
+
+Then, I profile all the proxy package measures below. See the results of these objects and please check if they look okay:
+
+
+```{r}
+
+metric_profile <- proxy_pkg_measures_types %>%
+  filter(!measure %in% c("Levenshtein", # Must be string
+                         "Gower", # N.B, check what's special about Gower,
+                         "Mahalanobis" # Needs non-singular matrix
+                         )) %>% 
+  pull(measure) %>%
+  map_dfr(function(measure) {
+    
+    if(measure == "Minkowski") {
+      res <- proxy_pkg_handler(x = 1:10, y = 1:10, proxy_method = measure, na.rm = TRUE,  p = 1)
+    } else {
+      res <- proxy_pkg_handler(1:10, 1:10, measure)
+    }
+
+    tibble::tibble(sim_measure = measure,
+                   distance = is_distance_measure(measure),
+                   value = res
+    )
+  })
+
+
+metric_profile_reversed <- proxy_pkg_measures_types %>%
+  filter(!measure %in% c("Levenshtein", # Must be string
+                         "Gower", # N.B, check what's special about Gower,
+                         "Mahalanobis" # Needs non-singular matrix
+                         )) %>% 
+  pull(measure) %>%
+  map_dfr(function(measure) {
+    
+    if(measure == "Minkowski") {
+      res <- proxy_pkg_handler(x = 10:1, y = 1:10, proxy_method = measure, na.rm = TRUE,  p = 1)
+    } else {
+      res <- proxy_pkg_handler(10:1, 1:10, measure)
+    }
+
+    tibble::tibble(sim_measure = measure,
+                   distance = is_distance_measure(measure),
+                   value = res
+    )
+  })
+
+```
+
+
+## Nomenclature
+
+I propose that we distinguish between two types of similarity measure here in `melsim`: lower-level similarity measures and higher-level similarity measures.
+
+Lower-level similarity measures correspond to a bear-bones distance or similarity metric: Euclidean, correlation, Mahalanobis etc. All those things that are in the `proxy` package and some of our own (e.g., `sim_edit_utf8`).
+
+Higher-level similarity measures represent a transformation * low-level similarity measure * other parameter combo. These are what we have been defining in `data-raw/sim_measures_db.R` and represent "official" *melodic* similarity measures offered by the package. Thus, the low-level similarity measures are not melodic in nature, but the high-level ones always are. This also reflects two kinds of use case for the package: i) creating your own melodic similarity measure(s) (if you're completely insane like us) vs. ii) using pre-created melodic similarity measures (if you're moderately more sane, but still need to see a shrink).
+
+## Other things
+
+- `linear_combinations` should now be passed as a formula, rather than a character string. I can't remember why I chose to do this now (type handling?), but it's also nice syntactically.
+
+
+- I wonder if we should base our `edit_sim_utf8` on the Levenshtein metric in the `proxy` package rather than `utils::adist`, just to keep things consistent?
+
+
+```{r}
+
+proxy_pkg_handler(x = "the quick brown", 
+                  y = "the quick brown fox", 
+                  proxy_method = "Levenshtein", na.rm = TRUE)
+
+```
+
+
+```{r}
+
+(lb <- bench::mark(
+  proxy::dist("the quick brown", 
+            "the quick brown fox", method = "Levenshtein") %>%
+      as.numeric()
+))
+
+(lb2 <- bench::mark(
+  utils::adist("the quick brown", 
+            "the quick brown fox") %>% 
+    as.numeric()
+))
+
+
+
+```
+
+
+Well, `adist` is much quicker, so I guess we should keep that, but also leave the other integration.
+
+
+##  Melodic features/FANTASTIC integration
+
+More of a question, rather than an update. We are computing some melodic features in this package e.g., through `add_difficulty_features` and `add_tonal_features`. There is a bit of overlap with `FANTASTIC`, but also, this is a smaller set than those I have wrapped in `itembankr` (this wraps FANTASTIC, Klaus's difficulty features, and some of Peter's `ppm`-decay features) (see `itembankr::get_melody_features`).
+
+I would really welcome bringing all such features into one place and removing some redundancy. Maybe this package is the place to do it? Or, we could use `itembankr::get_melody_features` here for now and maybe update this package to call this and get the larger battery of measures? Alternatively, we start a separate package just for melodic feature computation, e.g., `FANTASTIC` but as a real R package. At least some of this could be quite quick because we're re-framing prior resources. But I would be interested in more (higher-level) feature similarity being a key part of this package, so it would be good to find a way to support feature computation comprehensively somehow. I'm interested to hear your opinions.
+
+# Joint implicit harmonies
+
+As part of the similarity method on a melody factory, there was some code to compute joint implicit harmonies. Here's a snippet:
+
+```{r}
+
+ih1 <- self$get_implicit_harmonies() %>% pull(key)
+ih2 <- melody$get_implicit_harmonies() %>% pull(key)
+common_keys <- levels(factor(union(ih1, ih2)))
+ih1 <- factor(ih1, levels = common_keys) %>%
+  as.integer()
+ih2 <- factor(ih2, levels = common_keys) %>%
+  as.integer()
+        
+```
+
+
+Because this is feature engineering, it felt like this shouldn't be within the similarity function itself but instead should remain inside our `add_transforms` function. But I guess it was outside of there so that the `common_keys` could be created for levels (i.e., so that both melodies could be simultaneously accessed). To avoid this, I simply have defined all possible keys as an object in the package: see the `music_keys` object, which contains the 24 possible major and minor keys. I believe this is conceptually the same, but do let me know if this creates an issue.
+
+
+# Added segmentation to transforms
+
+I added a `phrase_segmentation` function to `add_transforms`, using `itembankr::segment_phrase` which in turn came from Klaus. This is used as a fallback if segmentation is not provided in the original melodic data (e.g., in a `bar` column).
+
+
+## Grand DB/table
+
+I think maybe we need something like a grand DB to store all the hard-coded data lying around in `sim_measures.R`. `proxy` has a nice one with `proxy::pr_DB`. Something for the TODO list?
+
+## Other changes
+
+There were a bunch of other things I had to do to get everything to work, but now I believe we more or less support the full range of (at least) 1,586 similarity measures!
+
+Try the test below:
+
+## Prelim test
+
+
+### Create combinatoric data
+
+
+```{r}
+
+# Note this only incorporates phrase_segmentation but not other forms e.g., bar etc.
+
+ngram_measures <- c("ukkon", "sum_common", "count_distinct", "dist_sim", "Tversky")
+
+measures_with_extra_pars <- c(ngram_measures,
+                              # "Tversky", For now we leave this out parameter exploration and use auto + the Berkowitz db
+                              "Minkowski",
+                              "pmi")
+
+
+similarity_grid_base <- expand_grid(sim_transformation = setdiff(sim_transformations, 
+                                                            c("ngrams", "none")),
+                               sim_measure = setdiff(low_level_sim_measures, 
+                                                     measures_with_extra_pars))   %>% 
+  rowwise() %>% 
+  mutate(
+    transposition_invariant = is_transposition_invariant(sim_transformation),
+    tempo_invariant = is_tempo_invariant(sim_transformation),
+    sim_type = get_sim_type(sim_measure),
+    ngram_transformation = NA,
+    ngram_length = NA,
+    p_minkowski = NA,
+    transpose_optimizer = NA,
+    sim_name = paste0(
+      paste0(c(sim_transformation,
+               sim_measure), collapse = "-"),
+             "_transposition_invariant=", transposition_invariant,
+             "_tempo_invariant=", tempo_invariant)
+    ) %>% 
+  ungroup()
+
+
+```
+
+
+
+N-gram experiment
+
+Note that some of the `set_based_measures` are used before, in a non-ngram setting
+
+
+```{r}
+
+similarity_grid_ngram <- expand_grid(sim_transformation = "ngrams",
+                               sim_measure = set_based_measures,
+                               ngram_length = 1:3,
+                               ngram_transformation = setdiff(sim_transformations,
+                                                              c("none", "ngrams"))) %>% 
+   rowwise() %>% 
+  mutate(
+    transposition_invariant = is_transposition_invariant(sim_transformation),
+    tempo_invariant = is_tempo_invariant(sim_transformation),
+    sim_type = get_sim_type(sim_measure),
+    sim_name = paste0(
+      paste0(c(sim_transformation,
+               sim_measure), collapse = "-"),
+              "_ngram_transformation=", ngram_transformation,
+              "_ngram_length=", ngram_length),
+    p_minkowski = NA,
+    transpose_optimizer = NA,
+    ) %>% 
+  ungroup() %>% 
+  relocate(sim_transformation, sim_measure, transposition_invariant, 
+           tempo_invariant, sim_type, ngram_transformation, ngram_length, p_minkowski, transpose_optimizer, sim_name)
+
+```
+
+
+```{r}
+
+similarity_grid_minkowski <- expand_grid(sim_transformation = setdiff(sim_transformations, 
+                                                            c("ngrams", "none")),
+                               p_minkowski = c(0.5, 1, 2, 3, Inf)) %>% 
+   rowwise() %>% 
+  mutate(
+    sim_measure = "Minkowski",
+    transposition_invariant = is_transposition_invariant(sim_transformation),
+    tempo_invariant = is_tempo_invariant(sim_transformation),
+    sim_type = get_sim_type(sim_measure),
+    sim_name = paste0(
+      paste0(c(sim_transformation,
+               sim_measure), collapse = "-"),
+              "_p=", p_minkowski),
+    ngram_transformation = NA,
+    ngram_length = NA,
+    transpose_optimizer = NA
+    ) %>% 
+  ungroup() %>% 
+  relocate(sim_transformation, sim_measure, transposition_invariant, 
+           tempo_invariant, sim_type, ngram_transformation, ngram_length, p_minkowski, transpose_optimizer, sim_name)
+
+```
+
+
+PMI with transposer and non-transposer
+
+```{r}
+
+similarity_grid_pmi <- expand_grid(sim_transformation = "pitch",
+                                   transpose_optimizer = c(TRUE, FALSE)) %>% 
+   rowwise() %>% 
+  mutate(
+    sim_measure = "pmi",
+    transposition_invariant = is_transposition_invariant(sim_transformation, if(transpose_optimizer) "transpose" else NULL),
+    tempo_invariant = is_tempo_invariant(sim_transformation),
+    sim_type = get_sim_type(sim_measure),
+    sim_name = paste0(
+      paste0(c(sim_transformation,
+               sim_measure), collapse = "-"),
+              "_transpose_optimizer=", transpose_optimizer),
+    ngram_transformation = NA,
+    ngram_length = NA,
+    p_minkowski = NA
+    ) %>% 
+  ungroup() %>% 
+  relocate(sim_transformation, sim_measure, transposition_invariant, 
+           tempo_invariant, sim_type, ngram_transformation, ngram_length, p_minkowski, transpose_optimizer, sim_name)
+
+```
+
+```{r}
+
+
+similarity_grid <- rbind(similarity_grid_base,
+                         similarity_grid_ngram,
+                         similarity_grid_minkowski,
+                         similarity_grid_pmi)
+
+use_data(similarity_grid, overwrite = TRUE)
+
+
+rm(similarity_grid_base,
+   similarity_grid_ngram,
+   similarity_grid_minkowski,
+   similarity_grid_pmi)
+
+```
+
+
+
+
+### Run the test
+
+
+```{r results = FALSE}
+
+
+sim_test <- similarity_grid %>% 
+  mutate(id = row_number() ) %>% 
+  pmap_dfr(function(sim_transformation, 
+                    sim_measure, 
+                    transposition_invariant,
+                    tempo_invariant,
+                    sim_type,
+                    ngram_transformation,
+                    ngram_length,
+                    p_minkowski,
+                    transpose_optimizer,
+                    sim_name,
+                    id) {
+    
+    print(id)
+   
+    logging::loginfo("Percent complete %s", (id/nrow(similarity_grid) * 100))
+    
+    
+     pars <- list()
+     
+     if(sim_measure == "pmi" && !is.na(transpose_optimizer)) {
+       if(transpose_optimizer) {
+        pars <- list(optimizer = "transpose")
+       }
+     }
+      
+      if(sim_measure == "Tversky") {
+
+        pars <- list(ngram_db = "melsim::int_ngrams_berkowitz",
+                     alpha = "auto",
+                     beta = "auto",
+                     transformation = ngram_transformation,
+                    ngram_length = ngram_length)
+
+      }
+     
+     if(sim_measure == "sim_emd") {
+       pars <- list(beta = .5,
+                    optimizer = "transpose",
+                    strategy = "all")
+     }
+      
+      if(sim_transformation == "ngrams" && sim_measure != "Tversky") {
+        
+        pars <- list(transformation = ngram_transformation,
+                    ngram_length = ngram_length)
+      }
+      
+      if(sim_measure == "Minkowski") {
+        pars <- list(p = p_minkowski)
+      }
+      
+      
+      
+      tictoc::tic("Time sim measure")
+      
+      if(sim_measure == "Mahalanobis") {
+        # Can't tolerate a singular matrix, 
+        # so won't work for this test with the same melody for comparison
+        res <-
+          tibble::tibble(melody1 = beatles[[1]]$meta$name, 
+                         melody2 = beatles[[1]]$meta$name, 
+                         algorithm = sim_measure, 
+                         sim = NA) 
+      } else {
+        
+      print('sim_measure')
+      print(sim_measure)
+      print('pars')
+      print(pars)
+      sim_measure <- sim_measure_factory$new(full_name = sim_name,
+                                              name = abbreviate(sim_name),
+                                              transformation = sim_transformation,
+                                              parameters = pars,
+                                              sim_measure = sim_measure)
+      
+        res <- melsim(
+        melody1 = beatles[[1]],
+        melody2 = beatles[[1]],
+        similarity_measures = sim_measure,
+        paired = TRUE,
+        verbose = TRUE,
+        with_checks = FALSE,
+        with_progress = TRUE,
+        name = sim_name
+        )
+           res <- res$data %>% 
+        select(melody1, melody2, algorithm, sim)
+      }
+   
+      
+    finish <- tictoc::toc()
+    time_taken_seconds <- as.numeric(finish$toc - finish$tic)
+    
+    res <- res %>% 
+        mutate(error = FALSE,
+               time_taken = time_taken_seconds)
+      
+   
+    return(res)
+    
+  })
+
+
+use_data(sim_test, overwrite = TRUE)
+
+
+```
+
+
+This test could provide the basis of a proper test we use when we `build()` the package in the future.
+
+It can also serve as a basis for doing some combinatoric modelling of different similarity measures on our empirical dataset (see below).
+
+
+# Next steps
+
+I suggest the following next steps:
+
+- You both review my changes, and do any updates you feel need making.
+
+- Perhaps there should be another round of code-tidying. Whilst I factored some of Klaus' code in the first stage, I have introduced some code that should probably itself be factored.
+
+- When we get to modelling, I suggest we profile all 1,586 possible measures on the dataset, since this is somewhat tractable. First, in an initial whittling stage, we could remove many similarity measures, not necessarily be fitting them on the whole dataset, but by using a computationally inexpensive measure as an early indication that they are a bad measure. For instance, we might randomly sample 100 cases from the full dataset and then run a correlation of the similarity measure output with the real human outputs. Then we remove measures with very low correlation values and take a small number forward for more intense modelling where we start fitting on the entire dataset.
+
+In the end, we try and find a combined measure using a small but high-performing subset of constituent measures like you guys did with `opti3`, but where we don't assume linearity (unless we observe it). I suggest we use the `desirability2` package and optimise jointly for `max(test_R^2)`, `min(test_RMSE)` and `min(num_features)`.
+
+
+
+
+

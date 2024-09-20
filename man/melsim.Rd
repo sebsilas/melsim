@@ -7,7 +7,7 @@
 melsim(
   melody1,
   melody2 = NULL,
-  similarity_measures = get_sim_measures(),
+  similarity_measures = similarity_measures$opti3,
   paired = FALSE,
   verbose = TRUE,
   with_progress = TRUE,

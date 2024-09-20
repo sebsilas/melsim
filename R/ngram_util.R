@@ -15,7 +15,11 @@ add_ngrams <- function(mel_data, columns, N, override = FALSE) {
       if(!(col %in% names(mel_data))){
         return(NULL)
       }
-      ngrams <- get_all_ngrams(mel_data[[col]],
+      transform <- mel_data[[col]]
+      if(is.factor(transform)) {
+        transform <- as.character(transform)
+      }
+      ngrams <- get_all_ngrams(transform,
                                N,
                                keep_length = TRUE) %>%
         tidyr::pivot_wider(id_cols = start,
