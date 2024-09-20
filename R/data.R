@@ -35,10 +35,3 @@ NULL
 #' @name miles
 #' @docType data
 NULL
-
-
-#' combinatoric_sim_measures
-#'
-#' @name combinatoric_sim_measures
-#' @docType data
-NULL
