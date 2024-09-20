@@ -112,12 +112,12 @@ proxy_simil <- function(x, y, proxy_method = "Jaccard", na.rm = T){
 pmi <- function(q, t) {
   q_l <- length(q)
   t_l <- length(t)
-  aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
-                                           intToUtf8(t),
-                                           type = "global", # i.e., Needleman-Wunsch
-                                           gapOpening = 12,
-                                           gapExtension = 6)
-
+  # aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
+  #                                          intToUtf8(t),
+  #                                          type = "global", # i.e., Needleman-Wunsch
+  #                                          gapOpening = 12,
+  #                                          gapExtension = 6)
+  aligned <- 0
   q_aligned <- utf8ToInt(as.character(aligned@pattern))
   t_aligned <- utf8ToInt(as.character(aligned@subject))
 
