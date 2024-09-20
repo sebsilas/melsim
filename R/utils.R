@@ -62,6 +62,7 @@ safe_get <- function(obj, field){
   return(NULL)
 }
 
+#' @export
 safe_append <- function(x, y){
   common_names <- intersect(names(x), names(y))
   if(length(common_names) > 0){
@@ -77,16 +78,12 @@ expand_grid_unique <- function(x, y, include_equals = FALSE){
   tmp %>% filter(x < y)
 }
 
-pair_index <- function(x, y){
-  stopifnot(length(x) == length(y))
-  if(!is.integer(x)){
-    x <- as.integer(factor(x))
-  }
-  if(!is.integer(y)){
-    y <- as.integer(factor(y))
-  }
-  ret  <- sprintf("%s_%s", x, y)
-  ret[x > y] <- ret[x < y]
+#' @export
+pair_index <- function(s1, s2, sep = "_"){
+  stopifnot(length(s1) == length(s2))
+  ret <- vector("character", length(s1))
+  ret[s1 <= s2] <- sprintf("%s%s%s", s1[s1 <= s2], sep, s2[s1 <= s2])
+  ret[s1 > s2] <- sprintf("%s%s%s", s2[s1 > s2], sep, s1[s1 > s2])
   ret
 }
 
@@ -159,6 +156,10 @@ abs_mean <- function(x, ...) mean(abs(x), ...)
 abs_sd <- function(x, ...) sd(abs(x), ...)
 #safe_entropy <- function(x, ...) suppressWarnings(entropy::entropy(na.omit(x)))
 
+squeeze <- function(x, min_val = 0, max_val = 1){
+  pmax(pmin(x, max_val), min_val)
+}
+
 modus <- function(x){
   # Little helper to calculate modus of simple vector
   t <- table(x)
@@ -185,10 +186,18 @@ parse_linear_combination <- function(lin_comb){
     elts <- elts[2:length(elts)]
   }
   elts <- stringr::str_split_fixed(elts, "[*]", 2)
-
   if(any(!nzchar(elts)) || any(is.na(suppressWarnings(as.numeric(elts[, 1]))))){
-    logging::logerror(sprintf("Invalid linear combination: %s", lin_comb))
-    return(NULL)
+    to_fix <- which(apply(elts, 1, function(x) nzchar(x[[1]]) & !nzchar(x[[2]])))
+    for(i in to_fix){
+      elts[i, 2] <- elts[i, 1]
+      elts[i, 1] <- "1"
+    }
+    if(any(!nzchar(elts)) || any(is.na(suppressWarnings(as.numeric(elts[, 1]))))){
+      logging::logerror(sprintf("Invalid linear combination: %s", lin_comb))
+      return(NULL)
+    }
+    #logging::logwarn(sprintf("Fixed terms with no coefficient (%s)", lin_comb))
+    #return(NULL)
   }
 
   tibble(terms =  trimws(elts[, 2]),
@@ -203,4 +212,36 @@ validate_sim_measure <- function(sim_measure){
     return(FALSE)
   }
   !is.null(parse_linear_combination(sim_measure))
+}
+
+plot_dtw_alignment <- function(x, y = NULL, beta = .5){
+  if(class(x) == "dtw"){
+    d <- x
+    x <- d$query %>% as.vector()
+    y <- d$reference %>% as.vector()
+  }
+  else{
+    if(is.null(y)){
+      stop("y must have value")
+    }
+    d <- dtw::dtw(x, y, keep.internals = T)
+  }
+  plot_df <- bind_rows(tibble(x = x, type = "query"), tibble(x = y, type = "reference"))
+  plot_df2 <- tibble(x = x[d$index1], y = y[d$index2]) %>% mutate(d = x - y)
+
+  #browser()
+  q <- plot_df %>% ggplot(aes(x = x, y  = type, colour = type)) + geom_point(size = 5)
+  q <- q + geom_segment(data = plot_df2,
+                        aes(x = x, y = "query", xend = y, yend = "reference"),
+                        colour = "black",
+                        arrow = arrow(length = unit(0.30, "cm"),
+                                      ends = "last",
+                                      type = "closed"))
+  q <- q + theme_minimal()
+  q <- q + labs(x = "Time (s)", title = sprintf("DTW: dist = %.2f, norm = %.2f, d = %.2f, sim(d) = %.2f",
+                                                d$distance, d$normalizedDistance,
+                                                mean(plot_df2$d), exp(-beta * d$normalizedDistance)))
+  q <- q + theme(legend.title = element_blank())
+  q
+
 }

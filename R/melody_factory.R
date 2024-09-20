@@ -1,11 +1,13 @@
 #'@export
 melody_factory <- R6::R6Class("Melody",
+
     private = list(
       .mel_data = tibble(onset = numeric(),
                          pitch = numeric()),
       .mel_meta = list(name = "melody"),
       .mel_cache = list(),
-      .mel_features = tibble()
+      .mel_features = list(),
+      .version = packageVersion("melsim")
     ),
 
     public = list(
@@ -22,8 +24,7 @@ melody_factory <- R6::R6Class("Melody",
           mel_meta <- tmp$mel_meta %>% safe_append(mel_meta)
         }
         if(!self$validate_mel_data(mel_data)){
-          browser()
-          logging::logerror(sprintf("Not valid melody data (fname = '%s')", fname))
+          logging::logerror(sprintf("Invalid melody data (fname = '%s')", fname))
           stop()
         }
         stopifnot(is.list(mel_meta))
@@ -105,28 +106,33 @@ melody_factory <- R6::R6Class("Melody",
             int_X_ioi_class <- sprintf("(%s|%s)",
                                        c(diff(private$.mel_data$pitch), NA),
                                        classify_duration(c(diff(private$.mel_data$onset), NA)))
-            int_X_ioi_class[str_detect(int_X_ioi_class, "NA")] <- NA
+            int_X_ioi_class[stringr::str_detect(int_X_ioi_class, "NA")] <- NA
             private$.mel_data$int_X_ioi_class <- int_X_ioi_class
           }
         }
         invisible(self)
       },
+
       add_ngrams = function(columns, N, override = T){
         private$.mel_data <- add_ngrams(private$.mel_data, columns = columns, N = N, override = override)
         invisible(self)
       },
+
       has = function(col_name){
-        col_name %in% names(private$.mel_data)
+        !is.null(col_name) && col_name %in% names(private$.mel_data)
       },
+
       has_not = function(col_name){
         !(col_name %in% names(private$.mel_data))
       },
+
       remove_columns = function(col_names){
         to_keep <- union(c("onset", "pitch"), setdiff(names(private$.mel_data), col_names))
         #print(to_keep)
         private$.mel_data <- private$.mel_data[, to_keep]
         invisible(self)
       },
+
       transpose = function(col, value){
         if(is.scalar.character(col) & self$has(col)){
           tmp <- private$.mel_data
@@ -135,6 +141,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         invisible(self)
       },
+
       split_by = function(segmentation, seg_prefix = "%s"){
         if(self$has_not(segmentation)){
           return(invisible(self))
@@ -159,6 +166,7 @@ melody_factory <- R6::R6Class("Melody",
                                                                 as.integer(seg_id)))
         })
       },
+
       read = function(fname){
         ext <- file_ext(fname)
         if(ext %in% c("csv", "mcsv")){
@@ -177,6 +185,7 @@ melody_factory <- R6::R6Class("Melody",
                                name = tools::file_path_sans_ext(basename(fname))))
         }
       },
+
       read_mcsv = function(fname){
         mel_data <- read.csv(fname,
                              header = TRUE,
@@ -186,10 +195,10 @@ melody_factory <- R6::R6Class("Melody",
         mel_meta <- list(file_name =  fname, name = tools::file_path_sans_ext(basename(fname)))
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
+
       get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE){
-        #browser()
         ih_id <- sprintf("%s_%s",
-                         ifelse(is.null(segmentation), "none", segmentation),
+                         ifelse(is.null(segmentation), "global", segmentation),
                          ifelse(only_winner, "best", "full"))
         if(cache && "implicit_harmonies" %in% names(private$.mel_cache)){
           ih <- private$.mel_cache$implicit_harmonies[[ih_id]]
@@ -200,7 +209,21 @@ melody_factory <- R6::R6Class("Melody",
         if(self$has(segmentation)){
           segmentation <- private$.mel_data[[segmentation]]
         }
-        ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation, only_winner = only_winner, fast_algorithm = T)
+        else{
+          #logging::logwarn(sprintf("Requested segmentation '%s' not found, using const", segmentation))
+          segmentation <- rep(1, nrow(private$.mel_data))
+        }
+        if(self$has("ioi_class")){
+          weights <- 2^(private$.mel_data$ioi_class - 1)
+        }
+        else{
+          weights <- NULL
+        }
+        ih <- get_implicit_harmonies(private$.mel_data$pitch,
+                                     segmentation,
+                                     only_winner = only_winner,
+                                     weights = weights,
+                                     fast_algorithm = T)
         if(cache){
           if(is.null(private$.mel_cache$implicit_harmonies)){
             private$.mel_cache$implicit_harmonies <- list()
@@ -209,6 +232,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         return(ih)
       },
+
       edit_sim = function(melody, transform = "int", sim_measure = edit_sim_utf8, optimizer = NULL){
         if(transform == "implicit_harmonies"){
           ih1 <- self$get_implicit_harmonies() %>% pull(key)
@@ -252,6 +276,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         sim_measure(v1, v2)
       },
+
       ngram_similarity = function(melody,
                                   N = 3,
                                   transform = "int",
@@ -259,6 +284,7 @@ melody_factory <- R6::R6Class("Melody",
                                   modify = TRUE,
                                   parameters = NULL){
         stopifnot(N > 0, methods::is(melody, "Melody"), transform %in% names(private$.mel_data))
+        #browser()
         ngr <- sprintf("%s_ngram_%d", transform, N)
         if(self$has_not(ngr)){
           if(!modify){
@@ -313,11 +339,11 @@ melody_factory <- R6::R6Class("Melody",
           proxy_simil(ngrams1, ngrams2, method)
         }
         else{
-          browser()
           loggin::logerror("Similarity function %s not defined", method)
           retunr(NA)
         }
       },
+
       similarity = function(melody, sim_measures){
         if(!is.list(sim_measures)){
           sim_measures <- list(sim_measures)
@@ -325,9 +351,16 @@ melody_factory <- R6::R6Class("Melody",
         stopifnot(methods::is(melody, "Melody"),
                   all(sapply(sim_measures, validate_sim_measure)))
 
-        imap_dfr(sim_measures, function(sm, i){
+        purrr::imap_dfr(sim_measures, function(sm, i){
+          if(is.scalar.character(sm)){
+            sm_str <- sm
+            sm <- similarity_measures[[sm_str]]
+            if(is.null(sm)){
+              logging::logerror(sprintf("Unknown similarity measure: %s", sm_str))
+              return(NULL)
+            }
+          }
           if(sm$type == "sequence_based"){
-            #browser()
             sim <- self$edit_sim(melody,
                                  sm$transformation,
                                  sim_measure = eval(parse(text = sm$sim_measure)),
@@ -346,7 +379,7 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             else{
-              logging::logwerror(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
+              logging::logerror(sprintf("Transformation %s not implemented yet for set_based", sm$transformation))
               return(NULL)
             }
           }
@@ -368,7 +401,8 @@ melody_factory <- R6::R6Class("Melody",
             combi_sim <-
               tibble(algorithm = sm$name,
                      full_name = sm$full_name,
-                     sim = sum(single_sims$sim * single_sims$weights))
+                     sim = squeeze(sum(single_sims$sim * single_sims$weights), 0, 1))
+
             if(keep){
               ret <- single_sims %>%
                 select(-weights) %>%
@@ -378,11 +412,43 @@ melody_factory <- R6::R6Class("Melody",
               ret <- combi_sim            }
             #logging::logerror(sprintf("Linear combination failed to compute"))
             return(ret)
-          }
-          else if (sm$type == "special"){
+          } else if (sm$type == "special"){
             if(sm$sim_measure == "const"){
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = 1.0))
             }
+            if(sm$sim_measure == "sim_NCD"){
+              #browser()
+              stopifnot(methods::is(melody, "Melody"),
+                        sm$transformation %in% names(self$data),
+                        sm$transformation %in% names(melody$data))
+
+              sim <- sim_NCD(paste(na.omit(self$data[[sm$transformation]]), collapse = ""),
+                             paste(na.omit(melody$data[[sm$transformation]]), collapse = ""))
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+            if(sm$sim_measure == "sim_emd"){
+              #browser()
+              stopifnot(methods::is(melody, "Melody"))
+              if(!is.null(sm$parameters$optimizer)){
+                sim <- optim_transposer_emd(private$.mel_data,
+                                            melody$data,
+                                            beta = sm$parameters$beta, strategy = "all")
+                return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+              }
+
+              sim <- sim_emd(mel1 = private$.mel_data,
+                             mel2 = melody$data,
+                             beta = sm$parameters$beta)
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+            if(sm$sim_measure == "sim_dtw"){
+              stopifnot(methods::is(melody, "Melody"))
+              sim <- sim_dtw(private$.mel_data,
+                             melody$data,
+                             beta = sm$parameters$beta)
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+
             logging::logwarn(sprintf("Special measure: %s not implemented.", sm$sim_measure))
             return(NULL)
           }
@@ -392,15 +458,35 @@ melody_factory <- R6::R6Class("Melody",
           }
 
         })
-
       },
-      add_features = function(columns = c("pitch", "int", "fuzzy_int"),
+
+      add_difficulty_features = function(segmentation = NULL,
+                                         override = TRUE){
+        if(!is.null(segmentation) && self$has(segmentation)){
+          tmp <- private$.mel_data %>%
+            group_by(!!sym(segmentation)) %>%
+            summarise(across(int, interval_difficulty), .groups = "drop") %>%
+            unnest(int)
+        }
+        else{
+          segmentation <- "global"
+          tmp <- private$.mel_data %>%
+            summarise(across(int, interval_difficulty), .groups = "drop") %>%
+            unnest(int)
+        }
+        self$.add_features(tmp, segmentation, override, prefix = "DIFF")
+        invisible((self))
+      },
+
+      add_basic_features = function(columns = c("pitch", "int", "fuzzy_int"),
                               func_list = list(mean = mean,
                                                abs_mean = abs_mean,
                                                sd = sd,
-                                               abs_sd = abs_sd),
+                                               abs_sd = abs_sd,
+                                               entropy  = entropy_wrapper),
                               segmentation = NULL,
                               override = TRUE) {
+
         common_cols <- intersect(names(private$.mel_data), columns)
         if(!is.null(segmentation) && self$has(segmentation)){
           tmp <- private$.mel_data %>%
@@ -408,24 +494,66 @@ melody_factory <- R6::R6Class("Melody",
             summarise(across(all_of(common_cols), func_list, na.rm = TRUE), .groups = "drop")
         }
         else{
-          tmp <- private$.mel_data %>% summarise(across(all_of(common_cols), func_list, na.rm = TRUE))
+          segmentation <- "global"
+          tmp <- private$.mel_data %>%
+            summarise(across(all_of(common_cols),
+                             func_list, na.rm = TRUE), .groups = "drop")
         }
-        if(nrow(private$.mel_features) == 0){
-          private$.mel_features <- tmp
+        self$.add_features(tmp, segmentation, override, prefix = "BASE")
+        invisible((self))
+      },
+
+      add_tonal_features = function(segmentation = NULL, override = T){
+        if(is.null(segmentation)){
+          segmentation <- "global"
+        }
+        ih_id <- sprintf("%s_full", segmentation)
+        ih <- NULL
+        if("implicit_harmonies" %in% names(private$.mel_cache)){
+          ih <- private$.mel_cache$implicit_harmonies[[ih_id]]
+        }
+        if(is.null(ih)){
+          ih <- self$get_implicit_harmonies(segmentation = segmentation,
+                                            cache = T,
+                                            only_winner = F)
+        }
+        tf <- get_tonal_features(ih) %>%
+        if(segmentation != "global")  tf <- tf %>% rename(!!segmentation := segment)
+        self$.add_features(tf, segmentation, override, prefix ="TON")
+
+      },
+      .add_features  = function(features, segmentation = NULL, override = T, prefix = ""){
+        if(is.null(segmentation)){
+          segmentation <- "global"
+        }
+        if(nzchar(prefix)){
+          features <- features %>% set_names(sprintf("%s.%s", prefix, names(.)))
+        }
+        if(is.null(private$.mel_features[[segmentation]]) ||
+           nrow(private$.mel_features[[segmentation]]) == 0){
+          private$.mel_features[[segmentation]] <- features
         }
         else {
           if(override){
-            feature_cols <- names(tmp)
+            feature_cols <- names(features)
+            del_cols <- intersect(names(private$.mel_features[[segmentation]]), feature_cols)
+            if(length(del_cols) > 0){
+              private$.mel_features[[segmentation]] <-
+                private$.mel_features[[segmentation]] %>%
+                select(-all_of(del_cols))
+            }
           }
           else{
-            feature_cols <- setdiff(names(tmp), names(private$.mel_features))
+            feature_cols <- setdiff(names(features), names(private$.mel_features[[segmentation]]))
           }
           if(length(feature_cols) > 0) {
-            private$.mel_features <- bind_cols(private$.mel_features, tmp[,feature_cols])
+            private$.mel_features[[segmentation]] <- bind_cols(private$.mel_features[[segmentation]],
+                                               features[,feature_cols])
           }
         }
         invisible((self))
       },
+
       plot = function(){
         if(self$length == 0 ){
           stop("No melody data to plot")
@@ -450,32 +578,57 @@ melody_factory <- R6::R6Class("Melody",
           private$.mel_data <- value
         }
       },
+
+      cache = function(value){
+        if(missing(value)){
+          private$.mel_cache
+        } else{
+          if(is.list(value)){
+            private$.mel_cache <- value
+          }
+        }
+      },
+
       meta = function(value){
         if(missing(value)){
           private$.mel_meta
         } else{
-          if(is.list(meta)){
+          if(is.list(value)){
             private$.mel_data <- value
           }
         }
       },
+
       features = function(value){
         if(missing(value)){
           private$.mel_features
         } else{
-          if(is.list(meta)){
+          if(is.list(value)){
             private$.mel_features <- value
           }
         }
       },
+
       length =  function(){
         nrow(private$.mel_data)
       },
+
       pitch = function(){
         private$.mel_data$pitch
       },
+
       onset = function(){
         private$.mel_data$onset
+      },
+
+      version = function(value){
+        if(missing(value)){
+          private$.version
+        } else{
+          if(is.scalar.character(value)){
+            private$.version <- value
+          }
+        }
       }
     )
 )

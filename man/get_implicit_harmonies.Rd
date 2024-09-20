@@ -7,6 +7,7 @@
 get_implicit_harmonies(
   pitch_vec,
   segmentation = NULL,
+  weights = NULL,
   only_winner = TRUE,
   fast_algorithm = TRUE
 )

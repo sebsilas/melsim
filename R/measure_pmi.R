@@ -10,19 +10,28 @@
 #' @export
 #'
 #' @examples
-pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExentsion = 6) {
+pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExension = 6) {
 
   # They use a gap opening penalty of 12 and a gap extension penalty of 6 as parameters.
 
   pmi <- function(q, t) {
     q_l <- length(q)
     t_l <- length(t)
+<<<<<<< HEAD
     # aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
     #                                          intToUtf8(t),
     #                                          type = "global", # i.e., Needleman-Wunsch
     #                                          gapOpening = gapOpening,
     #                                          gapExtension = gapExentsion)
     aligned <- 0
+=======
+    aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
+                                             intToUtf8(t),
+                                             type = "global", # i.e., Needleman-Wunsch
+                                             gapOpening = gapOpening,
+                                             gapExtension = gapExension)
+
+>>>>>>> 6439289b3aff2e937ffc2abddd9ccd05d9ac4bc7
     q_aligned <- utf8ToInt(as.character(aligned@pattern))
     t_aligned <- utf8ToInt(as.character(aligned@subject))
 

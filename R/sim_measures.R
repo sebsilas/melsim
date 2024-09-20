@@ -19,7 +19,19 @@ sim_measures <- c("edit_sim_utf8", "edit_sim",
                   "Fager", "Russel", "Hamman", "Faith",
                   "Tanimoto", "Dice", "Phi", "Stiles", "Michael",
                   "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
-                  "Braun-Blanquet", "Tversky", "pmi", "const")
+                  "Braun-Blanquet", "Tversky", "pmi", "const",
+                  "sim_NCD", "sim_emd")
+#' @export
+get_sim_measures <- function(){
+  #sapply(melsim::similarity_measures, function(x) x$name) %>% as.character()
+  names(similarity_measures)
+}
+
+#'@export
+is_sim_measure <- function(names){
+  names %in% get_sim_measures()
+}
+
 #'@export
 sim_measure_factory <- R6::R6Class(
   "SimilarityMeasure",
@@ -111,7 +123,6 @@ sim_measure_factory <- R6::R6Class(
       self$as_list()
       l <- list(l)
       names(l) <- name
-      browser()
       yaml::write_yaml(l, fname)
     },
     print = function(){
