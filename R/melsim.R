@@ -24,12 +24,16 @@ melsim <- function(melody1,
 
   # For now, only allow an actual sim measure to be passed.
   # Add support for character vectors later
+  if(!is.list(similarity_measures)) {
+    similarity_measures <- list(similarity_measures)
+  }
+  if(any(!sapply(similarity_measures, is_sim_measure))){
+    logging::logerror(sprintf("Received non-similarity measure"))
+    browser()
+    stop()
+  }
 
-  stopifnot(
-    is_sim_measure(similarity_measures)
-  )
-
-  assertthat::assert_that(paired && !is.null(melody2), msg = "If paired is TRUE, melody2 must be non-NULL.")
+  if(paired) assertthat::assert_that(!is.null(melody2), msg = "If paired is TRUE, melody2 must be non-NULL.")
 
   # Instantiate melodies
 
@@ -51,10 +55,6 @@ melsim <- function(melody1,
   if(!is.list(melody2)){
     melody2 <- list(melody2)
   }
-  if(!is.list(similarity_measures)) {
-    similarity_measures <- list(similarity_measures)
-  }
-
   # Apply similarity algorithm(s)
   ret <-
     map_dfr(similarity_measures, function(sim_algo) {
@@ -68,7 +68,6 @@ melsim <- function(melody1,
 
       purrr::imap_dfr(unname(melody1), function(m1, i) {
         # Note that if melody1 is named, i will be a name, but we want an index, hence the unname()
-
         if(with_progress) cli::cli_progress_update(.envir = globalenv())
 
         if(!("name" %in% names(m1$meta))) {
@@ -77,6 +76,7 @@ melsim <- function(melody1,
 
         purrr::imap_dfr(unname(melody2), function(m2, j) {
           # Note that if melody2 is named, j will be a name, but we want an index, hence the unname()
+          #browser()
           if(paired && i != j) {
             return(NULL)
           }
@@ -84,8 +84,8 @@ melsim <- function(melody1,
             m2$add_meta("name", sprintf("SET2MEL%04d", j))
           }
 
-          if(self_sim) {
-            return(handle_self_sim(i, j, sim_algo))
+          if(self_sim && j<= i) {
+            return(handle_self_sim(m1, m2, i, j, sim_algo))
           }
 
           if(is_sim_measure(sim_algo)) {
@@ -100,7 +100,7 @@ melsim <- function(melody1,
       })
 
     })
-
+  #browser()
   ret <- ret %>%
     arrange(algorithm, melody1, melody2)
 
@@ -157,7 +157,7 @@ give_progress <- function(with_progress, paired, melody1, melody2) {
   }
 }
 
-handle_self_sim <- function(i, j, sim_algo) {
+handle_self_sim <- function(m1, m2, i, j, sim_algo) {
   if(i == j) {
     #if sim_algo is a linear combination and we keep single we have to add all of them
     terms <- sim_algo$name
@@ -167,10 +167,8 @@ handle_self_sim <- function(i, j, sim_algo) {
     ret <- map_dfr(terms, function(t) {
       tibble(melody1 = m1$meta$name,
              melody2 = m2$meta$name,
-             algorithm = sim_algo[[t]]$name,
-             full_name = sim_algo[[t]]$full_name,
-             algorithm = sim_algo$name,
-             full_name = sim_algo$full_name,
+             algorithm = melsim::similarity_measures[[t]]$name,
+             full_name = melsim::similarity_measures[[t]]$full_name,
              sim = 1.0)
     })
     return(ret)

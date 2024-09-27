@@ -62,9 +62,17 @@ optim_slide_shorter_melody <- function(query,
                                        sim_measure = edit_sim_utf8,
                                        pars = NULL,
                                        ...) {
-
+  vec_type <- class(query)
+  query <- na.omit(query)
+  target <- na.omit(target)
+  if(vec_type == "factor"){
+    query <- as.character(query)
+    target <- as.character(target)
+    vec_type <- "character"
+  }
   query_length <- length(query)
   target_length <- length(target)
+  #browser()
 
   if(query_length == target_length) {
     return(sim_measure(query, target))
@@ -75,11 +83,10 @@ optim_slide_shorter_melody <- function(query,
     shorter_melody <- target
     longer_melody_ngrams <- get_all_ngrams(query, N = target_length)
   }
-
-
+  logging::loginfo(sprintf("Sliding on..."))
   purrr::pmap_dfr(longer_melody_ngrams, function(start, N, value) {
-    ngram <- itembankr::str_mel_to_vector(value)
-    tibble(ngram = ngram,
+    ngram <- value_to_vec(value, type = vec_type, collapse = ",")
+    tibble(ngram_pos = start,
            sim = sim_measure(ngram, shorter_melody))
   }) %>%
     slice_max(sim) %>%

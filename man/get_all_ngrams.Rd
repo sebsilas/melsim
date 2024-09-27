@@ -9,7 +9,7 @@ get_all_ngrams(x, N = 3, collapse = ",", keep_length = FALSE)
 \arguments{
 \item{x}{Arbitraty Vector}
 
-\item{N}{(set of positve integers) N.gram lengths}
+\item{N}{(set of positive integers) N.gram lengths}
 
 \item{collapse}{(string) Glue string for ngrams string representation}
 

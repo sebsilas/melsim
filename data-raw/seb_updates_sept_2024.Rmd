@@ -276,9 +276,9 @@ similarity_grid_ngram <- expand_grid(sim_transformation = "ngrams",
                                                               c("none", "ngrams"))) %>% 
    rowwise() %>% 
   mutate(
-    transposition_invariant = is_transposition_invariant(sim_transformation),
-    tempo_invariant = is_tempo_invariant(sim_transformation),
-    sim_type = get_sim_type(sim_measure),
+    transposition_invariant = melsim:::is_transposition_invariant(sim_transformation),
+    tempo_invariant = melsim:::is_tempo_invariant(sim_transformation),
+    sim_type = melsim:::get_sim_type(sim_measure),
     sim_name = paste0(
       paste0(c(sim_transformation,
                sim_measure), collapse = "-"),
@@ -302,9 +302,9 @@ similarity_grid_minkowski <- expand_grid(sim_transformation = setdiff(sim_transf
    rowwise() %>% 
   mutate(
     sim_measure = "Minkowski",
-    transposition_invariant = is_transposition_invariant(sim_transformation),
-    tempo_invariant = is_tempo_invariant(sim_transformation),
-    sim_type = get_sim_type(sim_measure),
+    transposition_invariant = melsim:::is_transposition_invariant(sim_transformation),
+    tempo_invariant = melsim:::is_tempo_invariant(sim_transformation),
+    sim_type = melsim:::get_sim_type(sim_measure),
     sim_name = paste0(
       paste0(c(sim_transformation,
                sim_measure), collapse = "-"),
@@ -329,9 +329,9 @@ similarity_grid_pmi <- expand_grid(sim_transformation = "pitch",
    rowwise() %>% 
   mutate(
     sim_measure = "pmi",
-    transposition_invariant = is_transposition_invariant(sim_transformation, if(transpose_optimizer) "transpose" else NULL),
-    tempo_invariant = is_tempo_invariant(sim_transformation),
-    sim_type = get_sim_type(sim_measure),
+    transposition_invariant = melsim:::is_transposition_invariant(sim_transformation, if(transpose_optimizer) "transpose" else NULL),
+    tempo_invariant = melsim:::is_tempo_invariant(sim_transformation),
+    sim_type = melsim:::get_sim_type(sim_measure),
     sim_name = paste0(
       paste0(c(sim_transformation,
                sim_measure), collapse = "-"),
@@ -354,7 +354,7 @@ similarity_grid <- rbind(similarity_grid_base,
                          similarity_grid_minkowski,
                          similarity_grid_pmi)
 
-use_data(similarity_grid, overwrite = TRUE)
+usethis::use_data(similarity_grid, overwrite = TRUE)
 
 
 rm(similarity_grid_base,
@@ -372,7 +372,7 @@ rm(similarity_grid_base,
 
 ```{r results = FALSE}
 
-
+library(melsim)
 sim_test <- similarity_grid %>% 
   mutate(id = row_number() ) %>% 
   pmap_dfr(function(sim_transformation, 
@@ -393,7 +393,7 @@ sim_test <- similarity_grid %>%
     
     
      pars <- list()
-     
+         
      if(sim_measure == "pmi" && !is.na(transpose_optimizer)) {
        if(transpose_optimizer) {
         pars <- list(optimizer = "transpose")
@@ -478,7 +478,7 @@ sim_test <- similarity_grid %>%
   })
 
 
-use_data(sim_test, overwrite = TRUE)
+usethis::use_data(sim_test, overwrite = TRUE)
 
 
 ```

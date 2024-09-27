@@ -62,6 +62,14 @@ safe_get <- function(obj, field) {
   return(NULL)
 }
 
+remove_cols <- function(data, cols){
+  to_remove <- intersect(names(data), cols)
+  if(length(to_remove) > 0){
+    return(data %>% select(!all_of(to_remove)))
+  }
+  data
+}
+
 #' @export
 safe_append <- function(x, y) {
   common_names <- intersect(names(x), names(y))
@@ -89,7 +97,7 @@ pair_index <- function(s1, s2, sep = "_") {
 
 #' @export
 value_to_vec <- function(value_str,
-                         type = c("integer", "character", "double"),
+                         type = c("integer", "character", "numeric", "string"),
                          collapse = "",
                          simplify = T){
   type <- match.arg(type)
@@ -100,16 +108,23 @@ value_to_vec <- function(value_str,
     }
     return(ret)
   }
-  else if(type == "double"){
+  else if(type == "numeric"){
     ret <- stringr::str_extract_all(value_str, "[+-]?[0-9\\.]+") %>% lapply(as.numeric)
     if(length(value_str) == 1 && simplify){
       ret <- ret[[1]]
     }
     return(ret)
   }
-  else{
+  else if(type == "string"){
     return(stringr::str_remove_all(value_str, "[\\[\\]\\{\\}\\(\\)]") %>% str_replace_all("[,]+", collapse))
 
+  }
+  else{
+    ret <- stringr::str_remove_all(value_str, "[\\[\\]\\{\\}\\(\\)]") %>% str_split(collapse)
+    if(length(value_str) == 1 && simplify){
+      ret <- ret[[1]]
+    }
+    return(ret)
   }
 }
 
@@ -255,7 +270,7 @@ plot_dtw_alignment <- function(x, y = NULL, beta = .5) {
 rescale_vectors <- function(x, y, rescale_independently = TRUE) {
   # Min-max rescaling function for a single vector
   rescale <- function(vec) {
-    (vec - min(vec)) / (max(vec) - min(vec))
+    (vec - min(vec, na.rm = T)) / (max(vec, na.rm = T) - min(vec, na.rm = T))
   }
 
   if (rescale_independently) {
@@ -264,8 +279,8 @@ rescale_vectors <- function(x, y, rescale_independently = TRUE) {
     y_rescaled <- rescale(y)
   } else {
     # Rescale x and y dependently (using the combined min and max)
-    combined_min <- min(c(x, y))
-    combined_max <- max(c(x, y))
+    combined_min <- min(c(x, y), na.rm = T)
+    combined_max <- max(c(x, y), na.rm = T)
 
     x_rescaled <- (x - combined_min) / (combined_max - combined_min)
     y_rescaled <- (y - combined_min) / (combined_max - combined_min)
@@ -324,6 +339,6 @@ is_transposition_invariant <- function(transform, optimizer = NULL) {
 is_tempo_invariant <- function(transform) {
   invariance_table %>%
     filter(transformation == !! transform) %>%
-    pull(is_transposition_invariant)
+    pull(is_tempo_invariant)
 }
 

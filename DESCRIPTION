@@ -1,7 +1,7 @@
 Package: melsim
 Type: Package
 Title: Calculating melodic similarities
-Version: 0.6.0
+Version: 0.7.0
 Author: Sebastian Silas, Klaus Frieler
 Maintainer: Klaus Frieler <klaus.frieler@ae.mpg.de>
 Description: Framework for calculatin tons of melodic similarities.
@@ -28,6 +28,7 @@ Imports:
     emdist,
     dtw,
     assertthat,
+    ggplot2,
     cba
 RoxygenNote: 7.3.1
 URL: https://github.com/sebsilas/melsim

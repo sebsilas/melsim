@@ -11,7 +11,7 @@ get_sim_type <- function(sim_measure) {
   } else if(sim_measure %in% special_measures) {
     return("special")
   } else {
-    stop("sim_measure type not recogised.")
+    stop(sprintf("sim_measure: <%s>  not recognised.", as.character(sim_measure)))
   }
 }
 
@@ -37,10 +37,11 @@ sim_measure_factory <- R6::R6Class(
                           parameters = list(),
                           sim_measure = "",
                           type = get_sim_type(sim_measure),
-                          transposition_invariant = if(transformation == "ngrams") is_tempo_invariant(parameters$transform) else is_tempo_invariant(transformation),
-                          tempo_invariant = if(transformation == "ngrams") is_transposition_invariant(parameters$transform, parameters$optimizer) else is_tempo_invariant(transformation),
+                          transposition_invariant = F,#if(transformation == "ngrams") melsim:::is_tempo_invariant(parameters$transform) else melsim:::is_tempo_invariant(transformation),
+                          tempo_invariant = F,#if(transformation == "ngrams") melsim:::is_tempo_invariant(parameters$transform, parameters$optimizer) else melsim:::is_tempo_invariant(transformation),
                           cache = TRUE
     ) {
+      #print(name)
       stopifnot(purrr::is_scalar_character(name),
                 purrr::is_scalar_character(full_name),
                 purrr::is_scalar_character(type),
@@ -120,7 +121,6 @@ sim_measure_factory <- R6::R6Class(
       logging::loginfo("Transposition: %s", self$transposition_invariant)
       logging::loginfo("Cache: %s", self$cache)
       logging::loginfo("Tranformation: %s", self$transformation)
-      logging::loginfo("Tranformation: %s", self$transformation)
       logging::loginfo("Parameters:")
       logging::loginfo("%s: %s", names(self$parameters), self$parameters)
       invisible(self)
@@ -154,10 +154,19 @@ set_based_measures <- c(
   # from melsim:
   "ukkon", "sum_common", "count_distinct", "dist_sim", "Tversky",
   # from proxy:
-  "Jaccard", "Kulczynski1", "Kulczynski2", "Mountford", "Fager", "Russel",
-  "simple matching", "Hamman", "Faith", "Tanimoto", "Dice", "Phi", "Stiles",
-  "Michael", "Mozley", "Yule", "Yule2", "Ochiai", "Simpson",
-  "Braun-Blanquet", "eJaccard", "eDice", "fJaccard"
+  "Jaccard", "Kulczynski1", "Kulczynski2", "Mountford",  "Russel", #"Fager",
+  "simple matching",
+  #"Hamman",
+  "Faith", "Tanimoto", "Dice",
+  #"Phi", -1 to 1
+  #"Stiles", > 1
+  #"Michael",-1 to 1
+  "Mozley",
+  #"Yule",-1 to 1
+  #"Yule2",-1 to 1
+  "Ochiai",
+  "Simpson",
+  "Braun-Blanquet"
   )
 
 
@@ -165,12 +174,12 @@ vector_measures <- c(
   "cosine", "angular", "correlation", "Chi-squared", "Phi-squared", "Tschuprow",
    "Cramer", "Pearson", "Gower", "Euclidean", "Mahalanobis", "Bhjattacharyya",
    "Manhattan", "supremum", "Minkowski", "Canberra", "Chord", "Hellinger", "Geodesic",
-  "Bray",   "Soergel", "Podani", "Whittaker"
+  "Bray",   "Soergel", "Podani", "Whittaker", "eJaccard", "eDice", "fJaccard", "Wave", "divergence", "Kullback" # from proxy
   )
 
 sequence_based_measures <- c(
   "edit_sim_utf8", "edit_sim", # from melsim
-  "Levenshtein", "Wave", "divergence", "Kullback" # from proxy
+  "Levenshtein"
   )
 
 special_measures <- c(

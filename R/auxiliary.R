@@ -221,12 +221,14 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
     return(res)
 
   } else if(proxy_type == "binary") {
-
     xy <- union(x, y)
     input <- rbind(xy %in%  x, xy %in%  y)
 
   } else if(proxy_type %in% c("metric", "nominal", "mixed")) {
-
+    if(length(x) != length(y)){
+      browser()
+      logging::logwarn(sprintf("Length of vectors not identicial for proxy method: %s", proxy_method))
+    }
     input <- rbind(x, y)
 
   } else {
@@ -239,7 +241,9 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
   } else {
     res <- proxy::simil(input, method = proxy_method, ...)
   }
-
+  if(res < 0 || res > 1){
+    browser()
+  }
   res %>%
     as.numeric()
 
@@ -285,7 +289,7 @@ update_melodies <- function(mel_list, force = TRUE){
   current_version <- melody_factory$new()$version
   map(mel_list, function(x){
     if(force || is.null(x$version) || x$version != current_version){
-      melody_factory$new(mel_data = x$data, mel_meta = x$meta, override = TRUE)
+      melody_factory$new(mel_data = x$data, mel_meta = x$meta, override = FALSE)
     }
     else{
       x

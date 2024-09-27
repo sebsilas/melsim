@@ -30,8 +30,11 @@ melody_factory <- R6::R6Class("Melody",
         stopifnot(is.list(mel_meta))
         private$.mel_data <- mel_data
         private$.mel_meta <- mel_meta
-        self$add_transforms(transforms = sim_transformations,
-                           override = override)
+        if(nrow(mel_data) > 0){
+          self$add_transforms(transforms = sim_transformations,
+                              override = override)
+
+        }
       },
 
       validate_mel_data = function(mel_data) {
@@ -115,10 +118,10 @@ melody_factory <- R6::R6Class("Melody",
         if(transform_check("phrase_segmentation")) {
           phrase_segmentation <- private$.mel_data %>%
             itembankr::segment_phrase(as_string_df = FALSE) %>%
-            select(phrasbeg, phrasend)
-
-          private$.mel_data <- cbind(private$.mel_data, phrase_segmentation) %>%
+            select(phrasbeg, phrasend) %>%
             mutate(phrase_segmentation = cumsum(phrasbeg))
+          private$.mel_data <- private$.mel_data %>% remove_cols(names(phrase_segmentation))
+          private$.mel_data <- bind_cols(private$.mel_data, phrase_segmentation)
         }
 
         if(transform_check("implicit_harmonies")) {
@@ -130,7 +133,7 @@ melody_factory <- R6::R6Class("Melody",
             private$.mel_data <- private$.mel_data %>%
               left_join(ih, by = setNames("segment", as.character(segmentation_name)) ) %>%
               rename(implicit_harmonies = key) %>%
-              mutate(implicit_harmonies = as.factor(implicit_harmonies))
+              mutate(implicit_harmonies = implicit_harmonies)
           } else {
             segmentation <- private$.mel_data$phrase_segmentation
             ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation = segmentation) %>%
@@ -138,7 +141,7 @@ melody_factory <- R6::R6Class("Melody",
             private$.mel_data <- private$.mel_data %>%
               left_join(ih, by = c("phrase_segmentation" = "segment")) %>%
               rename(implicit_harmonies = key) %>%
-              mutate(implicit_harmonies = as.factor(implicit_harmonies))
+              mutate(implicit_harmonies = implicit_harmonies)
           }
         }
 
@@ -403,26 +406,30 @@ melody_factory <- R6::R6Class("Melody",
 
               sim <- proxy_pkg_handler(self$data[[sm$transformation]], melody$data[[sm$transformation]], proxy_method = sm$sim_measure)
 
-              return(tibble(algorithm = sm$full_name, full_name = sm$full_name, sim = sim))
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
 
             }
           } else if(sm$type == "vector_based") {
 
             if(sm$sim_measure == "Minkowski") {
-              sim_measure_prepped <- function(x, y) {
-                proxy_pkg_handler(x, y, proxy_method = sm$sim_measure, p = sm$parameters$p)
+              sim_measure_prepped <- function(){
+                function(x, y) {
+                  proxy_pkg_handler(x, y, proxy_method = sm$sim_measure, p = sm$parameters$p)
+                }
               }
             } else {
-              sim_measure_prepped <- function(x, y) {
-                proxy_pkg_handler(x, y, proxy_method = sm$sim_measure)
+              sim_measure_prepped <- function(){
+                function(x, y) {
+                  proxy_pkg_handler(x, y, proxy_method = sm$sim_measure)
+                }
               }
             }
 
             # For vector-based, we have a default optimizer, which allows the melodies to be of unequal length
-
+            #browser()
             sim <- optim_slide_shorter_melody(query = self$data[[sm$transformation]],
                                               target = melody$data[[sm$transformation]],
-                                              sim_measure = sim_measure_prepped)
+                                              sim_measure = sim_measure_prepped())
 
 
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
@@ -612,9 +619,9 @@ melody_factory <- R6::R6Class("Melody",
           stop("No melody data to plot")
         }
 
-        q <- private$.mel_data %>% ggplot2::ggplot(aes(x = onset, y = pitch))
-        q <- q + ggplot2::geom_segment(aes(xend = onset + ioi, yend = pitch))
-        q <- q + ggplot2::theme_bw()
+        q <- private$.mel_data %>% ggplot(aes(x = onset, y = pitch))
+        q <- q + geom_segment(aes(xend = onset + ioi, yend = pitch))
+        q <- q + theme_bw()
         q
       }
     ),

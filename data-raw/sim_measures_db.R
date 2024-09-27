@@ -204,19 +204,19 @@ similarity_measures <- list(
                                   transformation = "none",
                                   parameters = list(beta = .5,
                                                     optimizer = "transpose"),
-                                  sim_measure = "sim_emd"#,
-                                  # transposition_invariant = TRUE,
-                                  # tempo_invariant = FALSE
+                                  sim_measure = "sim_emd",
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = FALSE
                                   ),
 
   melsim::sim_measure_factory$new(full_name = "dtw_normed_dist",
                                   name = "dtw",
                                   #type = "special",
                                   transformation = "none",
-                                  parameters = list(beta = 0)#,
-                                  # sim_measure = "sim_dtw",
-                                  # transposition_invariant = TRUE,
-                                  # tempo_invariant = FALSE
+                                  parameters = list(beta = 0),
+                                  sim_measure = "sim_dtw",
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = FALSE
                                   ),
 
   melsim::sim_measure_factory$new(full_name = "const",
@@ -224,10 +224,20 @@ similarity_measures <- list(
                                   #type = "special",
                                   transformation = "none",
                                   parameters = list(),
-                                  sim_measure = "const"#,
-                                  #transposition_invariant = TRUE,
-                                  #tempo_invariant = TRUE
-                                  )
+                                  sim_measure = "const",
+                                  transposition_invariant = TRUE,
+                                  tempo_invariant = TRUE
+                                  ),
+  melsim::sim_measure_factory$new(full_name = "Proxy::Tanimoto Pitch",
+                                  name = "tanimoto",
+                                  #type = "special",
+                                  transformation = "pitch",
+                                  parameters = list(),
+                                  sim_measure = "Tanimoto",
+                                  transposition_invariant = FALSE,
+                                  tempo_invariant = TRUE
+  )
+
   )
 
 # Add names
