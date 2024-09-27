@@ -15,7 +15,11 @@ add_ngrams <- function(mel_data, columns, N, override = FALSE) {
       if(!(col %in% names(mel_data))){
         return(NULL)
       }
-      ngrams <- get_all_ngrams(mel_data[[col]],
+      transform <- mel_data[[col]]
+      if(is.factor(transform)) {
+        transform <- as.character(transform)
+      }
+      ngrams <- get_all_ngrams(transform,
                                N,
                                keep_length = TRUE) %>%
         tidyr::pivot_wider(id_cols = start,
@@ -38,7 +42,7 @@ add_ngrams <- function(mel_data, columns, N, override = FALSE) {
 #' Get all ngrams from a given vector
 #'
 #' @param x Arbitraty Vector
-#' @param N (set of positve integers) N.gram lengths
+#' @param N (set of positive integers) N.gram lengths
 #' @param collapse (string) Glue string for ngrams string representation
 #' @param keep_length (logical) Shall the length of the original vector be kept by including NA at the end?
 #' @return Data frame of ngrams with N columns
@@ -46,7 +50,7 @@ add_ngrams <- function(mel_data, columns, N, override = FALSE) {
 #'
 #' @examples
 get_all_ngrams <- function(x, N = 3, collapse = ",", keep_length = FALSE){
-  stopifnot(is.vector(x) & !is.list(x))
+  stopifnot(is.vector(x) & !is.list(x) & length(x) > 0)
   ret <-
     map_dfr(N, function(n){
     if(keep_length){

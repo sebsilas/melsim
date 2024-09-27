@@ -28,7 +28,7 @@ pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExension
 
     sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
   }
-  pmi_edit_sim <- function(q, t){
+  pmi_edit_sim <- function(q, t) {
     edit_sim(intToUtf8(q),
              intToUtf8(t))
   }

@@ -1,3 +1,4 @@
+
 ngrukkon:
   full_name: ngram-int-3-ukkon
   type: set_based
@@ -29,7 +30,7 @@ opti2:
   sim_measure: "0.6 *  ngrukkon + 0.4  * rhytfuzz"
   transposition_invariant: true
   tempo_invariant: true
-  
+
 opti3:
   full_name: opti3
   type:  linear_combination

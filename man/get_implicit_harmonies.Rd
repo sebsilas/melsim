@@ -2,7 +2,7 @@
 % Please edit documentation in R/auxiliary.R
 \name{get_implicit_harmonies}
 \alias{get_implicit_harmonies}
-\title{get harmonies via the Krumhansl-Schmuckler algorithm}
+\title{Get harmonies via the Krumhansl-Schmuckler algorithm}
 \usage{
 get_implicit_harmonies(
   pitch_vec,
@@ -22,5 +22,5 @@ get_implicit_harmonies(
 \item{fast_algorithm}{(logical) Use, fast matrix-base algorithm}
 }
 \description{
-get harmonies via the Krumhansl-Schmuckler algorithm
+Get harmonies via the Krumhansl-Schmuckler algorithm
 }

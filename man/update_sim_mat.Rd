@@ -5,7 +5,7 @@
 \title{update_sim_mat
 Updates a SimilarityMatrix object}
 \usage{
-update_sim_mat(sim_mat, force = T)
+update_sim_mat(sim_mat, force = TRUE)
 }
 \arguments{
 \item{sim_mat}{SimilarityMatrix object}

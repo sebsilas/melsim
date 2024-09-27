@@ -1,2 +1,3 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^data/combinatoric_sim_measures\.rda$
