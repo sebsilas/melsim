@@ -188,7 +188,7 @@ special_measures <- c(
   )
 
 
-low_level_sim_measures <- c(set_based_measures, vector_measures, sequence_based_measures, special_measures)
+low_level_sim_measures <- c(set_based_measures, vector_measures, sequence_based_measures)
 
 
 proxy_pkg_types <- c("binary", "metric", "nominal", "other")

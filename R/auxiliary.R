@@ -274,7 +274,9 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
     res <- proxy::simil(input, method = proxy_method, ...)
   }
   if(res < 0 || res > 1){
-    browser()
+    #browser()
+    logging::logwarn(sprintf("Similarity measure out of bounds: sim = %3f. Squeezing.", res))
+    res <- squeeze(res)
   }
   res %>%
     as.numeric()

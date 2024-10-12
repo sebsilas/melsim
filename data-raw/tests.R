@@ -47,14 +47,19 @@ sim_grids <- function(){
                                 "pmi")
 
 
-  similarity_grid_base <- expand_grid(sim_transformation = setdiff(sim_transformations,
-                                                                   c("ngrams", "none")),
-                                      sim_measure = setdiff(low_level_sim_measures,
-                                                            measures_with_extra_pars))   %>%
+  similarity_grid_base <-
+    expand_grid(
+      sim_transformation = setdiff(sim_transformations,
+                                   c("ngrams", "none")),
+      sim_measure = setdiff(low_level_sim_measures,
+                            measures_with_extra_pars)
+    )   %>%
     rowwise() %>%
     mutate(
-      transposition_invariant = F,#is_transposition_invariant(sim_transformation),
-      tempo_invariant = F,#melsim:::is_tempo_invariant(sim_transformation),
+      transposition_invariant = F,
+      #is_transposition_invariant(sim_transformation),
+      tempo_invariant = F,
+      #melsim:::is_tempo_invariant(sim_transformation),
       sim_type = melsim:::get_sim_type(sim_measure),
       ngram_transformation = NA,
       ngram_length = NA,
@@ -63,15 +68,21 @@ sim_grids <- function(){
       sim_name = paste0(
         paste0(c(sim_transformation,
                  sim_measure), collapse = "-"),
-        "_transposition_invariant=", transposition_invariant,
-        "_tempo_invariant=", tempo_invariant)
+        "_transposition_invariant=",
+        transposition_invariant,
+        "_tempo_invariant=",
+        tempo_invariant
+      )
     ) %>%
     ungroup()
-  similarity_grid_ngram <- expand_grid(sim_transformation = "ngrams",
-                                       sim_measure = set_based_measures,
-                                       ngram_length = 1:3,
-                                       ngram_transformation = setdiff(sim_transformations,
-                                                                      c("none", "ngrams"))) %>%
+
+  similarity_grid_ngram <- expand_grid(
+    sim_transformation = "ngrams",
+    sim_measure = set_based_measures,
+    ngram_length = 1:3,
+    ngram_transformation = setdiff(sim_transformations,
+                                   c("none", "ngrams"))
+  ) %>%
     rowwise() %>%
     mutate(
       transposition_invariant = melsim:::is_transposition_invariant(sim_transformation),
@@ -80,19 +91,34 @@ sim_grids <- function(){
       sim_name = paste0(
         paste0(c(sim_transformation,
                  sim_measure), collapse = "-"),
-        "_ngram_transformation=", ngram_transformation,
-        "_ngram_length=", ngram_length),
+        "_ngram_transformation=",
+        ngram_transformation,
+        "_ngram_length=",
+        ngram_length
+      ),
       p_minkowski = NA,
       transpose_optimizer = NA,
     ) %>%
     ungroup() %>%
-    relocate(sim_transformation, sim_measure, transposition_invariant,
-             tempo_invariant, sim_type, ngram_transformation, ngram_length, p_minkowski, transpose_optimizer, sim_name)
+    relocate(
+      sim_transformation,
+      sim_measure,
+      transposition_invariant,
+      tempo_invariant,
+      sim_type,
+      ngram_transformation,
+      ngram_length,
+      p_minkowski,
+      transpose_optimizer,
+      sim_name
+    )
 
-
-  similarity_grid_minkowski <- expand_grid(sim_transformation = setdiff(sim_transformations,
-                                                                        c("ngrams", "none")),
-                                           p_minkowski = c(0.5, 1, 2, 3, Inf)) %>%
+  similarity_grid_minkowski <-
+    expand_grid(
+      sim_transformation = setdiff(sim_transformations,
+                                   c("ngrams", "none")),
+      p_minkowski = c(0.5, 1, 2, 3, Inf)
+    ) %>%
     rowwise() %>%
     mutate(
       sim_measure = "Minkowski",
@@ -100,16 +126,25 @@ sim_grids <- function(){
       tempo_invariant = melsim:::is_tempo_invariant(sim_transformation),
       sim_type = melsim:::get_sim_type(sim_measure),
       sim_name = paste0(
-        paste0(c(sim_transformation,
-                 sim_measure), collapse = "-"),
+        paste0(c(sim_transformation, sim_measure), collapse = "-"),
         "_p=", p_minkowski),
       ngram_transformation = NA,
       ngram_length = NA,
       transpose_optimizer = NA
     ) %>%
     ungroup() %>%
-    relocate(sim_transformation, sim_measure, transposition_invariant,
-             tempo_invariant, sim_type, ngram_transformation, ngram_length, p_minkowski, transpose_optimizer, sim_name)
+    relocate(
+      sim_transformation,
+      sim_measure,
+      transposition_invariant,
+      tempo_invariant,
+      sim_type,
+      ngram_transformation,
+      ngram_length,
+      p_minkowski,
+      transpose_optimizer,
+      sim_name
+    )
 
 
   similarity_grid_pmi <- expand_grid(sim_transformation = "pitch",
@@ -117,20 +152,35 @@ sim_grids <- function(){
     rowwise() %>%
     mutate(
       sim_measure = "pmi",
-      transposition_invariant = melsim:::is_transposition_invariant(sim_transformation, if(transpose_optimizer) "transpose" else NULL),
+      transposition_invariant = melsim:::is_transposition_invariant(sim_transformation, if (transpose_optimizer)
+        "transpose"
+        else
+          NULL),
       tempo_invariant = melsim:::is_tempo_invariant(sim_transformation),
       sim_type = melsim:::get_sim_type(sim_measure),
       sim_name = paste0(
         paste0(c(sim_transformation,
                  sim_measure), collapse = "-"),
-        "_transpose_optimizer=", transpose_optimizer),
+        "_transpose_optimizer=",
+        transpose_optimizer
+      ),
       ngram_transformation = NA,
       ngram_length = NA,
       p_minkowski = NA
     ) %>%
     ungroup() %>%
-    relocate(sim_transformation, sim_measure, transposition_invariant,
-             tempo_invariant, sim_type, ngram_transformation, ngram_length, p_minkowski, transpose_optimizer, sim_name)
+    relocate(
+      sim_transformation,
+      sim_measure,
+      transposition_invariant,
+      tempo_invariant,
+      sim_type,
+      ngram_transformation,
+      ngram_length,
+      p_minkowski,
+      transpose_optimizer,
+      sim_name
+    )
 
 
   similarity_grid <- rbind(similarity_grid_base,
@@ -142,113 +192,121 @@ sim_grids <- function(){
 }
 
 similarity_grid <- sim_grids()
-all_sims_test <- function(){
-sim_test <- similarity_grid %>%
-  #filter(sim_measure == "Yule2", sim_transformation == "int") %>%
-  mutate(id = row_number() ) %>%
-  pmap_dfr(function(sim_transformation,
-                    sim_measure,
-                    transposition_invariant,
-                    tempo_invariant,
-                    sim_type,
-                    ngram_transformation,
-                    ngram_length,
-                    p_minkowski,
-                    transpose_optimizer,
-                    sim_name,
-                    id) {
-
-
-    logging::loginfo("[%d] Percent complete %s %%", id, round((id/nrow(similarity_grid) * 100)))
-    if(sim_transformation == "ngrams" && sim_type == "metric"){
-      browser()
-      return(NULL)
-    }
-    pars <- list()
-    if(sim_measure == "pmi" && !is.na(transpose_optimizer)) {
-      if(transpose_optimizer) {
-        pars <- list(optimizer = "transpose")
+usethis::use_data(similarity_grid, overwrite = T)
+all_sims_test <- function() {
+  sim_test <- similarity_grid %>%
+    #filter(sim_measure == "Yule2", sim_transformation == "int") %>%
+    mutate(id = row_number()) %>%
+    pmap_dfr(function(sim_transformation,
+                      sim_measure,
+                      transposition_invariant,
+                      tempo_invariant,
+                      sim_type,
+                      ngram_transformation,
+                      ngram_length,
+                      p_minkowski,
+                      transpose_optimizer,
+                      sim_name,
+                      id) {
+      logging::loginfo("[%d] Percent complete %s %%", id, round((id / nrow(
+        similarity_grid
+      ) * 100)))
+      if (sim_transformation == "ngrams" && sim_type == "metric") {
+        browser()
+        return(NULL)
       }
-    }
+      pars <- list()
+      if (sim_measure == "pmi" && !is.na(transpose_optimizer)) {
+        if (transpose_optimizer) {
+          pars <- list(optimizer = "transpose")
+        }
+      }
 
-    if(sim_measure == "Tversky") {
+      if (sim_measure == "Tversky") {
+        pars <- list(
+          ngram_db = "melsim::int_ngrams_berkowitz",
+          alpha = "auto",
+          beta = "auto",
+          transformation = ngram_transformation,
+          ngram_length = ngram_length
+        )
 
-      pars <- list(ngram_db = "melsim::int_ngrams_berkowitz",
-                   alpha = "auto",
-                   beta = "auto",
-                   transformation = ngram_transformation,
-                   ngram_length = ngram_length)
+      }
 
-    }
+      if (sim_measure == "sim_emd") {
+        pars <- list(beta = .5,
+                     optimizer = "transpose",
+                     strategy = "all")
+      }
 
-    if(sim_measure == "sim_emd") {
-      pars <- list(beta = .5,
-                   optimizer = "transpose",
-                   strategy = "all")
-    }
+      if (sim_transformation == "ngrams" &&
+          sim_measure != "Tversky") {
+        pars <- list(transformation = ngram_transformation,
+                     ngram_length = ngram_length)
+      }
 
-    if(sim_transformation == "ngrams" && sim_measure != "Tversky") {
-
-      pars <- list(transformation = ngram_transformation,
-                   ngram_length = ngram_length)
-    }
-
-    if(sim_measure == "Minkowski") {
-      pars <- list(p = p_minkowski)
-    }
-
-
-    beatles12 <- update_melodies(beatles[1:2], force = T)
-    tictoc::tic("Time sim measure")
-
-    if(sim_measure == "Mahalanobis") {
-      # Can't tolerate a singular matrix,
-      # so won't work for this test with the same melody for comparison
-      res <-
-        tibble::tibble(melody1 = beatles12[[1]]$meta$name,
-                       melody2 = beatles12[[2]]$meta$name,
-                       algorithm = sim_measure,
-                       sim = NA)
-    } else {
-
-      #print('sim_measure')
-      #print(sim_measure)
-      #print('pars')
-      pars_string <- ifelse(length(pars) > 0, sprintf("%s: %s", names(pars), pars), "<no params>")
-      sim_name <- sprintf("%s_%s", sim_transformation, sim_measure)
-      logging::loginfo("Testing: %s (params: %s)", sim_name, pars_string)
-      sim_measure <- sim_measure_factory$new(full_name = sim_name,
-                                             name = abbreviate(sim_name),
-                                             transformation = sim_transformation,
-                                             parameters = pars,
-                                             sim_measure = sim_measure)
-
-      res <- melsim(
-        melody1 = beatles12[[1]],
-        melody2 = beatles12[[2]],
-        similarity_measures = sim_measure,
-        paired = TRUE,
-        verbose = TRUE,
-        with_checks = FALSE,
-        with_progress = TRUE,
-        name = sim_name
-      )
-      res <- res$data %>%
-        select(melody1, melody2, algorithm, sim)
-    }
+      if (sim_measure == "Minkowski") {
+        pars <- list(p = p_minkowski)
+      }
 
 
-    finish <- tictoc::toc()
-    time_taken_seconds <- as.numeric(finish$toc - finish$tic)
+      beatles12 <- update_melodies(beatles[1:2], force = T)
+      tictoc::tic("Time sim measure")
 
-    res <- res %>%
-      mutate(error = FALSE,
-             time_taken = time_taken_seconds)
+      if (sim_measure == "Mahalanobis") {
+        # Can't tolerate a singular matrix,
+        # so won't work for this test with the same melody for comparison
+        res <-
+          tibble::tibble(
+            melody1 = beatles12[[1]]$meta$name,
+            melody2 = beatles12[[2]]$meta$name,
+            algorithm = sim_measure,
+            sim = NA
+          )
+      } else {
+        #print('sim_measure')
+        #print(sim_measure)
+        #print('pars')
+        pars_string <-
+          ifelse(length(pars) > 0,
+                 sprintf("%s: %s", names(pars), pars),
+                 "<no params>")
+        sim_name <- sprintf("%s_%s", sim_transformation, sim_measure)
+        logging::loginfo("Testing: %s (params: %s)", sim_name, pars_string)
+        sim_measure <- sim_measure_factory$new(
+          full_name = sim_name,
+          name = abbreviate(sim_name),
+          transformation = sim_transformation,
+          parameters = pars,
+          sim_measure = sim_measure
+        )
+
+        res <- melsim(
+          melody1 = beatles12[[1]],
+          melody2 = beatles12[[2]],
+          similarity_measures = sim_measure,
+          paired = TRUE,
+          verbose = TRUE,
+          with_checks = FALSE,
+          with_progress = TRUE,
+          name = sim_name
+        )
+        res <- res$data %>%
+          select(melody1, melody2, algorithm, sim)
+      }
 
 
-    return(res)
+      finish <- tictoc::toc()
+      time_taken_seconds <- as.numeric(finish$toc - finish$tic)
 
-  })
+      res <- res %>%
+        mutate(error = FALSE,
+               time_taken = time_taken_seconds)
+
+
+      return(res)
+
+    })
   sim_test
 }
 
