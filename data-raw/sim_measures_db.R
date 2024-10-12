@@ -139,6 +139,15 @@ similarity_measures <- list(
                                   # transposition_invariant = TRUE,
                                   # tempo_invariant = TRUE
                                   ),
+  melsim::sim_measure_factory$new(full_name = "int-stringdot",
+                                  name ="diffsd",
+                                  #type = "sequence_based",
+                                  transformation = "int",
+                                  parameters = list(ngram_length = 3, method = "spectrum"),
+                                  sim_measure = "stringdot_utf8"#,
+                                  # transposition_invariant = TRUE,
+                                  # tempo_invariant = TRUE
+  ),
 
   melsim::sim_measure_factory$new(full_name = "ngram-int-3-tversky",
                                   name = "ngrtvers",
@@ -182,11 +191,22 @@ similarity_measures <- list(
                                   name = "rawed",
                                   #type = "sequence_based",
                                   transformation = "pitch",
-                                  parameters = list(optimizer = "transpose"),
+                                  parameters = list(optimizer = "transpose" ),
                                   sim_measure = "edit_sim_utf8"#,
                                   # transposition_invariant = TRUE,
                                   # tempo_invariant = TRUE
                                   ),
+  melsim::sim_measure_factory$new(full_name = "pitch-stringdot",
+                                  name = "rawsd",
+                                  #type = "sequence_based",
+                                  transformation = "pitch",
+                                  parameters = list(optimizer = "transpose",
+                                                    ngram_length = 5,
+                                                    method = "spectrum"),
+                                  sim_measure = "stringdot_utf8"#,
+                                  # transposition_invariant = TRUE,
+                                  # tempo_invariant = TRUE
+  ),
 
   melsim::sim_measure_factory$new(full_name = "NCD-int_X_ioiclass",
                                   name = "ncdintioi",

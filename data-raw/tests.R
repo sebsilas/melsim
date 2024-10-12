@@ -1,6 +1,6 @@
 library(tidyverse)
 
-test_melsim <- function(N = 20, sim_measure = c("ngrukkon")){
+test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "diffsd", "rawsd")){
   tictoc::tic()
   kinder_full <- update_melodies(kinder_full, force = TRUE)
   ret <-

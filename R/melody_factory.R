@@ -266,18 +266,24 @@ melody_factory <- R6::R6Class("Melody",
         return(ih)
       },
 
-      edit_sim = function(melody, transform = "int", sim_measure = edit_sim_utf8, optimizer = NULL) {
+      edit_sim = function(melody,
+                          transform = "int",
+                          sim_measure = edit_sim_utf8,
+                          optimizer = NULL,
+                          optimizer_pars = list(strategy = c("all", "hints", "best")),
+                          parameters = NULL) {
+
         v1 <- private$.mel_data[[transform]] %>% na.omit() %>% unclass()
         v2 <- melody$data[[transform]] %>% na.omit() %>% unclass()
-        if(length(v1) == 0 || length(v2) == 0){
+        if (length(v1) == 0 || length(v2) == 0) {
           return(NA)
         }
-        if(is.numeric(v1) && is.numeric(v2)) {
+        if (is.numeric(v1) && is.numeric(v2)) {
           #browser()
           #offset <- min(c(v1, v2)) - 1
           #v1 <- v1 - offset
           #v2 <- v2 - offset
-        } else if(is.character(v1) && is.character(v2)) {
+        } else if (is.character(v1) && is.character(v2)) {
           common_elts <- levels(factor(union(v1, v2)))
           v1 <- factor(v1, levels = common_elts) %>%
             as.integer()
@@ -287,10 +293,7 @@ melody_factory <- R6::R6Class("Melody",
         } else {
           stop("Undefined edit similarity")
         }
-        if(!is.null(optimizer)) {
-          return(apply_optimizer(v1, v2, sim_measure, optimizer_pars))
-        }
-        sim_measure(v1, v2)
+        apply_optimizer(v1, v2, sim_measure, optimizer, optimizer_pars, parameters)
       },
 
       ngram_similarity = function(melody,
@@ -371,26 +374,33 @@ melody_factory <- R6::R6Class("Melody",
 
           if(sm$type == "sequence_based") {
 
-            if(sm$sim_measure %in% c("edit_sim_utf8", "edit_sim")) {
-
+            if(sm$sim_measure %in% c("edit_sim_utf8", "edit_sim", "stringdot_utf8")) {
+              if(sm$sim_measure == "stringdot_utf8"){
+                sim_measure <- make_stringdot_utf8(sm$parameters)
+              }
+              else{
+                sim_measure <- eval(parse(text = sm$sim_measure))
+              }
               sim <- self$edit_sim(melody,
                                    sm$transformation,
-                                   sim_measure = eval(parse(text = sm$sim_measure)),
-                                   optimizer = sm$parameters$optimizer)
+                                   sim_measure = sim_measure,
+                                   optimizer = sm$parameters$optimizer,
+                                   optimizer_pars = sm$parameters$optimizer_pars,
+                                   parameters = sm$parameters)
 
-            } else {
+            }
+            else {
               if(sm$sim_measure == "Levenshtein") {
                 str_conversion <- utf8_convert(self$data[[sm$transformation]], melody$data[[sm$transformation]])
                 sim <- proxy_pkg_handler(str_conversion$s, str_conversion$t, proxy_method = sm$sim_measure)
-              } else {
+              }
+              else {
                 sim <- proxy_pkg_handler(self$data[[sm$transformation]], melody$data[[sm$transformation]], proxy_method = sm$sim_measure)
               }
-
             }
-
             return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
-
-          } else if(sm$type == "set_based") {
+          }
+          else if(sm$type == "set_based") {
 
             if(sm$transformation == "ngrams") {
               sim <- self$ngram_similarity(melody,
@@ -501,11 +511,12 @@ melody_factory <- R6::R6Class("Melody",
             if(sm$sim_measure == "pmi") {
               stopifnot(methods::is(melody, "Melody"))
               if(is.scalar.character(sm$parameters$optimizer)) {
-                sim <- apply_optimizer(sm$parameters$optimizer,
+                sim <- apply_optimizer(
                                        private$.mel_data[[sm$transformation]],
                                        melody$data[[sm$transformation]],
                                        pmi,
-                                       optimizer_pars = list(strategy = "all"))
+                                       optimizer = sm$parameters$optimizer,
+                                       paraméters = list(strategy = "all"))
               } else {
                 sim <- pmi(private$.mel_data[[sm$transformation]],
                            melody$data[[sm$transformation]])

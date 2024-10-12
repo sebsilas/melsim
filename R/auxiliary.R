@@ -130,6 +130,38 @@ edit_sim_utf8 <- function(s, t) {
   1 - utils::adist(intToUtf8(s),intToUtf8(t))[1,1]/max(length(s), length(t))
 }
 
+stringdot_utf8 <- function(s, t, length = 4, method = "spectrum") {
+  if(!is.numeric(s) || !is.numeric(t)){
+    logging::logerror("Called stringdot_utf8 with non-numeric vectors")
+    stop()
+  }
+  s <- s[!is.na(s)]
+  t <- t[!is.na(t)]
+
+  offset <- min(c(s, t))
+  s <- s -  offset + 256
+  t <- t -  offset  + 256
+  sk <- kernlab::stringdot(length, method, normalized = T)
+  sk(intToUtf8(s),intToUtf8(t))
+}
+
+make_stringdot_utf8 <- function(parameters = list(ngram_length = 4, method = "spectrum")){
+  logging::loginfo(sprintf("Made stringdot measure with %d parameters", length(parameters)))
+  if(is.null(parameters)){
+    return(stringdot_utf8)
+  }
+  length <- 4
+  if(!is.null(parameters$ngram_length)){
+    length <- parameters$ngram_length
+  }
+  method <- "spectrum"
+  if(!is.null(parameters$method)){
+    method <- parameters$method
+  }
+  function(s, t){
+    stringdot_utf8(s, t, length, method)
+  }
+}
 dist_sim <- function(x, y){
   if(length(x) == 0 || length(y) == 0){
     return(0)

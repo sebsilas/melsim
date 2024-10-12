@@ -179,7 +179,8 @@ vector_measures <- c(
 
 sequence_based_measures <- c(
   "edit_sim_utf8", "edit_sim", # from melsim
-  "Levenshtein"
+  "Levenshtein",
+  "stringdot_utf8" # base on kernlab::stringdot
   )
 
 special_measures <- c(
@@ -206,15 +207,12 @@ is_distance_measure <- function(sim_measure_name) {
   proxy::pr_DB$get_entry(sim_measure_name)$distance
 }
 
-
-
 proxy_pkg_measures_types <- purrr::map_dfr(proxy_pkg_measures, function(measure) {
   tibble::tibble(
     measure = measure,
     type =  get_proxy_sim_measure_type(measure)
   )
 })
-
 
 sim_measure_from_string <- function(sm) {
   if(is.scalar.character(sm)) {

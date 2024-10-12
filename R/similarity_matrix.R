@@ -219,7 +219,7 @@ sim_mat_factory <- R6::R6Class(
       tmp
     },
 
-    as_wide = function(only_similarities = F){
+    as_tibble = function(only_similarities = F){
       tmp <- private$sim_df %>% tidyr::pivot_wider(id_cols = c("melody1", "melody2"),
                                                    names_from = algorithm,
                                                    names_prefix = "sim_",
