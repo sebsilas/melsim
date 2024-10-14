@@ -334,8 +334,8 @@ melody_factory <- R6::R6Class("Melody",
           sum_common(ngrams1, ngrams2)
         } else if(method == "ukkon") {
           ukkon(ngrams1, ngrams2)
-        } else if(method == "dist_sim") {
-          dist_sim(ngrams1, ngrams2)
+        } else if(method == "distr_sim") {
+          distr_sim(ngrams1, ngrams2)
         } else if(method == "Tversky") {
           tversky_sim(ngrams1,
                       ngrams2,
@@ -364,9 +364,8 @@ melody_factory <- R6::R6Class("Melody",
         if(!is.list(sim_measures)){
           sim_measures <- list(sim_measures)
         }
-
-        assertthat::assert_that(methods::is(melody, "Melody"), msg = "Not a valid melody object")
-        assertthat::assert_that(all(sapply(sim_measures, validate_sim_measure)), msg = "Invalid similarity measure.")
+        #assertthat::assert_that(methods::is(melody, "Melody"), msg = "Not a valid melody object")
+        #assertthat::assert_that(all(sapply(sim_measures, validate_sim_measure)), msg = "Invalid similarity measure.")
 
         purrr::imap_dfr(unname(sim_measures), function(sm, i) {
 

@@ -38,21 +38,20 @@ test_dtw <- function(N = 20){
   tictoc::toc()
   invisible(ret)
 }
+
 sim_grids <- function(){
-  ngram_measures <- c("ukkon", "sum_common", "count_distinct", "dist_sim", "Tversky")
+
+  ngram_measures <- c("ukkon", "sum_common", "count_distinct", "distr_sim", "Tversky")
 
   measures_with_extra_pars <- c(ngram_measures,
                                 # "Tversky", For now we leave this out parameter exploration and use auto + the Berkowitz db
                                 "Minkowski",
                                 "pmi")
-
-
+  logging::loginfo("Creatring sim_grid base")
   similarity_grid_base <-
     expand_grid(
-      sim_transformation = setdiff(sim_transformations,
-                                   c("ngrams", "none")),
-      sim_measure = setdiff(low_level_sim_measures,
-                            measures_with_extra_pars)
+      sim_transformation = setdiff(sim_transformations, c("ngrams", "none")),
+      sim_measure = setdiff(low_level_sim_measures, measures_with_extra_pars)
     )   %>%
     rowwise() %>%
     mutate(
@@ -76,6 +75,7 @@ sim_grids <- function(){
     ) %>%
     ungroup()
 
+  logging::loginfo("Creatring sim_grid ngram")
   similarity_grid_ngram <- expand_grid(
     sim_transformation = "ngrams",
     sim_measure = set_based_measures,
@@ -113,6 +113,7 @@ sim_grids <- function(){
       sim_name
     )
 
+  logging::loginfo("Creating sim_grid minkowski")
   similarity_grid_minkowski <-
     expand_grid(
       sim_transformation = setdiff(sim_transformations,
@@ -146,24 +147,16 @@ sim_grids <- function(){
       sim_name
     )
 
-
-  similarity_grid_pmi <- expand_grid(sim_transformation = "pitch",
-                                     transpose_optimizer = c(TRUE, FALSE)) %>%
+  browser()
+  logging::loginfo("Creating sim_grid special")
+  similarity_grid_special <- expand_grid(sim_transformation = "none",
+                                         sim_measure = special_measures) %>%
     rowwise() %>%
     mutate(
-      sim_measure = "pmi",
-      transposition_invariant = melsim:::is_transposition_invariant(sim_transformation, if (transpose_optimizer)
-        "transpose"
-        else
-          NULL),
-      tempo_invariant = melsim:::is_tempo_invariant(sim_transformation),
+      transposition_invariant = NA,
+      tempo_invariant = NA,
       sim_type = melsim:::get_sim_type(sim_measure),
-      sim_name = paste0(
-        paste0(c(sim_transformation,
-                 sim_measure), collapse = "-"),
-        "_transpose_optimizer=",
-        transpose_optimizer
-      ),
+      sim_name = sprintf("%s-%s", sim_transformation, sim_measure),
       ngram_transformation = NA,
       ngram_length = NA,
       p_minkowski = NA
@@ -178,15 +171,15 @@ sim_grids <- function(){
       ngram_transformation,
       ngram_length,
       p_minkowski,
-      transpose_optimizer,
       sim_name
     )
+  browser()
 
 
   similarity_grid <- rbind(similarity_grid_base,
                            similarity_grid_ngram,
                            similarity_grid_minkowski,
-                           similarity_grid_pmi)
+                           similarity_grid_sepcial)
 
   similarity_grid
 }
@@ -208,9 +201,7 @@ all_sims_test <- function() {
                       transpose_optimizer,
                       sim_name,
                       id) {
-      logging::loginfo("[%d] Percent complete %s %%", id, round((id / nrow(
-        similarity_grid
-      ) * 100)))
+      logging::loginfo("[%d] Percent complete %s%%", id, round((id / nrow(similarity_grid) * 100)))
       if (sim_transformation == "ngrams" && sim_type == "metric") {
         browser()
         return(NULL)

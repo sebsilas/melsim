@@ -63,7 +63,7 @@ melsim <- function(melody1,
       handle_verbose(verbose, sim_algo)
 
       # Progress
-      give_progress(with_progress, paired, melody1, melody2)
+      show_progress(with_progress, paired, melody1, melody2)
 
 
       purrr::imap_dfr(unname(melody1), function(m1, i) {
@@ -150,7 +150,7 @@ handle_verbose <- function(verbose, sim_algo) {
 }
 
 
-give_progress <- function(with_progress, paired, melody1, melody2) {
+show_progress <- function(with_progress, paired, melody1, melody2) {
   if(with_progress) {
     total_length <- ifelse(paired, length(melody1), length(melody1) * (length(melody2) - 1)/2)
     cli::cli_progress_bar("Calculating similarities", total = length(melody1), .envir = globalenv())

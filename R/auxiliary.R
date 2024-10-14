@@ -37,45 +37,91 @@ edit_sim <- function(s, t) {
 
 edit_dist_utf8 <- function(s, t) {
   offset <- min(c(s, t))
-  s <- s -  offset + 128
-  t <- t -  offset  + 128
+  s <- s -  offset + 256
+  t <- t -  offset  + 256
   utils::adist(intToUtf8(s),intToUtf8(t))[1,1]
 }
 
 utf8_convert <- function(s, t) {
   s <- na.omit(s)
   t <- na.omit(t)
-  s <- s %>% as.factor() %>% as.integer()
-  t <- t %>% as.factor() %>% as.integer()
+  joint_factor <- factor(c(s, t))
+  s <- factor(s, levels = levels(joint_factor)) %>% as.integer()
+  t <- factor(t, levels = levels(joint_factor)) %>% as.integer()
   offset <- min(c(s, t))
-  s <- s -  offset + 128
-  t <- t -  offset  + 128
+  assertthat::assert_that(offset == 1)
+  s <- s -  offset + 256
+  t <- t -  offset + 256
   list(s = intToUtf8(s),
        t = intToUtf8(t))
 }
 
+edit_sim_utf8 <- function(s, t) {
+  if(!is.numeric(s) || !is.numeric(t)){
+    logging::logerror("Called edit_sim_utf8 with non-numeric vectors")
+    stop()
+  }
+  s <- s[!is.na(s)]
+  t <- t[!is.na(t)]
+
+  offset <- min(c(s, t))
+  s <- s -  offset + 256
+  t <- t -  offset  + 256
+  1 - utils::adist(intToUtf8(s),intToUtf8(t))[1,1]/max(length(s), length(t))
+}
+
+stringdot_utf8 <- function(s, t, length = 4, method = "spectrum") {
+  if(!is.scalar.character(s)){
+    tmp <- utf8_convert(s, t)
+    s <- tmp$s
+    t <- tmp$t
+  }
+  if(s == t) return(1)
+  sk <- kernlab::stringdot(length, method, normalized = T)
+  sk(s, t)
+}
+
+make_stringdot_utf8 <- function(parameters = list(ngram_length = 4, method = "spectrum")){
+  #logging::loginfo(sprintf("Made stringdot measure with %d parameters", length(parameters)))
+  if(is.null(parameters)){
+    return(stringdot_utf8)
+  }
+  length <- 4
+  if(!is.null(parameters$ngram_length)){
+    length <- parameters$ngram_length
+  }
+  method <- "spectrum"
+  if(!is.null(parameters$method)){
+    method <- parameters$method
+  }
+  function(s, t){
+    stringdot_utf8(s, t, length, method)
+  }
+}
+
 diss_NCD <- function(s, t, method = "gz") {
-  s <- as.character(na.omit(s))
-  t <- as.character(na.omit(t))
-  #browser()
-  if(all(s == t)) return(0)
-  st <- as.character(na.omit(sprintf("%s%s", s, t)))
-  s_c <-   lapply(s, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
-  t_c <-   lapply(t, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
-  st_c <-   lapply(st, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
-  #browser()
+  if(!is.scalar.character(s)){
+    tmp <- utf8_convert(s, t)
+    s <- tmp$s
+    t <- tmp$t
+  }
+  if(s == t) return(0)
+
+  st <- sprintf("%s%s", s, t)
+  s_c <- lapply(s, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  t_c <- lapply(t, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
+  st_c <- lapply(st, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
   # d_NCD <- TSclust::diss.NCD(lapply(s, charToRaw) %>% unlist()  %>% as.numeric(),
   #                            lapply(t, charToRaw) %>% unlist()  %>% as.numeric(),
   #                            type = method)
-  #d_NCD <- TSclust::diss.NCD(s, t)
-  #comp <- TSclust:::.compression.lengths(s, t, method)
-  #d_NCD <- (comp$cxy - min(comp$cx, comp$cy))/max(comp$cx, comp$cy)
+  # d_NCD <- TSclust::diss.NCD(s, t)
+  # comp <- TSclust:::.compression.lengths(s, t, method)
+  # d_NCD <- (comp$cxy - min(comp$cx, comp$cy))/max(comp$cx, comp$cy)
   d_ncd <- (st_c - min(s_c, t_c))/max(s_c, t_c)
   d_ncd
 }
 
 sim_NCD <- function(s, t, method = "gz") {
-  #browser()
   d <- diss_NCD(s, t, method)
   1 - d
 }
@@ -95,8 +141,11 @@ sim_dtw <- function(mel1, mel2, beta = 1) {
 }
 
 compression_ratio <- function(s, t, method = "gz") {
-  s <- as.character(na.omit(s))
-  t <- as.character(na.omit(t))
+  if(!is.scalar.character(s)){
+    tmp <- utf8_convert(s, t)
+    s <- tmp$s
+    t <- tmp$t
+  }
   st <- as.character(na.omit(sprintf("%s%s", s, t)))
   s_r <- lapply(s, charToRaw) %>% unlist() %>% length()
   t_r <- lapply(t, charToRaw) %>% unlist() %>% length()
@@ -105,10 +154,9 @@ compression_ratio <- function(s, t, method = "gz") {
   t_c <-   lapply(t, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
   st_c <-   lapply(st, charToRaw) %>% unlist() %>% memCompress(method) %>% length()
   overhead <- length(memCompress(raw(0), method))
-  #browser()
   comp_r_raw <- (s_c - overhead + t_c - overhead)/(s_r + t_r)
-  comp_r_cat <- (st_c - offset)/st_r
-  logging::loginfo(sprintf("Raw %.3f, combined: %.3f, var1: %.3f", comp_r_raw, comp_r_cat, (st_c - overhead)/(s_c - offset + t_c - overhead)))
+  comp_r_cat <- (st_c - overhead)/st_r
+  #logging::loginfo(sprintf("Raw %.3f, combined: %.3f, overhead = %.3f", comp_r_raw, comp_r_cat, overhead))
   return(2*(1-comp_r_cat/comp_r_raw))
 }
 
@@ -116,53 +164,8 @@ na.omit <- function(x) {
   x[!is.na(x)]
 }
 
-edit_sim_utf8 <- function(s, t) {
-  if(!is.numeric(s) || !is.numeric(t)){
-    logging::logerror("Called edit_sim_utf8 with non-numeric vectors")
-    stop()
-  }
-  s <- s[!is.na(s)]
-  t <- t[!is.na(t)]
 
-  offset <- min(c(s, t))
-  s <- s -  offset + 256
-  t <- t -  offset  + 256
-  1 - utils::adist(intToUtf8(s),intToUtf8(t))[1,1]/max(length(s), length(t))
-}
-
-stringdot_utf8 <- function(s, t, length = 4, method = "spectrum") {
-  if(!is.numeric(s) || !is.numeric(t)){
-    logging::logerror("Called stringdot_utf8 with non-numeric vectors")
-    stop()
-  }
-  s <- s[!is.na(s)]
-  t <- t[!is.na(t)]
-
-  offset <- min(c(s, t))
-  s <- s -  offset + 256
-  t <- t -  offset  + 256
-  sk <- kernlab::stringdot(length, method, normalized = T)
-  sk(intToUtf8(s),intToUtf8(t))
-}
-
-make_stringdot_utf8 <- function(parameters = list(ngram_length = 4, method = "spectrum")){
-  logging::loginfo(sprintf("Made stringdot measure with %d parameters", length(parameters)))
-  if(is.null(parameters)){
-    return(stringdot_utf8)
-  }
-  length <- 4
-  if(!is.null(parameters$ngram_length)){
-    length <- parameters$ngram_length
-  }
-  method <- "spectrum"
-  if(!is.null(parameters$method)){
-    method <- parameters$method
-  }
-  function(s, t){
-    stringdot_utf8(s, t, length, method)
-  }
-}
-dist_sim <- function(x, y){
+distr_sim <- function(x, y){
   if(length(x) == 0 || length(y) == 0){
     return(0)
   }
@@ -286,8 +289,16 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
 
 
 pmi <- function(q, t) {
-  q_l <- length(q)
+  q <- q[!is.na(q)]
+  t <- t[!is.na(t)]
+
+  offset <- min(c(q, t))
+  q <- q -  offset + 256
+  t <- t -  offset + 256
+
+    q_l <- length(q)
   t_l <- length(t)
+
   aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
                                            intToUtf8(t),
                                            type = "global", # i.e., Needleman-Wunsch

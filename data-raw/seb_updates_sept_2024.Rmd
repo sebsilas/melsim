@@ -46,7 +46,7 @@ I also added spacing before curly brackets and  made sure all logicals were expl
 
 # Larger updates
 
-I factored a lot of code inside the grand `melsim` function e.g., into `conduct_checks`, `handle_verbose`, `give_progress`.
+I factored a lot of code inside the grand `melsim` function e.g., into `conduct_checks`, `handle_verbose`, `show_progress`.
 
 
 I removed the `sim_type` argument from `melsim` (which had possible values such as `set_based`, `sequence_based` etc). These shouldn't need to be known by the user and can be determined from the `sim_measure` being used internally, so I set things up to work like that e.g.,:
@@ -228,7 +228,7 @@ Try the test below:
 
 # Note this only incorporates phrase_segmentation but not other forms e.g., bar etc.
 
-ngram_measures <- c("ukkon", "sum_common", "count_distinct", "dist_sim", "Tversky")
+ngram_measures <- c("ukkon", "sum_common", "count_distinct", "distr_sim", "Tversky")
 
 measures_with_extra_pars <- c(ngram_measures,
                               # "Tversky", For now we leave this out parameter exploration and use auto + the Berkowitz db

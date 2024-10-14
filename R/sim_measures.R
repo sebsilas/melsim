@@ -50,7 +50,6 @@ sim_measure_factory <- R6::R6Class(
                 purrr::is_scalar_character(sim_measure) || purrr::is_formula(sim_measure),
                 purrr::is_scalar_logical(transposition_invariant),
                 purrr::is_scalar_logical(tempo_invariant))
-
       if(!transformation %in% sim_transformations) {
         stop(sprintf("Unrecognized transformation: %s", transformation))
       }
@@ -122,7 +121,7 @@ sim_measure_factory <- R6::R6Class(
       logging::loginfo("Cache: %s", self$cache)
       logging::loginfo("Tranformation: %s", self$transformation)
       logging::loginfo("Parameters:")
-      logging::loginfo("%s: %s", names(self$parameters), self$parameters)
+      logging::loginfo(paste(sprintf("  %s: %s", names(self$parameters), self$parameters), collapse = ", "))
       invisible(self)
     }),
   # End public
@@ -152,7 +151,7 @@ proxy_pkg_measures <-  proxy::pr_DB$get_entry_names()
 
 set_based_measures <- c(
   # from melsim:
-  "ukkon", "sum_common", "count_distinct", "dist_sim", "Tversky",
+  "ukkon", "sum_common", "count_distinct", "distr_sim", "Tversky",
   # from proxy:
   "Jaccard", "Kulczynski1", "Kulczynski2", "Mountford",  "Russel", #"Fager",
   "simple matching",
@@ -180,11 +179,12 @@ vector_measures <- c(
 sequence_based_measures <- c(
   "edit_sim_utf8", "edit_sim", # from melsim
   "Levenshtein",
-  "stringdot_utf8" # base on kernlab::stringdot
+  "sim_NCD",#compression distance
+  "stringdot_utf8" # based on kernlab::stringdot
   )
 
 special_measures <- c(
-  "pmi", "const", "sim_NCD", "sim_emd", "sim_dtw" # from melsim
+  "pmi", "const", "sim_emd", "sim_dtw" # from melsim
   )
 
 
@@ -244,8 +244,10 @@ is_sim_measure <- function(sim_measures) {
 }
 
 is_sim_measure_recognised <- function(sim_measure) {
-  if(!(sim_measure %in% low_level_sim_measures) && !(validate_sim_measure(sim_measure))) {
+  if(!(sim_measure %in% low_level_sim_measures) &&
+     !(validate_sim_measure(sim_measure))) {
     stop(sprintf("Unrecognized similarity measure: %s", sim_measure))
   }
+
 }
 

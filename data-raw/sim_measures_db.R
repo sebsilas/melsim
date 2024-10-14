@@ -65,7 +65,7 @@ similarity_measures <- list(
                                   #type = "set_based",
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int", ngram_length = 3),
-                                  sim_measure = "dist_sim"#,
+                                  sim_measure = "distr_sim"#,
                                   #transposition_invariant = TRUE,
                                   #tempo_invariant = TRUE
                                   ),
@@ -75,7 +75,7 @@ similarity_measures <- list(
                                   #type = "set_based",
                                   transformation = "ngrams",
                                   parameters = list(transformation = "int_X_ioi_class", ngram_length = 3),
-                                  sim_measure = "dist_sim"#,
+                                  sim_measure = "distr_sim"#,
                                   #transposition_invariant = TRUE,
                                   #tempo_invariant = TRUE
                                   ),
@@ -85,7 +85,7 @@ similarity_measures <- list(
                                   #type = "set_based",
                                   transformation = "ngrams",
                                   parameters = list(transformation = "ioi_class", ngram_length = 3),
-                                  sim_measure = "dist_sim"#,
+                                  sim_measure = "distr_sim"#,
                                   #transposition_invariant = TRUE,
                                   #tempo_invariant = TRUE
                                   ),
@@ -95,7 +95,7 @@ similarity_measures <- list(
                                   #type = "set_based",
                                   transformation = "ngrams",
                                   parameters = list(transformation = "ioi_class", ngram_length = 2),
-                                  sim_measure = "dist_sim"#,
+                                  sim_measure = "distr_sim"#,
                                   # transposition_invariant = TRUE,
                                   # tempo_invariant = TRUE
                                   ),
@@ -105,7 +105,7 @@ similarity_measures <- list(
                                   #type = "set_based",
                                   transformation = "ngrams",
                                   parameters = list(transformation = "ioi_class", ngram_length = 1),
-                                  sim_measure = "dist_sim"#,
+                                  sim_measure = "distr_sim"#,
                                   # transposition_invariant = TRUE,
                                   # tempo_invariant = TRUE
                                   ),
@@ -143,7 +143,8 @@ similarity_measures <- list(
                                   name ="diffsd",
                                   #type = "sequence_based",
                                   transformation = "int",
-                                  parameters = list(ngram_length = 3, method = "spectrum"),
+                                  parameters = list(ngram_length = 3,
+                                                    method = "exponential"),
                                   sim_measure = "stringdot_utf8"#,
                                   # transposition_invariant = TRUE,
                                   # tempo_invariant = TRUE
@@ -201,8 +202,8 @@ similarity_measures <- list(
                                   #type = "sequence_based",
                                   transformation = "pitch",
                                   parameters = list(optimizer = "transpose",
-                                                    ngram_length = 5,
-                                                    method = "spectrum"),
+                                                    ngram_length = 4,
+                                                    method = "exponential"),
                                   sim_measure = "stringdot_utf8"#,
                                   # transposition_invariant = TRUE,
                                   # tempo_invariant = TRUE
@@ -248,6 +249,7 @@ similarity_measures <- list(
                                   transposition_invariant = TRUE,
                                   tempo_invariant = TRUE
                                   ),
+
   melsim::sim_measure_factory$new(full_name = "Proxy::Tanimoto Pitch",
                                   name = "tanimoto",
                                   #type = "special",

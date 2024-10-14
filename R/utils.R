@@ -222,7 +222,6 @@ parse_linear_combination <- function(lin_comb) {
 }
 
 validate_sim_measure <- function(sim_measure) {
-
   if(purrr::is_formula(sim_measure)) {
     return(TRUE)
   }
@@ -231,9 +230,10 @@ validate_sim_measure <- function(sim_measure) {
     return(TRUE)
   }
 
-  if(!is.character(sim_measure)){
-    return(FALSE)
+  if(is.character(sim_measure)){
+    return(TRUE)
   }
+  return(FALSE)
 }
 
 plot_dtw_alignment <- function(x, y = NULL, beta = .5) {
