@@ -185,6 +185,7 @@ sequence_based_measures <- c(
 
 special_measures <- c(
   "pmi", "const", "sim_emd", "sim_dtw" # from melsim
+
   )
 
 

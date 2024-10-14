@@ -366,12 +366,21 @@ melody_factory <- R6::R6Class("Melody",
         }
         #assertthat::assert_that(methods::is(melody, "Melody"), msg = "Not a valid melody object")
         #assertthat::assert_that(all(sapply(sim_measures, validate_sim_measure)), msg = "Invalid similarity measure.")
-
+        #browser()
         purrr::imap_dfr(unname(sim_measures), function(sm, i) {
-
+          #browser()
           sm <- sim_measure_from_string(sm)
 
           if(sm$type == "sequence_based") {
+            if(sm$sim_measure == "sim_NCD") {
+              stopifnot(methods::is(melody, "Melody"),
+                        sm$transformation %in% names(self$data),
+                        sm$transformation %in% names(melody$data))
+
+              sim <- sim_NCD(paste(na.omit(self$data[[sm$transformation]]), collapse = ""),
+                             paste(na.omit(melody$data[[sm$transformation]]), collapse = ""))
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
 
             if(sm$sim_measure %in% c("edit_sim_utf8", "edit_sim", "stringdot_utf8")) {
               if(sm$sim_measure == "stringdot_utf8"){
@@ -476,15 +485,6 @@ melody_factory <- R6::R6Class("Melody",
             if(sm$sim_measure == "const") {
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = 1.0))
             }
-            if(sm$sim_measure == "sim_NCD") {
-              stopifnot(methods::is(melody, "Melody"),
-                        sm$transformation %in% names(self$data),
-                        sm$transformation %in% names(melody$data))
-
-              sim <- sim_NCD(paste(na.omit(self$data[[sm$transformation]]), collapse = ""),
-                             paste(na.omit(melody$data[[sm$transformation]]), collapse = ""))
-              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
-            }
             if(sm$sim_measure == "sim_emd") {
               stopifnot(methods::is(melody, "Melody"))
               if(!is.null(sm$parameters$optimizer)) {
@@ -515,7 +515,7 @@ melody_factory <- R6::R6Class("Melody",
                                        melody$data[[sm$transformation]],
                                        pmi,
                                        optimizer = sm$parameters$optimizer,
-                                       paraméters = list(strategy = "all"))
+                                       parameters = list(strategy = "all"))
               } else {
                 sim <- pmi(private$.mel_data[[sm$transformation]],
                            melody$data[[sm$transformation]])

@@ -147,7 +147,6 @@ sim_grids <- function(){
       sim_name
     )
 
-  browser()
   logging::loginfo("Creating sim_grid special")
   similarity_grid_special <- expand_grid(sim_transformation = "none",
                                          sim_measure = special_measures) %>%
@@ -159,7 +158,8 @@ sim_grids <- function(){
       sim_name = sprintf("%s-%s", sim_transformation, sim_measure),
       ngram_transformation = NA,
       ngram_length = NA,
-      p_minkowski = NA
+      p_minkowski = NA,
+      transpose_optimizer = NA
     ) %>%
     ungroup() %>%
     relocate(
@@ -171,23 +171,26 @@ sim_grids <- function(){
       ngram_transformation,
       ngram_length,
       p_minkowski,
+      transpose_optimizer,
       sim_name
     )
-  browser()
-
 
   similarity_grid <- rbind(similarity_grid_base,
                            similarity_grid_ngram,
                            similarity_grid_minkowski,
-                           similarity_grid_sepcial)
+                           similarity_grid_special)
 
-  similarity_grid
+  similarity_grid[similarity_grid$sim_measure == "pmi",]$sim_transformation <- "pitch"
+  similarity_grid %>% mutate(id = 1:nrow(.)) %>% select(id, everything())
 }
 
 similarity_grid <- sim_grids()
 usethis::use_data(similarity_grid, overwrite = T)
-all_sims_test <- function() {
-  sim_test <- similarity_grid %>%
+devtools::document()
+all_sims_test <- function(sim_grid = melsim::similarity_grid) {
+  beatles12 <- update_melodies(beatles[1:2], force = T)
+
+  sim_test <-  sim_grid %>%
     #filter(sim_measure == "Yule2", sim_transformation == "int") %>%
     mutate(id = row_number()) %>%
     pmap_dfr(function(sim_transformation,
@@ -241,7 +244,6 @@ all_sims_test <- function() {
       }
 
 
-      beatles12 <- update_melodies(beatles[1:2], force = T)
       tictoc::tic("Time sim measure")
 
       if (sim_measure == "Mahalanobis") {
@@ -264,6 +266,7 @@ all_sims_test <- function() {
                  "<no params>")
         sim_name <- sprintf("%s_%s", sim_transformation, sim_measure)
         logging::loginfo("Testing: %s (params: %s)", sim_name, pars_string)
+        base_sim <- sim_measure
         sim_measure <- sim_measure_factory$new(
           full_name = sim_name,
           name = abbreviate(sim_name),
@@ -271,19 +274,36 @@ all_sims_test <- function() {
           parameters = pars,
           sim_measure = sim_measure
         )
-
-        res <- melsim(
-          melody1 = beatles12[[1]],
-          melody2 = beatles12[[2]],
-          similarity_measures = sim_measure,
-          paired = TRUE,
-          verbose = TRUE,
-          with_checks = FALSE,
-          with_progress = TRUE,
-          name = sim_name
-        )
-        res <- res$data %>%
-          select(melody1, melody2, algorithm, sim)
+        #browser()
+        res <- tryCatch({
+          melsim(
+            melody1 = beatles12[[1]],
+            melody2 = beatles12[[2]],
+            similarity_measures = sim_measure,
+            paired = TRUE,
+            verbose = TRUE,
+            with_checks = FALSE,
+            with_progress = TRUE,
+            name = sim_name
+          ) %>%
+            pluck("data") %>%
+            mutate(error = FALSE)
+        }, error = function(e) {
+          logging::logerror("Found a bad body: %s", sim_name)
+          return(
+            tibble(
+              melody1 = beatles12[[1]]$meta$name,
+              melody2 = beatles12[[2]]$meta$name,
+              algorithm = sim_measure$name,
+              full_name = sim_measure$full_name,
+              sim = NA,
+              error = TRUE,
+              time_taken  = NA
+            )
+          )
+        })
+        #browser()
+        res <- res %>% mutate(sim_trafo = sim_transformation, sim_type = sim_type, base_sim = base_sim)
       }
 
 
@@ -291,8 +311,7 @@ all_sims_test <- function() {
       time_taken_seconds <- as.numeric(finish$toc - finish$tic)
 
       res <- res %>%
-        mutate(error = FALSE,
-               time_taken = time_taken_seconds)
+        mutate(time_taken = time_taken_seconds)
 
 
       return(res)
