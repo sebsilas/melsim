@@ -161,14 +161,24 @@ handle_self_sim <- function(m1, m2, i, j, sim_algo) {
   if(i == j) {
     #if sim_algo is a linear combination and we keep single we have to add all of them
     terms <- sim_algo$name
+
     if(!is.null(sim_algo$parameters$keep_singles) && sim_algo$parameters$keep_singles) {
       terms <- c(terms, parse_linear_combination(sim_algo$sim_measure) %>% pull(terms))
     }
+
     ret <- map_dfr(terms, function(t) {
+      algorithm <- sim_algo$name %>% as.vector()
+      full_name <- names(sim_algo$name)
+
+      if(t %in% names(melsim::similarity_measures)){
+        algorithm <- melsim::similarity_measures[[t]]$name
+        full_name <-  melsim::similarity_measures[[t]]$full_name
+      }
+
       tibble(melody1 = m1$meta$name,
              melody2 = m2$meta$name,
-             algorithm = melsim::similarity_measures[[t]]$name,
-             full_name = melsim::similarity_measures[[t]]$full_name,
+             algorithm = algorithm,
+             full_name = full_name,
              sim = 1.0)
     })
     return(ret)

@@ -408,7 +408,7 @@ melody_factory <- R6::R6Class("Melody",
             }
             return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
           }
-          else if(sm$type == "set_based") {
+          else if(sm$type == "set_based" || sm$type == "distribution_based" ) {
 
             if(sm$transformation == "ngrams") {
               sim <- self$ngram_similarity(melody,
@@ -421,8 +421,9 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
 
             } else {
-
-              sim <- proxy_pkg_handler(self$data[[sm$transformation]], melody$data[[sm$transformation]], proxy_method = sm$sim_measure)
+              sim <- proxy_pkg_handler(x = self$data[[sm$transformation]],
+                                       y = melody$data[[sm$transformation]],
+                                       proxy_method = sm$sim_measure)
 
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
 

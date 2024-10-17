@@ -6,6 +6,8 @@ get_sim_type <- function(sim_measure) {
     return("vector_based")
   } else if(sim_measure %in% sequence_based_measures) {
     return("sequence_based")
+  } else if(sim_measure %in% distribution_based_measures) {
+    return("distribution_based")
   } else if(sim_measure %in% set_based_measures) {
     return("set_based")
   } else if(sim_measure %in% special_measures) {
@@ -127,18 +129,21 @@ sim_measure_factory <- R6::R6Class(
   # End public
   active = list())
 
+#'@export
 sim_types <- c("set_based",
+               "distribution_based",
                "sequence_based",
                "vector_based",
                "linear_combination",
                "special")
 
+#'@export
 sim_transformations <- c("pitch",
                          "pc",
                          "int",
                          "parsons",
-                         "ioi",
-                         "phrase_segmentation",
+                         #"ioi",
+                         #"phrase_segmentation",
                          "ioi_class",
                          "fuzzy_int",
                          "duration_class",
@@ -149,11 +154,17 @@ sim_transformations <- c("pitch",
 
 proxy_pkg_measures <-  proxy::pr_DB$get_entry_names()
 
+#'@export
 set_based_measures <- c(
   # from melsim:
-  "ukkon", "sum_common", "count_distinct", "distr_sim", "Tversky",
+  "count_distinct",
   # from proxy:
-  "Jaccard", "Kulczynski1", "Kulczynski2", "Mountford",  "Russel", #"Fager",
+  "Jaccard",
+  "Tversky",
+  #"Kulczynski1", unbounded
+  "Kulczynski2",
+  #"Mountford",  not normalized
+  "Russel", #"Fager",
   "simple matching",
   #"Hamman",
   "Faith", "Tanimoto", "Dice",
@@ -166,16 +177,41 @@ set_based_measures <- c(
   "Ochiai",
   "Simpson",
   "Braun-Blanquet"
+
   )
 
 
+#'@export
 vector_measures <- c(
-  "cosine", "angular", "correlation", "Chi-squared", "Phi-squared", "Tschuprow",
-   "Cramer", "Pearson", "Gower", "Euclidean", "Mahalanobis", "Bhjattacharyya",
-   "Manhattan", "supremum", "Minkowski", "Canberra", "Chord", "Hellinger", "Geodesic",
-  "Bray",   "Soergel", "Podani", "Whittaker", "eJaccard", "eDice", "fJaccard", "Wave", "divergence", "Kullback" # from proxy
+  "cosine", "angular", "correlation",
+  #"Chi-squared", unbounded
+  #"Phi-squared",unbounded
+  "Tschuprow",
+   "Cramer",
+  #"Pearson", not bnormed
+  "Gower", "Euclidean",
+  #"Mahalanobis", not normalizable
+   "Manhattan",
+  "supremum", "Minkowski", "Canberra", "Chord",  "Geodesic",
+  "Bray",   "Soergel", "Podani", "Whittaker", "eJaccard", "eDice"
+  #"Wave", not normed
   )
 
+#'@export
+distribution_based_measures <- c(
+  #"fJaccard", only for 0 < values <1
+  "ukkon",
+  "sum_common",
+  "distr_sim",
+  "Bhjattacharyya",
+  "divergence",
+  "Hellinger"
+
+  #"Kullback" # from proxy, not symmetric
+
+)
+
+#'@export
 sequence_based_measures <- c(
   "edit_sim_utf8", "edit_sim", # from melsim
   "Levenshtein",
@@ -189,7 +225,7 @@ special_measures <- c(
   )
 
 
-low_level_sim_measures <- c(set_based_measures, vector_measures, sequence_based_measures)
+low_level_sim_measures <- c(set_based_measures, vector_measures, sequence_based_measures, distribution_based_measures)
 
 
 proxy_pkg_types <- c("binary", "metric", "nominal", "other")

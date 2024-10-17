@@ -164,6 +164,28 @@ na.omit <- function(x) {
   x[!is.na(x)]
 }
 
+get_joint_probs <- function(x, y, format = "proxy", smooth = FALSE){
+  if(length(x) == 0 || length(y) == 0){
+    return(NULL)
+  }
+  joint <- c(x, y) %>% table()
+  tx <- factor(x, levels = names(joint)) %>% table()
+  ty <- factor(y, levels = names(joint)) %>% table()
+  #joint <- joint/sum(joint)
+
+  if(format == "proxy"){
+    ret <- rbind(tx, ty)
+    if(smooth){
+      ret[ret == 0] <- 1
+    }
+  }
+  else{
+    tx <- tx/sum(tx)
+    ty <- ty/sum(ty)
+    ret <- tibble(p_x = tx, p_y = ty, value = levels(tx))
+  }
+  ret
+}
 
 distr_sim <- function(x, y){
   if(length(x) == 0 || length(y) == 0){
@@ -245,12 +267,12 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
     y <- rescaled_vs$y_rescaled
   }
 
-
+  #browser()
   if(proxy_method == "Levenshtein") {
 
     stopifnot(is.character(x) && is.character(y))
 
-    res <- proxy::dist(x, y, method = "Levenshtein", ...) %>%
+    res <- proxy::simil(x, y, method = "Levenshtein", ...) %>%
       as.numeric()
 
     return(res)
@@ -261,27 +283,35 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
 
   } else if(proxy_type %in% c("metric", "nominal", "mixed")) {
     if(length(x) != length(y)){
-      browser()
-      logging::logwarn(sprintf("Length of vectors not identicial for proxy method: %s", proxy_method))
+      #browser()
+      logging::logwarn(sprintf("Length of vectors not identical for proxy method: %s, using probs", proxy_method))
+      input <- get_joint_probs(x, y, format = "proxy", smooth = T)
+    } else{
+      input <- rbind(x, y)
     }
-    input <- rbind(x, y)
 
   } else {
     stop("proxy_type not recognised.")
   }
-
-  if(is_distance_measure(proxy_method)) {
-    res <- proxy::dist(input, method = proxy_method, ...) %>%
-      proxy::pr_dist2simil()
-  } else {
-    res <- proxy::simil(input, method = proxy_method, ...)
+  if(get_sim_type(proxy_method) == "distribution_based"){
+    #browser()
+    input <- get_joint_probs(x, y, format = "proxy", smooth = T)
   }
+
+  res <- proxy::simil(input, method = proxy_method, ...)
   if(is.na(res)){
+    #browser()
     logging::logwarn(sprintf("Similarity measure '%s' returned NA.", proxy_method))
   }
   else if(res < 0 || res > 1){
-    logging::logwarn(sprintf("Similarity measure out of bounds: sim = %3f. Squeezing.", res))
-    res <- squeeze(res)
+    if(res > 1){
+      logging::logwarn(sprintf("Similarity measure '%s' out of bounds: sim = %3f. Squeezing.", proxy_method, res))
+      #browser()
+      res <- NA
+    }
+    else{
+      res <- squeeze(res)
+    }
   }
   res %>%
     as.numeric()

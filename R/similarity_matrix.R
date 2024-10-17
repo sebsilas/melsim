@@ -28,6 +28,7 @@ sim_mat_factory <- R6::R6Class(
         return(FALSE)
       }
       if(sim_df %>% count(algorithm) %>% count(nn = n) %>% nrow() != 1){
+        browser()
         logging::logwarn("Similarity not homogenuous in regard to different algorithms")
         return(FALSE)
       }
