@@ -13,29 +13,29 @@ sim_mat_factory <- R6::R6Class(
   ),
   #end private
   public = list(
-    initialize = function(similarity_df, name = "", paired = FALSE){
+    initialize = function(similarity_df, name = "", paired = FALSE) {
       private$sim_df <- similarity_df
       private$meta$name <- name
-      if(!self$validate(similarity_df, paired = paired)){
+      if(!self$validate(similarity_df, paired = paired)) {
         logging::logwarn("Similarity matrix invalid or in wrong format")
       }
     },
 
-    check_homogenity = function(similarity_df){
+    check_homogenity = function(similarity_df) {
       sim_df <- similarity_df %>% arrange(algorithm, melody1, melody2)
-      if(length(intersect(names(sim_df), c("melody1", "melody2", "sim", "algorithm"))) != 4){
+      if(length(intersect(names(sim_df), c("melody1", "melody2", "sim", "algorithm"))) != 4) {
         logging::logwarn("Wrong column names")
         return(FALSE)
       }
-      if(sim_df %>% count(algorithm) %>% count(nn = n) %>% nrow() != 1){
+      if(sim_df %>% count(algorithm) %>% count(nn = n) %>% nrow() != 1) {
         browser()
         logging::logwarn("Similarity not homogenuous in regard to different algorithms")
         return(FALSE)
       }
       singles <- sim_df %>% group_split(algorithm) %>% lapply(function(x) x %>% select(melody1, melody2))
-      if(length(singles) > 1){
-        for(i in 1:(length(singles) - 1)){
-          if(!identical(singles[[i]], singles[[i + 1]])){
+      if(length(singles) > 1) {
+        for(i in 1:(length(singles) - 1)) {
+          if(!identical(singles[[i]], singles[[i + 1]])) {
             logging::logwarn("Similarity not homogenuous in regard to different algorithms")
             return(FALSE)
           }
@@ -45,7 +45,7 @@ sim_mat_factory <- R6::R6Class(
       return(TRUE)
     },
 
-    validate = function(similarity_df, paired = F){
+    validate = function(similarity_df, paired = FALSE) {
       private$type <- "invalid"
       if(!is.data.frame(similarity_df)){
         logging::logwarn("No data frame")
@@ -55,7 +55,7 @@ sim_mat_factory <- R6::R6Class(
         logging::logwarn("Wrong column names")
         return(FALSE)
       }
-      if(any(na.omit(similarity_df$sim) > 1) || any(na.omit(similarity_df$sim) < 0)){
+      if(any(na.omit(similarity_df$sim) > 1) || any(na.omit(similarity_df$sim) < 0)) {
         logging::logwarn("Similarity values not in range [0-1]")
         return(FALSE)
       }
@@ -65,13 +65,13 @@ sim_mat_factory <- R6::R6Class(
         private$dim2 <- length(unique(similarity_df$melody2))
         return(TRUE)
       }
-      if(!self$check_homogenity(similarity_df)){
+      if(!self$check_homogenity(similarity_df)) {
         return(FALSE)
       }
       similarity_df <- similarity_df %>% filter(algorithm == algorithm[[1]])
       diag_df <- similarity_df %>% filter(melody1 == melody2)
       diag_sim <- diag_df %>% pull(sim)
-      if(length(diag_sim) > 0 && any(diag_sim != 1)){
+      if(length(diag_sim) > 0 && any(diag_sim != 1)) {
         logging::logwarn("Self-identity property not fulfilled")
         return(FALSE)
       }
@@ -90,17 +90,17 @@ sim_mat_factory <- R6::R6Class(
         private$symmetric <- T
         if(nrow(diag_df) == l_u1){
           private$type <- ifelse(l_m1 == l_u1 * l_u1, "full-diag", "half-diag")
-          private$diagonal <- T
+          private$diagonal <- TRUE
         } else {
           private$type <- "full-no-diag"
-          private$diagonal <- F
+          private$diagonal <- FALSE
         }
       }
       else if(length(union(m1, m2)) == l_u1 + 1 ||
-              length(union(m1, m2)) == l_u2 + 1){
-        if(l_m1 == l_u1 * (l_u1 - 1)/2){
+              length(union(m1, m2)) == l_u2 + 1) {
+        if(l_m1 == l_u1 * (l_u1 - 1)/2) {
           private$type <- "half-no-diag"
-          private$has_diagonal <- F
+          private$has_diagonal <- FALSE
         } else if(l_m1 == l_u1 * (l_u1 + 1)/2){
           private$type <- "half-diag"
           private$dim1 <- l_u1 + 1
@@ -115,7 +115,7 @@ sim_mat_factory <- R6::R6Class(
           return(TRUE)
         }
       } else{
-        if(nrow(similarity_df) != l_u1 * l_u2){
+        if(nrow(similarity_df) != l_u1 * l_u2) {
           logging::logwarn("Missing entries in non-symmetric data frame")
           return(FALSE)
         }
@@ -134,14 +134,14 @@ sim_mat_factory <- R6::R6Class(
       private$melodies[[idx]]
     },
 
-    add_pair_index = function(){
+    add_pair_index = function() {
       private$sim_df <- private$sim_df %>%
         mutate(sim_id = pair_index(private$sim_df$melody1,
                                    private$sim_df$melody2))
       invisible(self)
     },
 
-    remove_pair_index = function(){
+    remove_pair_index = function() {
       if(self$has_pair_index){
         private$sim_df$sim_id <- NULL
       }
@@ -176,7 +176,7 @@ sim_mat_factory <- R6::R6Class(
       nr <- private$dim1
       nc <- private$dim2
       sim_df <- private$sim_df
-      if(private$type != "general"){
+      if(private$type != "general") {
         sim_df <- self$get_symmetric(with_diagonal = TRUE) %>%
           arrange(algorithm, melody1, melody2)
         nr <- nc <- length(unique(sim_df$melody1))
@@ -202,20 +202,20 @@ sim_mat_factory <- R6::R6Class(
         tmp
       })
       names(ret) <- algorithm
-      if(length(algorithm) == 1){
+      if(length(algorithm) == 1) {
         return(ret[[1]])
       }
       return(ret)
     },
 
-    as_dist = function(algorithm = NULL, method = "cauchy", ...){
+    as_dist = function(algorithm = NULL, method = "cauchy", ...) {
       tmp <- self$as_matrix(algorithm)
       #browser()
-      trafo <- function(x, a = 1, b = 1){
+      trafo <- function(x, a = 1, b = 1) {
         b * (1-x)^a
       }
       if(method == "cauchy"){
-        trafo <- function(x, a = 1, b = 1){
+        trafo <- function(x, a = 1, b = 1) {
           1/(a + b * x) - 1/(a + b)
         }
       }
@@ -225,30 +225,30 @@ sim_mat_factory <- R6::R6Class(
       tmp
     },
 
-    as_tibble = function(only_similarities = F){
+    as_tibble = function(only_similarities = FALSE) {
       tmp <- private$sim_df %>% tidyr::pivot_wider(id_cols = c("melody1", "melody2"),
                                                    names_from = algorithm,
                                                    names_prefix = "sim_",
                                                    values_from = sim
       )
-      if(only_similarities){
+      if(only_similarities) {
         tmp <- tmp %>% select(starts_with("sim_"))
       }
       tmp
     },
 
-    make_symmetric = function(){
+    make_symmetric = function() {
       private$sim_df <- self$get_symmetric()
       if(self$has_pair_index){
         self$add_pair_index()
       }
       private$type <- "full-diag"
-      private$diagonal <- T
-      private$symmetric < T
+      private$diagonal <- TRUE
+      private$symmetric < TRUE
       self
     },
 
-    get_symmetric = function(with_diagonal = T){
+    get_symmetric = function(with_diagonal = TRUE) {
       if(private$type == "general") {
         stop("Requesting symmetrizing of general sim matrix, you fool.")
         #return(private$sim_df)
@@ -262,7 +262,7 @@ sim_mat_factory <- R6::R6Class(
       })
     },
 
-    symmetrize = function(algorithm, with_diagonal = T, modify = F){
+    symmetrize = function(algorithm, with_diagonal = TRUE, modify = FALSE) {
       stopifnot(is.scalar.character(algorithm))
       sim_df <- private$sim_df %>%
         filter(algorithm == !!algorithm)
@@ -278,7 +278,7 @@ sim_mat_factory <- R6::R6Class(
               melody2 = private$melodies[[1]],
               sim = 1.0,
               algorithm = algorithm))
-        if(!is.null(full_name)){
+        if(!is.null(full_name)) {
           sim_df$full_name <- full_name
         }
         return(sim_df)
@@ -289,7 +289,7 @@ sim_mat_factory <- R6::R6Class(
             rename(tmp = melody2) %>%
             rename(melody1 = tmp, melody2 = melody1)
         ) %>% distinct()
-      if(with_diagonal){
+      if(with_diagonal) {
         sim_df <- sim_df %>%
           distinct() %>%
           filter(melody1 != melody2) %>%
@@ -301,19 +301,19 @@ sim_mat_factory <- R6::R6Class(
           sim_df$full_name <- full_name
         }
       }
-      if(modify){
+      if(modify) {
         private$sim_df <- sim_df
       }
       sim_df
     },
 
-    fuse = function(sim_mat){
-      if(!is_class(sim_mat, "SimilarityMatrix") || sim_mat$mat_type != private$type){
+    fuse = function(sim_mat) {
+      if(!is_class(sim_mat, "SimilarityMatrix") || sim_mat$mat_type != private$type) {
         logging::logerror("Similarities matrices not compatible")
         return(invisible(self))
       }
       new_algos <- setdiff(sim_mat$data$algorithm, private$sim_df$algorithm)
-      if(length(new_algos) == 0){
+      if(length(new_algos) == 0) {
         logging::logwarn("No new similarity algorithms found")
         return(invisible(self))
       }
@@ -322,29 +322,28 @@ sim_mat_factory <- R6::R6Class(
               private$sim_df$melody2)
       m2 <- c(sim_mat$data$melody1,
               sim_mat$data$melody2)
-      if(length(union(setdiff(m1, m2), setdiff(m2, m1))) > 0){
+      if(length(union(setdiff(m1, m2), setdiff(m2, m1))) > 0) {
         logging::logerror("Similarities matrices do not contain the same melodies")
         return(invisible(self))
-
       }
       private$sim_df <- bind_rows(private$sim_df, sim_mat$data %>% filter(algorithm %in% new_algos))
       return(invisible(self))
     },
 
-    plot = function(algorithms = NULL){
+    plot = function(algorithms = NULL) {
       sim_df <- private$sim_df
-      if(!is.null(algorithms)){
+      if(!is.null(algorithms)) {
         sim_df <- sim_df %>% filter(algorithm %in% algorithms)
       }
       if(private$type == "paired") {
         q <- sim_df %>% ggplot(aes(x = sim, y = after_stat(count), fill = algorithm))
         q <- q + geom_histogram(color = "black")
         q <- q + theme_bw()
-        if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
+        if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10) {
           q <- q + facet_wrap(~algorithm)
           q <- q + scale_fill_brewer(palette = "Set1")
         }
-        else{
+        else {
           q <- q + scale_fill_viridis_d(option = "inferno")
         }
         return(q)
@@ -355,7 +354,7 @@ sim_mat_factory <- R6::R6Class(
       q <- q + theme(axis.text.x = element_text(angle = 45, hjust = 1))
       q <- q + scale_fill_viridis_c(option = "inferno")
       #q <- q + scale_fill_brewer(palette = "Set1")
-      if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10){
+      if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10) {
         q <- q + facet_wrap(~algorithm)
       }
       q
@@ -363,13 +362,13 @@ sim_mat_factory <- R6::R6Class(
     linear_sum = function(algorithms,
                           weights = rep(1.0, length(algorithms)),
                           name = "",
-                          add = F){
+                          add = FALSE) {
       #browser()
       algorithms <- unique(algorithms)
       stopifnot(length(algorithms) == length(weights),
                 is.vector(algorithms), is.vector(weights))
       tmp <- private$sim_df %>% filter(algorithm %in% algorithms)
-      if(length(unique(tmp$algorithm)) != length(algorithms)){
+      if(length(unique(tmp$algorithm)) != length(algorithms)) {
         #browser()
         logging::logwarn(sprintf("Found unknown algorithms: %s",
                                  paste(setdiff(algorithms, tmp$algorithm), collapse = ", ")))
@@ -413,35 +412,35 @@ sim_mat_factory <- R6::R6Class(
   ),
   #end public
   active = list(
-    is_valid = function(){
+    is_valid = function() {
       private$type != "invalid"
     },
-    mat_type = function(){
+    mat_type = function() {
       private$type
     },
-    algorithms = function(){
+    algorithms = function() {
       unique(private$sim_df$algorithm)
     },
-    has_diagonal = function(){
+    has_diagonal = function() {
       private$diagonal
     },
-    has_full_name = function(){
+    has_full_name = function() {
       "full_name" %in% names(private$sim_df)
     },
-    has_pair_index = function(){
+    has_pair_index = function() {
       "sim_id" %in% names(private$sim_df)
     },
-    data = function(similarity_df){
-      if(missing(similarity_df)){
+    data = function(similarity_df) {
+      if(missing(similarity_df)) {
         private$sim_df
-      } else{
+      } else {
         stopifnot(self$validate_data(similarity_df))
         private$sim_df <- similarity_df
       }
     }
   ))
 
-test_sim_matrix <- function(){
+test_sim_matrix <- function() {
   sim_df_invalid1 <- tibble(mel1 = "moin", mel2 = "hallo", sim = 1)
   sim_df_invalid2 <- tibble(melody1 = "moin", melody2 = "hallo", sim = 100)
   sim_df_invalid3 <- tibble(melody1 = "moin", melody2 = "moin", sim = .5)
