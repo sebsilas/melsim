@@ -219,12 +219,13 @@ sequence_based_measures <- c(
   "stringdot_utf8" # based on kernlab::stringdot
   )
 
+#'@export
 special_measures <- c(
   "pmi", "const", "sim_emd", "sim_dtw" # from melsim
 
   )
 
-
+#'@export
 low_level_sim_measures <- c(set_based_measures, vector_measures, sequence_based_measures, distribution_based_measures)
 
 
