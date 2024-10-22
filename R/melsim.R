@@ -159,7 +159,7 @@ show_progress <- function(with_progress, paired, melody1, melody2) {
 
 handle_self_sim <- function(m1, m2, i, j, sim_algo) {
   if(i == j) {
-    #if sim_algo is a linear combination and we keep single we have to add all of them
+    # If sim_algo is a linear combination and we keep single we have to add all of them
     terms <- sim_algo$name
 
     if(!is.null(sim_algo$parameters$keep_singles) && sim_algo$parameters$keep_singles) {
