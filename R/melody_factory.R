@@ -227,7 +227,8 @@ melody_factory <- R6::R6Class("Melody",
                              sep = ";",
                              stringsAsFactors = FALSE) %>%
           as_tibble()
-        mel_meta <- list(file_name =  fname, name = tools::file_path_sans_ext(basename(fname)))
+        mel_meta <- list(file_name =  fname,
+                         name = tools::file_path_sans_ext(basename(fname)))
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
 
@@ -351,7 +352,7 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       similarity = function(melody, sim_measures) {
-
+        #browser()
         # Make sure both melodies have transforms
         if(self$has_not(sim_transformations)) {
           self$add_transforms(sim_transformations)

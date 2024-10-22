@@ -9,8 +9,12 @@ optim_transposer <- function(query,
   if(is.null(parameters)){
     parameters <- list(strategy = "all")
   }
+  parameters$strategy <- parameters$strategy[1]
+
+
   query <- query + 60 - min(c(query))
   target <- target + 60 - min(c(target))
+
   d <- stats::median(target)  -  stats::median(query)
 
   if(parameters$strategy == "all") {
@@ -37,6 +41,11 @@ optim_transposer_emd <- function(mel1,
 
   mel1$pitch <- mel1$pitch + 60 - min(c(mel1$pitch))
   mel2$pitch <- mel2$pitch + 60 - min(c(mel2$pitch))
+
+  if(is.null(parameters)){
+    parameters <- list(strategy = "all", beta = .5)
+  }
+  parameters$strategy <- parameters$strategy[1]
 
   d <- stats::median(mel2$pitch)  -  stats::median(mel1$pitch)
 

@@ -32,7 +32,6 @@ melsim <- function(melody1,
     browser()
     stop()
   }
-
   if(paired) assertthat::assert_that(!is.null(melody2), msg = "If paired is TRUE, melody2 must be non-NULL.")
 
   # Instantiate melodies
@@ -69,6 +68,7 @@ melsim <- function(melody1,
       purrr::imap_dfr(unname(melody1), function(m1, i) {
         # Note that if melody1 is named, i will be a name, but we want an index, hence the unname()
         if(with_progress) cli::cli_progress_update(.envir = globalenv())
+        #browser()
 
         if(!("name" %in% names(m1$meta))) {
           m1$add_meta("name", sprintf("SET1MEL%04d", i))

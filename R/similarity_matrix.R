@@ -164,9 +164,11 @@ sim_mat_factory <- R6::R6Class(
         filter(pair_id %in% keep_ids) %>% select(-pair_id)
       sim_mat_factory$new(sim_df, paired = TRUE)
     },
+
     update = function(old_sim_mat){
       sim_mat_factory$new(old_sim_mat$data, paired = old_sim_mat$type == "paired")
     },
+
     as_matrix = function(algorithm = NULL){
       if(!self$is_valid){
         return(NULL)
@@ -179,15 +181,18 @@ sim_mat_factory <- R6::R6Class(
           arrange(algorithm, melody1, melody2)
         nr <- nc <- length(unique(sim_df$melody1))
       }
+
       if(is.null(algorithm)){
         algorithm <- unique(sim_df$algorithm)
       }
       else{
         algorithm <- intersect(unique(sim_df$algorithm), algorithm)
       }
+
       if(length(algorithm) == 0){
         stop("Unknown algorithms requested")
       }
+
       ret <- lapply(algorithm, function(algo){
         tmp <- matrix(sim_df[sim_df$algorithm == algo,]$sim,
                       nrow = nr,
