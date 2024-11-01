@@ -1,22 +1,4 @@
 
-get_sim_type <- function(sim_measure) {
-  if(is_formula(sim_measure)) {
-    return("linear_combination")
-  } else if(sim_measure %in% vector_measures) {
-    return("vector_based")
-  } else if(sim_measure %in% sequence_based_measures) {
-    return("sequence_based")
-  } else if(sim_measure %in% distribution_based_measures) {
-    return("distribution_based")
-  } else if(sim_measure %in% set_based_measures) {
-    return("set_based")
-  } else if(sim_measure %in% special_measures) {
-    return("special")
-  } else {
-    stop(sprintf("sim_measure: <%s>  not recognised.", as.character(sim_measure)))
-  }
-}
-
 #'@export
 sim_measure_factory <- R6::R6Class(
   "SimilarityMeasure",
@@ -129,6 +111,10 @@ sim_measure_factory <- R6::R6Class(
   # End public
   active = list())
 
+
+
+
+
 #'@export
 sim_types <- c("set_based",
                "distribution_based",
@@ -158,9 +144,9 @@ proxy_pkg_measures <-  proxy::pr_DB$get_entry_names()
 set_based_measures <- c(
   # from melsim:
   "count_distinct",
+  "Tversky",
   # from proxy:
   "Jaccard",
-  "Tversky",
   #"Kulczynski1", unbounded
   "Kulczynski2",
   #"Mountford",  not normalized
@@ -234,6 +220,28 @@ proxy_pkg_types <- c("binary", "metric", "nominal", "other")
 
 # Functions
 
+is_proxy_pkg_measure <- function(sim_measure) {
+  proxy::pr_DB$entry_exists(sim_measure)
+}
+
+get_sim_type <- Vectorize(function(sim_measure) {
+  if(is_formula(sim_measure)) {
+    return("linear_combination")
+  } else if(sim_measure %in% vector_measures) {
+    return("vector_based")
+  } else if(sim_measure %in% sequence_based_measures) {
+    return("sequence_based")
+  } else if(sim_measure %in% distribution_based_measures) {
+    return("distribution_based")
+  } else if(sim_measure %in% set_based_measures) {
+    return("set_based")
+  } else if(sim_measure %in% special_measures) {
+    return("special")
+  } else {
+    stop(sprintf("sim_measure: <%s>  not recognised.", as.character(sim_measure)))
+  }
+})
+
 get_proxy_sim_measure_type <- function(sim_measure_name) {
   if(sim_measure_name == "Gower") {
     return("mixed")
@@ -241,9 +249,21 @@ get_proxy_sim_measure_type <- function(sim_measure_name) {
   proxy::pr_DB$get_entry(sim_measure_name)$type
 }
 
-is_distance_measure <- function(sim_measure_name) {
-  proxy::pr_DB$get_entry(sim_measure_name)$distance
-}
+is_distance_measure <- Vectorize(function(sim_measure_name) {
+  if(is_proxy_pkg_measure(sim_measure_name)) {
+    return(proxy::pr_DB$get_entry(sim_measure_name)$distance)
+  } else {
+    if(sim_measure_name %in% c("pmi", "const")) {
+      return(NA)
+    } else if(sim_measure_name == "Levenshtein") { # Technically also covered by proxy, but we have a separate implementation
+      return(TRUE)
+    } else if(sim_measure_name %in% c("sim_emd", "sim_dtw", "edit_sim_utf8", "edit_sim", "sim_NCD", "stringdot_utf8", "count_distinct", "Tversky", "ukkon", "sum_common", "distr_sim")) {
+      return(FALSE)
+    } else {
+      stop(paste0("`sim_measure_name` ", sim_measure_name, " not found."))
+    }
+  }
+})
 
 proxy_pkg_measures_types <- purrr::map_dfr(proxy_pkg_measures, function(measure) {
   tibble::tibble(

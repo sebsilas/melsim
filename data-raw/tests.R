@@ -47,7 +47,7 @@ sim_grids <- function(){
                                 # "Tversky", For now we leave this out parameter exploration and use auto + the Berkowitz db
                                 "Minkowski",
                                 "pmi")
-  logging::loginfo("Creatring sim_grid base")
+  logging::loginfo("Creating sim_grid base")
 
   similarity_grid_base <-
     expand_grid(

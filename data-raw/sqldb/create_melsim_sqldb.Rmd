@@ -1,0 +1,306 @@
+
+
+```{r}
+
+library(tidyverse)
+library(musicassessrdb)
+
+load_all()
+
+```
+KF:
+
+I think we need some auxialliary DFs that capture the properties of the similarity measures, one DF that captures the properties of the melodic transformation (first and second order), and then the GRID, which combines all these. We have some vectors now describing the similarity measure types, but need something more detailed, e.g. the value range of the proxy measures.  We also could think to systematize the different normalization methods, the general ones, going from distances to similarities, and the specific ones, e.g., the main difference rawed and Pat's pmi besides the different gap costs, is the normalization. There is no information on the melody transformation types yet, and nothing systematic about ngrams and derived probability distribution.
+
+
+```{r}
+
+db_con <- musicassessr_con(db_name = "melsim")
+
+```
+
+
+```{r}
+
+optimizers_tbl <- tibble(
+  optimizer = optimizers
+) %>% 
+  mutate(optimizer_id = row_number()) %>% 
+  relocate(optimizer_id)
+
+```
+
+```{r}
+
+low_level_sim_measures_tbl <- tibble(
+  low_level_sim_measure_name = low_level_sim_measures,
+  sim_type = get_sim_type(low_level_sim_measure_name),
+  is_proxy_measure = is_proxy_pkg_measure(low_level_sim_measure_name),
+  distance = is_distance_measure(low_level_sim_measure_name) ) %>% 
+  mutate(low_level_sim_measure_id = row_number(),
+         sim_measure_lower_bound = NA, 
+         sim_measure_upper_bound = NA,
+         normalisation_method = NA
+         ) %>% 
+  relocate(low_level_sim_measure_id)
+
+```
+
+
+```{r}
+
+low_level_sim_measures_additional_parameters_tbl <- tibble(
+  low_level_sim_measure_id = NA,
+  parameter_name = NA,
+  parameter_type = NA,
+  parameter_min = NA,
+  parameter_max = NA
+)
+
+```
+
+```{r}
+
+low_level_sim_measures_additional_parameter_values_tbl <- 
+  tibble(
+  low_level_sim_measure_id = rep(23,  5), # Minkowski 
+  parameter_name = "p",
+  parameter_value = c(0.5, 1, 2, 3, Inf)
+)
+
+```
+
+
+```{r}
+
+sim_transformations_tbl <- tibble::tibble(
+  sim_transformation = sim_transformations
+) %>% 
+  mutate(sim_transformation_id = row_number() ) %>% 
+  relocate(sim_transformation_id)
+
+```
+
+```{r}
+
+ngram_transformations_tbl <- tibble::tibble(
+  sim_transformation = setdiff(sim_transformations, "ngrams")
+) %>% 
+  mutate(sim_transformation_id = row_number() ) %>% 
+  relocate(sim_transformation_id)
+
+```
+
+
+
+
+```{r}
+
+melodic_sim_measures_ngram <- 
+   expand_grid(
+     low_level_sim_measure_id = low_level_sim_measures_tbl$low_level_sim_measure_id,
+     sim_transformation_id = 10L, # ngrams
+     ngram_transformation_id = sim_transformations_tbl$sim_transformation_id,
+     optimizer_id = optimizers_tbl$optimizer_id
+     ) %>% 
+    left_join(sim_transformations_tbl, 
+              by = c("ngram_transformation_id" = "sim_transformation_id") ) %>% 
+  rename(ngram_sim_transformation = sim_transformation) %>% 
+  
+  left_join(sim_transformations_tbl, 
+              by = "sim_transformation_id") %>% 
+  left_join(low_level_sim_measures_tbl, by = "low_level_sim_measure_id") %>% 
+  left_join(optimizers_tbl, by = "optimizer_id")
+
+```
+
+
+```{r}
+
+melodic_sim_measures <- 
+   expand_grid(
+     low_level_sim_measure_id = low_level_sim_measures_tbl$low_level_sim_measure_id,
+     sim_transformation_id = sim_transformations_tbl$sim_transformation_id,
+     optimizer_id = optimizers_tbl$optimizer_id
+     ) %>% 
+  left_join(optimizers_tbl, by = "optimizer_id") %>% 
+  left_join(sim_transformations_tbl, by = "sim_transformation_id") %>% 
+  left_join(low_level_sim_measures_tbl, by = "low_level_sim_measure_id") %>% 
+  
+  rowwise() %>% 
+  mutate(transposition_invariant = is_transposition_invariant(sim_transformation), 
+         tempo_invariant = is_tempo_invariant(sim_transformation)) %>% 
+  ungroup() %>% 
+  mutate(ngram_transformation_id = NA,
+         ngram_sim_transformation = NA) %>% 
+  select(all_of(names(melodic_sim_measures_ngram))) %>% 
+  rbind(melodic_sim_measures_ngram) %>% 
+  rowwise() %>% 
+  mutate(sim_name =  sprintf("%s-%s", sim_transformation, low_level_sim_measure_name) ) %>% 
+  ungroup() %>% 
+  full_join(low_level_sim_measures_additional_parameter_values_tbl, 
+            by = "low_level_sim_measure_id") %>% 
+  mutate(melodic_sim_measure_id = row_number() ) %>% 
+    relocate(melodic_sim_measure_id, sim_name)
+    
+
+# Tversky pars..
+# ngram_transformations_tbl
+# ngram_length
+ 
+# ngram_transformation, ngram_length, optimizer
+
+```
+
+
+```{r}
+
+benchmark_data <- read_csv('../input/model_based_sim_aggregates.csv')
+
+```
+
+
+```{r}
+
+sim_benchmarks <- tibble::tibble(
+  sim_measure_id = NA,
+  speed_benchmark = NA,
+  communality = NA,
+  rmse = NA,
+  r = NA
+)
+
+```
+
+
+```{r}
+
+compile_sim_measure_from_db <- function(melodic_sim_measure_id) {
+  
+  sim_measure <- melodic_sim_measures %>% 
+    dplyr::filter(melodic_sim_measure_id == !! melodic_sim_measure_id)
+  
+  pars <- list(
+            optimizer = sim_measure$optimizer,
+            transformation = sim_measure$ngram_sim_transformation,
+            ngram_length = 2L # Harcode for now
+          )
+  
+  # Note this only handles one parameter currently
+  # What if measures have multi parameter combinations?
+  
+  if(!is.na(sim_measure$parameter_name)) {
+    sim_measure[[sim_measure$parameter_name]] = sim_measure$parameter_value
+  }
+  
+  sim_measure <- sim_measure_factory$new(
+          full_name = sim_measure$sim_name,
+          name = abbreviate(sim_measure$sim_name),
+          transformation = sim_measure$sim_transformation,
+          parameters = pars,
+          sim_measure = sim_measure$low_level_sim_measure_name
+        )
+  
+}
+
+tt <- compile_sim_measure_from_db(2861L)
+  
+```
+
+
+```{r}
+
+benchmark_data_small <- benchmark_data %>% 
+  filter(trial_type == "midi_to_midi",
+         n_ratings >= 20) %>% 
+  separate_wider_delim(pair_id,
+                       delim = "_",
+                       names = c("melody1", "melody2"))
+
+```
+
+
+```{r}
+
+mel_list <- readRDS(system.file("extdata/mel_objects.rds", 
+                                mustWork = TRUE, package = "melsim"))
+
+names(mel_list) <- 1:length(mel_list)
+
+mel1_list <- mel_list[benchmark_data_small$melody1]
+mel2_list <- mel_list[benchmark_data_small$melody2]
+  
+```
+
+
+```{r}
+
+saveRDS(mel1_list, file = '../../inst/extdata/mel1_list.rds')
+saveRDS(mel2_list, file = '../../inst/extdata/mel2_list.rds')
+
+```
+
+```{r}
+
+benchmark_sim_measure <- function(sim_measure_id) {
+  
+  compiled_sim_measure <- compile_sim_measure_from_db(sim_measure_id)
+  
+  mel1_list <- readRDS(system.file("extdata/mel2_list.rds", 
+                                  mustWork = TRUE, package = "melsim"))
+  
+  mel2_list <- readRDS(system.file("extdata/mel1_list.rds", 
+                                  mustWork = TRUE, package = "melsim"))
+  
+  tictoc::tic("Benchmark sim measure")
+  
+  res <- melsim(
+        melody1 = mel1_list,
+        melody2 = mel2_list,
+        similarity_measures = compiled_sim_measure,
+        paired = TRUE,
+        verbose = TRUE,
+        with_checks = TRUE,
+        with_progress = TRUE,
+        name = paste0("benchmark_", compiled_sim_measure$name)
+        )
+  
+  res <- res$data %>% 
+        select(melody1, melody2, algorithm, sim)
+   
+      
+  finish <- tictoc::toc()
+  
+  time_taken_seconds <- as.numeric(finish$toc - finish$tic)
+  
+  res <- res %>% 
+      mutate(error = FALSE,
+             time_taken = time_taken_seconds)
+  
+  return(res)
+  
+}
+
+
+tt <- benchmark_sim_measure(3891)
+
+
+```
+
+
+```{r}
+
+add_sim_measure_to_db <- function(compute_benchmarks = TRUE) {
+  
+}
+
+```
+
+
+
+
+```{r}
+
+db_disconnect(db_con)
+
+```

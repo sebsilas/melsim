@@ -327,6 +327,10 @@ invariance_table <- tribble(
 
 is_transposition_invariant <- function(transform, optimizer = NULL) {
 
+  if(transform == "none") {
+    return(NA)
+  }
+
   if(is.null(optimizer)) {
 
     ret <- invariance_table %>%
@@ -345,6 +349,11 @@ is_transposition_invariant <- function(transform, optimizer = NULL) {
 }
 
 is_tempo_invariant <- function(transform) {
+
+  if(transform == "none") {
+    return(NA)
+  }
+
   invariance_table %>%
     filter(transformation == !! transform) %>%
     pull(is_tempo_invariant)
