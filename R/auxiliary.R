@@ -362,7 +362,7 @@ read_melody <- function(f) {
 #' @param mel_list list of Melody objects
 #' @param force (logical) Do it no matter what, otherwise only if version of melsim has changed
 #'@export
-update_melodies <- function(mel_list, force = TRUE){
+update_melodies <- function(mel_list, force = TRUE) {
   current_version <- melody_factory$new()$version
   map(mel_list, function(x){
     if(force || is.null(x$version) || x$version != current_version){

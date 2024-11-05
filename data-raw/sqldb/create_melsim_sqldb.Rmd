@@ -4,6 +4,7 @@
 
 library(tidyverse)
 library(musicassessrdb)
+library(DBI)
 
 load_all()
 
@@ -22,13 +23,24 @@ db_con <- musicassessr_con(db_name = "melsim")
 
 ```{r}
 
-optimizers_tbl <- tibble(
-  optimizer = optimizers
-) %>% 
+optimizers_tbl <- tibble(optimizer = optimizers) %>% 
   mutate(optimizer_id = row_number()) %>% 
   relocate(optimizer_id)
 
 ```
+
+<!--  
+
+```{r}
+
+dbWriteTable(db_con, 
+             name = 'optimizers', 
+             value = optimizers_tbl, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
+
+```
+
+-->
 
 ```{r}
 
@@ -46,6 +58,40 @@ low_level_sim_measures_tbl <- tibble(
 
 ```
 
+<!--
+
+```{r}
+
+dbWriteTable(db_con, 
+             name = 'low_level_sim_measures', 
+             value = low_level_sim_measures_tbl, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
+
+```
+
+-->
+
+```{r}
+
+get_low_level_sim_measure_id_from_name <- function(db_con, name) {
+  
+  id <- dplyr::tbl(db_con, "low_level_sim_measures") %>% 
+    dplyr::filter(low_level_sim_measure_name == !! name) %>% 
+    dplyr::collect()
+  
+  if(nrow(id) < 1) {
+    stop("This sim measure name does not exist in the DB.")
+  }
+  
+  id <- id %>% 
+    dplyr::pull(low_level_sim_measure_id)
+  
+  return(id)
+}
+
+
+```
+
 
 ```{r}
 
@@ -59,39 +105,124 @@ low_level_sim_measures_additional_parameters_tbl <- tibble(
 
 ```
 
+<!--
+
 ```{r}
 
-low_level_sim_measures_additional_parameter_values_tbl <- 
-  tibble(
-  low_level_sim_measure_id = rep(23,  5), # Minkowski 
+dbWriteTable(db_con, 
+             name = 'low_level_sim_measures_additional_parameters', 
+             value = low_level_sim_measures_additional_parameters_tbl, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
+
+```
+
+-->
+
+```{r}
+
+
+minkowski_id <- get_low_level_sim_measure_id_from_name(db_con, "Minkowski")
+tversky_id <- get_low_level_sim_measure_id_from_name(db_con, "Tversky")
+
+
+minkowski_additional_pars_values <- tibble(
+  low_level_sim_measure_id = rep(minkowski_id,  5), # Minkowski 
   parameter_name = "p",
   parameter_value = c(0.5, 1, 2, 3, Inf)
-)
+) %>% 
+  mutate(additional_parameter_values_id = row_number() )
+  
+
+minkowski_max <- max(minkowski_additional_pars_values$additional_parameter_values_id)
+
+
+tversky_additional_pars_values <- expand_grid(transformation = "int",
+                                       ngram_length = as.character(2:3),
+                                       ngram_db = "melsim::int_ngrams_berkowitz",
+                                       alpha = "auto",
+                                       beta = "auto") %>% 
+   mutate(additional_parameter_values_id = row_number() + minkowski_max ) %>% 
+   pivot_longer(transformation:beta, 
+                names_to = "parameter_name",
+                values_to = "parameter_value") %>% 
+   mutate(low_level_sim_measure_id = tversky_id) %>%  # Tversky 
+   relocate(low_level_sim_measure_id)
+
+  
+  
+low_level_sim_measures_additional_parameter_values_tbl <- rbind(
+  minkowski_additional_pars_values, 
+  tversky_additional_pars_values
+) %>% 
+  relocate(additional_parameter_values_id)
+
 
 ```
 
 
+<!--  
 ```{r}
 
-sim_transformations_tbl <- tibble::tibble(
-  sim_transformation = sim_transformations
-) %>% 
+dbWriteTable(db_con, 
+             name = 'low_level_sim_measures_additional_parameter_values', 
+             value = low_level_sim_measures_additional_parameter_values_tbl, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
+
+```
+
+-->
+
+
+```{r}
+
+sim_transformations_tbl <- 
+  tibble(sim_transformation = sim_transformations) %>% 
   mutate(sim_transformation_id = row_number() ) %>% 
   relocate(sim_transformation_id)
 
 ```
 
+<!--
+
 ```{r}
 
-ngram_transformations_tbl <- tibble::tibble(
-  sim_transformation = setdiff(sim_transformations, "ngrams")
-) %>% 
-  mutate(sim_transformation_id = row_number() ) %>% 
-  relocate(sim_transformation_id)
+dbWriteTable(db_con, 
+             name = 'sim_transformations', 
+             value = sim_transformations_tbl, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
+
+```
+
+-->
+
+
+```{r}
+
+ngram_transformations_tbl <- expand_grid(
+  ngram_transformation = setdiff(sim_transformations, c("ngrams", "none")),
+  ngram_length = 2:4) %>%
+  mutate(ngram_transformation_id = row_number() ) %>% 
+  relocate(ngram_transformation_id)
 
 ```
 
 
+<!--
+
+```{r}
+
+dbWriteTable(db_con, 
+             name = 'ngram_transformations', 
+             value = ngram_transformations_tbl, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
+
+```
+
+-->
+
+
+
+Now we build everything together, ngrams first, because this is a slightly special case
 
 
 ```{r}
@@ -100,20 +231,35 @@ melodic_sim_measures_ngram <-
    expand_grid(
      low_level_sim_measure_id = low_level_sim_measures_tbl$low_level_sim_measure_id,
      sim_transformation_id = 10L, # ngrams
-     ngram_transformation_id = sim_transformations_tbl$sim_transformation_id,
+     ngram_transformation_id = ngram_transformations_tbl$ngram_transformation_id,
      optimizer_id = optimizers_tbl$optimizer_id
      ) %>% 
-    left_join(sim_transformations_tbl, 
-              by = c("ngram_transformation_id" = "sim_transformation_id") ) %>% 
-  rename(ngram_sim_transformation = sim_transformation) %>% 
-  
-  left_join(sim_transformations_tbl, 
-              by = "sim_transformation_id") %>% 
+  left_join(sim_transformations_tbl,  by = "sim_transformation_id") %>% 
   left_join(low_level_sim_measures_tbl, by = "low_level_sim_measure_id") %>% 
-  left_join(optimizers_tbl, by = "optimizer_id")
+  left_join(optimizers_tbl, by = "optimizer_id") %>% 
+  left_join(ngram_transformations_tbl, by = "ngram_transformation_id")
 
 ```
 
+Then anything with additional parameters
+
+```{r}
+
+low_level_sim_measures_additional_parameters_values_tbl_transformed <- 
+  low_level_sim_measures_additional_parameters_values_tbl %>% 
+  group_by(additional_parameter_values_id) %>% 
+  summarise(low_level_sim_measure_id = low_level_sim_measure_id,
+            parameter_array = paste0('"', parameter_name, '" : "', parameter_value, '"', 
+                                     collapse = ', '),
+            parameter_array = paste0("{ ", parameter_array, " }")) %>% 
+  ungroup() %>% 
+  unique()
+
+low_level_sim_measures_additional_parameters_values_tbl_transformed
+  
+```
+
+Bring it all together
 
 ```{r}
 
@@ -132,45 +278,60 @@ melodic_sim_measures <-
          tempo_invariant = is_tempo_invariant(sim_transformation)) %>% 
   ungroup() %>% 
   mutate(ngram_transformation_id = NA,
-         ngram_sim_transformation = NA) %>% 
+         ngram_sim_transformation = NA,
+         ngram_transformation = NA,
+         ngram_length = NA) %>% 
   select(all_of(names(melodic_sim_measures_ngram))) %>% 
   rbind(melodic_sim_measures_ngram) %>% 
   rowwise() %>% 
   mutate(sim_name =  sprintf("%s-%s", sim_transformation, low_level_sim_measure_name) ) %>% 
   ungroup() %>% 
-  full_join(low_level_sim_measures_additional_parameter_values_tbl, 
+  full_join(low_level_sim_measures_additional_parameters_values_tbl_transformed, 
             by = "low_level_sim_measure_id") %>% 
   mutate(melodic_sim_measure_id = row_number() ) %>% 
-    relocate(melodic_sim_measure_id, sim_name)
+  relocate(melodic_sim_measure_id, sim_name)
     
 
-# Tversky pars..
-# ngram_transformations_tbl
-# ngram_length
- 
-# ngram_transformation, ngram_length, optimizer
+```
+
+
+This gets us to the grand melodic similarity measure DB
+
+<!-- 
+```{r}
+
+dbWriteTable(db_con, 
+             name = 'melodic_sim_measures', 
+             value = melodic_sim_measures, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
 
 ```
 
+-->
+
+
+
+Check Tversky and Minowski
 
 ```{r}
 
-benchmark_data <- read_csv('../input/model_based_sim_aggregates.csv')
+tt <- melodic_sim_measures %>% 
+  filter(low_level_sim_measure_id %in% c(minkowski_id, tversky_id))
 
 ```
-
 
 ```{r}
 
-sim_benchmarks <- tibble::tibble(
-  sim_measure_id = NA,
-  speed_benchmark = NA,
-  communality = NA,
-  rmse = NA,
-  r = NA
-)
+parse_additional_parameters_from_string <- function(x) {
+  if(length(x) == 0 || is.na(x)) {
+    return(list())
+  } else {
+    return(rjson::fromJSON(x))
+  }
+}
 
 ```
+
 
 
 ```{r}
@@ -180,17 +341,21 @@ compile_sim_measure_from_db <- function(melodic_sim_measure_id) {
   sim_measure <- melodic_sim_measures %>% 
     dplyr::filter(melodic_sim_measure_id == !! melodic_sim_measure_id)
   
+  # Parse potential additional parameters
+  pars <- parse_additional_parameters_from_string(sim_measure$parameter_array)
+  
+  # Add optimizer
   pars <- list(
-            optimizer = sim_measure$optimizer,
-            transformation = sim_measure$ngram_sim_transformation,
-            ngram_length = 2L # Harcode for now
-          )
+    pars,
+    optimizer = sim_measure$optimizer
+  )
   
-  # Note this only handles one parameter currently
-  # What if measures have multi parameter combinations?
   
-  if(!is.na(sim_measure$parameter_name)) {
-    sim_measure[[sim_measure$parameter_name]] = sim_measure$parameter_value
+  # Add ngram transformations, if need be
+  if(sim_measure$sim_transformation == "ngrams") {
+    pars <- c(pars,
+              list(transformation = sim_measure$ngram_transformation,
+                   ngram_length = sim_measure$ngram_length))
   }
   
   sim_measure <- sim_measure_factory$new(
@@ -203,54 +368,82 @@ compile_sim_measure_from_db <- function(melodic_sim_measure_id) {
   
 }
 
-tt <- compile_sim_measure_from_db(2861L)
+# tt <- compile_sim_measure_from_db(2861L)
   
 ```
 
 
+
+
 ```{r}
+
+sim_benchmarks <- tibble::tibble(
+  sim_measure_id = NA,
+  speed_benchmark = NA,
+  rmse = NA,
+  r = NA
+)
+
+```
+
+```{r}
+
+
+benchmark_data <- read_csv('../input/model_based_sim_aggregates.csv')
+
 
 benchmark_data_small <- benchmark_data %>% 
   filter(trial_type == "midi_to_midi",
          n_ratings >= 20) %>% 
   separate_wider_delim(pair_id,
                        delim = "_",
-                       names = c("melody1", "melody2"))
+                       names = c("melody1", "melody2")) %>% 
+  mutate(melody1 = paste0("MEL", sprintf("%04s", melody1)),
+         melody2 = paste0("MEL", sprintf("%04s", melody2))) %>% 
+  mutate(across(lmer_pred_all_data: Bayes_pred_3plus_ratings, ~ .x / 10))
+  # Is dividing by 10 way too simplisitic?
 
 ```
+
+<!--
+```{r}
+
+dbWriteTable(db_con, 
+             name = 'benchmark_data', 
+             value = benchmark_data_small, 
+             row.names = FALSE, append = FALSE, overwrite = TRUE)
+
+```
+-->
+
 
 
 ```{r}
 
-mel_list <- readRDS(system.file("extdata/mel_objects.rds", 
-                                mustWork = TRUE, package = "melsim"))
+load_all()
 
-names(mel_list) <- 1:length(mel_list)
+mel1_list <- system.file("extdata/mel1_list.rds", 
+                         mustWork = TRUE,
+                         package = "melsim") %>% 
+  readRDS() %>% 
+  update_melodies()
 
-mel1_list <- mel_list[benchmark_data_small$melody1]
-mel2_list <- mel_list[benchmark_data_small$melody2]
-  
-```
-
-
-```{r}
-
-saveRDS(mel1_list, file = '../../inst/extdata/mel1_list.rds')
-saveRDS(mel2_list, file = '../../inst/extdata/mel2_list.rds')
+mel2_list <- system.file("extdata/mel2_list.rds",
+                         mustWork = TRUE, 
+                         package = "melsim") %>% 
+  readRDS() %>% 
+  update_melodies()
 
 ```
 
+Right now we are doing this with the local dataframe, but we will read from the DB when all setup.
+
 ```{r}
+
 
 benchmark_sim_measure <- function(sim_measure_id) {
   
   compiled_sim_measure <- compile_sim_measure_from_db(sim_measure_id)
-  
-  mel1_list <- readRDS(system.file("extdata/mel2_list.rds", 
-                                  mustWork = TRUE, package = "melsim"))
-  
-  mel2_list <- readRDS(system.file("extdata/mel1_list.rds", 
-                                  mustWork = TRUE, package = "melsim"))
   
   tictoc::tic("Benchmark sim measure")
   
@@ -275,18 +468,29 @@ benchmark_sim_measure <- function(sim_measure_id) {
   
   res <- res %>% 
       mutate(error = FALSE,
-             time_taken = time_taken_seconds)
+             time_taken = time_taken_seconds) 
   
-  return(res)
+  # Store the raw predictions in the db here
+  
+  res <- res %>% 
+    left_join(benchmark_data_small, by = c("melody1", "melody2") ) 
+  
+  benchmarks <- tibble::tibble(
+              sim_measure_id = sim_measure_id,
+              speed_benchmark = time_taken_seconds,
+              rmse = Metrics::rmse(res$Bayes_pred_3plus_ratings, res$sim),
+              r = cor(res$Bayes_pred_3plus_ratings, res$sim) 
+              )
+  
+  return(benchmarks)
   
 }
 
 
-tt <- benchmark_sim_measure(3891)
+tt <- benchmark_sim_measure(2861L)
 
 
 ```
-
 
 ```{r}
 
@@ -301,6 +505,6 @@ add_sim_measure_to_db <- function(compute_benchmarks = TRUE) {
 
 ```{r}
 
-db_disconnect(db_con)
+# db_disconnect(db_con)
 
 ```

@@ -43,7 +43,7 @@ sim_measure_factory <- R6::R6Class(
         }
         if(length(intersect(names(parameters),
                             c("transformation", "ngram_length"))) != 2) {
-          stop("Ngram needs parameter 'transformation' and 'ngram_lengths'")
+          stop("Ngram needs parameter 'transformation' and 'ngram_length'")
         }
         if(!(parameters$transformation %in% sim_transformations)) {
           stop(sprintf("Unrecognized transformation for ngrams: %s",

@@ -76,7 +76,6 @@ melsim <- function(melody1,
 
         purrr::imap_dfr(unname(melody2), function(m2, j) {
           # Note that if melody2 is named, j will be a name, but we want an index, hence the unname()
-          #browser()
           if(paired && i != j) {
             return(NULL)
           }

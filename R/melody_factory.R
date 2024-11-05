@@ -352,7 +352,7 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       similarity = function(melody, sim_measures) {
-        #browser()
+
         # Make sure both melodies have transforms
         if(self$has_not(sim_transformations)) {
           self$add_transforms(sim_transformations)
@@ -371,6 +371,7 @@ melody_factory <- R6::R6Class("Melody",
         purrr::imap_dfr(unname(sim_measures), function(sm, i) {
           #browser()
           sm <- sim_measure_from_string(sm)
+
 
           if(sm$type == "sequence_based") {
             if(sm$sim_measure == "sim_NCD") {
@@ -409,7 +410,7 @@ melody_factory <- R6::R6Class("Melody",
             }
             return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
           }
-          else if(sm$type == "set_based" || sm$type == "distribution_based" ) {
+          else if(sm$type == "set_based" || sm$type == "distribution_based") {
 
             if(sm$transformation == "ngrams") {
               sim <- self$ngram_similarity(melody,
