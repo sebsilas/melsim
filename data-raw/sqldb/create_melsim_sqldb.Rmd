@@ -246,7 +246,7 @@ Then anything with additional parameters
 ```{r}
 
 low_level_sim_measures_additional_parameters_values_tbl_transformed <- 
-  low_level_sim_measures_additional_parameters_values_tbl %>% 
+  low_level_sim_measures_additional_parameter_values_tbl %>% 
   group_by(additional_parameter_values_id) %>% 
   summarise(low_level_sim_measure_id = low_level_sim_measure_id,
             parameter_array = paste0('"', parameter_name, '" : "', parameter_value, '"', 
