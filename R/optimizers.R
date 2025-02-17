@@ -93,7 +93,6 @@ optim_slide_shorter_melody <- function(query,
     shorter_melody <- target
     longer_melody_ngrams <- get_all_ngrams(query, N = target_length)
   }
-  logging::loginfo(sprintf("Sliding on..."))
   purrr::pmap_dfr(longer_melody_ngrams, function(start, N, value) {
     ngram <- value_to_vec(value, type = vec_type, collapse = ",")
     tibble(ngram_pos = start,
