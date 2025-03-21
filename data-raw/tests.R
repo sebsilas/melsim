@@ -3,6 +3,7 @@ library(tidyverse)
 test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "diffsd", "rawsd")){
   tictoc::tic()
   kinder_full <- update_melodies(kinder_full, force = TRUE)
+  test_simple_matching <- sim_measure_factory$new("sm_test", "sm_test", "ioi_class", sim_measure = "Braun-Blanquet")
   ret <-
     melsim(
       #c('data-raw/nokia_829607.csv', 'data-raw/postfinance_2022.csv'),
@@ -10,7 +11,9 @@ test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "
       #melody1 = kinder_full[sample(1:length(kinder_full), N)],
       melody1 = kinder_full[1:N],
       melody2 = NULL,
-      similarity_measures = similarity_measures[sim_measure]#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
+      #similarity_measures = similarity_measures[sim_measure]#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
+      #similarity_measures = test_simple_matching
+      similarity_measures <- similarity_measures$ngrtvera
     )
   tictoc::toc()
   invisible(ret)
@@ -177,9 +180,9 @@ sim_grids <- function(){
 }
 
 
-similarity_grid <- sim_grids()
-usethis::use_data(similarity_grid, overwrite = T)
-devtools::document()
+# similarity_grid <- sim_grids()
+# usethis::use_data(similarity_grid, overwrite = T)
+# devtools::document()
 
 all_sims_test <- function(sim_grid = melsim::similarity_grid) {
   beatles10 <- update_melodies(beatles[1:10], force = T)
