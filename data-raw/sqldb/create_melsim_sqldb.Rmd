@@ -5,6 +5,7 @@
 library(tidyverse)
 library(musicassessrdb)
 library(DBI)
+library(desirability2)
 
 load_all()
 
@@ -476,7 +477,7 @@ benchmark_sim_measure <- function(sim_measure_id) {
     left_join(benchmark_data_small, by = c("melody1", "melody2") ) 
   
   benchmarks <- tibble::tibble(
-              sim_measure_id = sim_measure_id,
+              melodic_sim_measure_id = sim_measure_id,
               speed_benchmark = time_taken_seconds,
               rmse = Metrics::rmse(res$Bayes_pred_3plus_ratings, res$sim),
               r = cor(res$Bayes_pred_3plus_ratings, res$sim) 
@@ -492,19 +493,127 @@ tt <- benchmark_sim_measure(2861L)
 
 ```
 
+
 ```{r}
 
-add_sim_measure_to_db <- function(compute_benchmarks = TRUE) {
-  
-}
+sim_measure_benchmarks <-
+  purrr::map_dfr(1:max(melodic_sim_measures$melodic_sim_measure_id),
+                                         
+      function(sim_measure_id) {
+        
+        if(sim_measure_id %% 100 == 0) {
+           logging::loginfo("Benchmarking sim_measure_id: %s", sim_measure_id)
+        }
+        
+        tryCatch({
+          benchmark_sim_measure(sim_measure_id)
+        }, error = function(err) {
+          logging::logerror(err)
+          
+          tibble::tibble(
+              melodic_sim_measure_id = sim_measure_id,
+              speed_benchmark = NA,
+              rmse = NA,
+              r = NA
+              )
+        })
+        
+        })
+
+
+# t <- benchmark_sim_measure(1L)
+
+use_data(sim_measure_benchmarks)
+
 
 ```
-
-
 
 
 ```{r}
 
 # db_disconnect(db_con)
+
+```
+
+
+
+```{r}
+
+sim_measure_benchmarks$rmse %>% hist()
+  
+sim_measure_benchmarks$r %>% hist()
+
+sim_measure_benchmarks$speed_benchmark %>% hist()
+
+```
+
+
+```{r}
+
+
+sim_measure_benchmarks <- sim_measure_benchmarks %>% 
+  left_join(melodic_sim_measures, by = "melodic_sim_measure_id")
+
+```
+
+
+
+```{r}
+
+sim_measure_benchmarks_ranked <- sim_measure_benchmarks %>% 
+  mutate(rmse_d = d_min(rmse, use_data = TRUE),
+         rsq_d = d_max(r, low = 0, high = 1),
+         speed_benchmark_d = d_min(speed_benchmark, use_data = TRUE),
+         overall = d_overall(across(c(rmse_d, rsq_d))), 
+         overall2 = d_overall(across(ends_with("_d")))) %>% 
+  arrange(desc(overall))
+
+
+cor(sim_measure_benchmarks_ranked$overall, 
+    sim_measure_benchmarks_ranked$overall2,
+    use = 'pairwise.complete.obs')
+
+```
+
+
+```{r}
+
+overall_ecdf <- ecdf(sim_measure_benchmarks_ranked$overall)
+
+sim_measure_benchmarks_ranked <- sim_measure_benchmarks_ranked %>% 
+  mutate(overall_percentile = overall_ecdf(overall) )
+  
+
+```
+
+
+```{r}
+
+lm1 <- sim_measure_benchmarks_ranked %>% 
+  filter(!is.na(overall), !is.nan(overall)) %>% 
+  lm(overall ~ 
+            # normalisation_method +. only has one level...
+            sim_type +
+            optimizer +
+            low_level_sim_measure_name +
+            sim_transformation #+
+            #ngram_transformation +
+           # ngram_length
+     , data = .)
+
+```
+
+
+```{r}
+
+summary(lm1)
+
+```
+
+
+```{r}
+
+top_five_percentile <- sim_measure_benchmarks_ranked %>% 
+  filter(overall_percentile >= .95)
 
 ```
