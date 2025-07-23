@@ -2,7 +2,7 @@
 #'
 #' @param melody1 Vector of melody objects or file names - for comparison.
 #' @param melody2 Vector of melody objects or file names - for comparison.
-#' @param similarity_measures Which similarity algorithm(s) to use.
+#' @param sim_measures Which similarity algorithm(s) to use.
 #' @param paired
 #' @param verbose
 #' @param with_progress
@@ -15,7 +15,7 @@
 #' @examples
 melsim <- function(melody1,
                    melody2 = NULL,
-                   similarity_measures = similarity_measures$opti3,
+                   sim_measures = melsim::similarity_measures$opti3,
                    paired = FALSE,
                    verbose = TRUE,
                    with_progress = TRUE,
@@ -24,10 +24,10 @@ melsim <- function(melody1,
 
   # For now, only allow an actual sim measure to be passed.
   # Add support for character vectors later
-  if(!is.list(similarity_measures)) {
-    similarity_measures <- list(similarity_measures)
+  if(!is.list(sim_measures)) {
+    sim_measures <- list(sim_measures)
   }
-  if(any(!sapply(similarity_measures, is_sim_measure))){
+  if(any(!sapply(sim_measures, is_sim_measure))){
     logging::logerror(sprintf("Received non-similarity measure"))
     browser()
     stop()
@@ -56,7 +56,7 @@ melsim <- function(melody1,
   }
   # Apply similarity algorithm(s)
   ret <-
-    map_dfr(similarity_measures, function(sim_algo) {
+    map_dfr(sim_measures, function(sim_algo) {
 
       # Verbose
       handle_verbose(verbose, sim_algo)
