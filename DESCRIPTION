@@ -1,7 +1,7 @@
 Package: melsim
 Type: Package
 Title: Calculating melodic similarities
-Version: 0.9.0
+Version: 0.9.1
 Author: Sebastian Silas, Klaus Frieler
 Maintainer: Klaus Frieler <klaus.frieler@ae.mpg.de>
 Description: Framework for calculating tons of melodic similarities.

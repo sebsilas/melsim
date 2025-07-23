@@ -350,3 +350,9 @@ is_tempo_invariant <- function(transform) {
     pull(is_tempo_invariant)
 }
 
+
+is_midi_note <- function(n) {
+  n <- as.integer(n)
+  n %in% 0:127
+}
+

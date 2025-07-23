@@ -7,7 +7,7 @@
 melsim(
   melody1,
   melody2 = NULL,
-  similarity_measures = similarity_measures$opti3,
+  sim_measures = similarity_measures$opti3,
   paired = FALSE,
   verbose = TRUE,
   with_progress = TRUE,
@@ -20,7 +20,7 @@ melsim(
 
 \item{melody2}{Vector of melody objects or file names - for comparison.}
 
-\item{similarity_measures}{Which similarity algorithm(s) to use.}
+\item{sim_measures}{Which similarity algorithm(s) to use.}
 
 \item{name}{}
 }
