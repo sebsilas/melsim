@@ -331,14 +331,16 @@ pmi <- function(q, t) {
     q_l <- length(q)
   t_l <- length(t)
 
-  aligned <- Biostrings::pairwiseAlignment(intToUtf8(q),
+  aligned <- pwalign::pairwiseAlignment(intToUtf8(q),
                                            intToUtf8(t),
                                            type = "global", # i.e., Needleman-Wunsch
                                            gapOpening = 12,
                                            gapExtension = 6)
 
-  q_aligned <- utf8ToInt(as.character(aligned@pattern))
-  t_aligned <- utf8ToInt(as.character(aligned@subject))
+  #q_aligned <- utf8ToInt(as.character(aligned@pattern))
+  #t_aligned <- utf8ToInt(as.character(aligned@subject))
+  q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
+  t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
 
   sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
 }

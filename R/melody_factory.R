@@ -23,6 +23,7 @@ melody_factory <- R6::R6Class("Melody",
           mel_data <- tmp$mel_data
           mel_meta <- tmp$mel_meta %>% safe_append(mel_meta)
         }
+        #browser()
         if(!self$validate_mel_data(mel_data)) {
           logging::logerror(sprintf("Invalid melody data (fname = '%s')", fname))
           stop()
@@ -516,7 +517,7 @@ melody_factory <- R6::R6Class("Melody",
                                        private$.mel_data[[sm$transformation]],
                                        melody$data[[sm$transformation]],
                                        pmi,
-                                       optimizer = sm$parameters$optimizer,
+                                       name = sm$parameters$optimizer,
                                        parameters = list(strategy = "all"))
               } else {
                 sim <- pmi(private$.mel_data[[sm$transformation]],
