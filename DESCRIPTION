@@ -38,3 +38,6 @@ Depends:
     R (>= 3.5)
 Remotes:
     sebsilas/itembankr
+Suggests: 
+    kernlab,
+    pwalign
