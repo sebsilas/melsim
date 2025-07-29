@@ -111,11 +111,11 @@ apply_optimizer <- function(query,
                             name = optimizers,
                             parameters,
                             ...) {
-  if(is.null(name) ||
-     !is.character(name) ||
-     nchar(name) == 0){
-    name <- "none"
-  }
+  # if(is.null(name) ||
+  #    !is.character(name) ||
+  #    nchar(name) == 0){
+  #   name <- "none"
+  # }
   name <- match.arg(name)
   switch(name,
          none = sim_measure(query, target),
