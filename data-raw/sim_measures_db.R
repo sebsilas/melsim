@@ -216,22 +216,6 @@ manual_measures <- list(
                                   sim_measure = "ukkon"),
 
 
-  melsim::sim_measure_factory$new(full_name = "int-stringdot",
-                                  name = "diffsd",
-                                  transformation = "int",
-                                  parameters = list(ngram_length = 3,
-                                                    method = "exponential"),
-                                  sim_measure = "stringdot_utf8"),
-
-
-  melsim::sim_measure_factory$new(full_name = "pitch-stringdot",
-                                  name = "rawsd",
-                                  transformation = "pitch",
-                                  parameters = list(optimizer = "transpose",
-                                                    ngram_length = 4,
-                                                    method = "exponential"),
-                                  sim_measure = "stringdot_utf8"),
-
   melsim::sim_measure_factory$new(full_name = "implicit-harmonies-edit-distance",
                                   name = "harmcore",
                                   transformation = "implicit_harmonies",
@@ -329,3 +313,4 @@ if(any(duplicated(names(similarity_measures)))) {
 }
 
 usethis::use_data(similarity_measures, overwrite = TRUE)
+
