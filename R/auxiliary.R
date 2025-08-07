@@ -473,7 +473,7 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
             match <- ks_cor[i, winner] %>% as.numeric()
 
             tibble(segment = seg,
-                   key_pc = if(length(key_pc) == 0) NA_character_ else key_pc,
+                   key_pc = if(length(key_pc) == 0) NA_real_ else key_pc,
                    type = if(length(type) == 0) NA_character_ else type,
                    key = if(length(key) == 0) NA_character_ else key,
                    match = if(length(match) == 0 || is.nan(match)) NA_real_)
