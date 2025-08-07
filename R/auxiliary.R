@@ -463,15 +463,20 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
       ret <-
         purrr::imap_dfr(s, function(seg, i) {
           if(only_winner) {
+
             winner <- ks_cor[i, ] %>% which.max()
+            key_pc <- (winner - 1) %% 12
+            type <- ifelse(winner <= 12, "major", "minor")
+            key <- sprintf("%s-%s", pc_labels_flat[key_pc + 1], substr(type, 1, 3))
+
             browser()
+            match <- ks_cor[i, winner] %>% as.numeric()
+
             tibble(segment = seg,
-                   key_pc = (winner - 1) %% 12,
-                   type = ifelse(winner <= 12, "major", "minor"),
-                   key = sprintf("%s-%s",
-                                 pc_labels_flat[key_pc + 1], substr(type, 1, 3)),
-                   match = ks_cor[i, winner] %>% as.numeric()
-                   )
+                   key_pc = if(length(key_pc) == 0) NA_character_ else key_pc,
+                   type = if(length(type) == 0) NA_character_ else type,
+                   key = if(length(key) == 0) NA_character_ else key,
+                   match = if(length(match) == 0 || is.nan(match)) NA_real_)
           } else{
             tibble(
               segment = seg,
