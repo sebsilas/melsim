@@ -464,6 +464,7 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
         purrr::imap_dfr(s, function(seg, i) {
           if(only_winner) {
             winner <- ks_cor[i, ] %>% which.max()
+            browser()
             tibble(segment = seg,
                    key_pc = (winner - 1) %% 12,
                    type = ifelse(winner <= 12, "major", "minor"),
