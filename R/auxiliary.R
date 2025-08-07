@@ -469,7 +469,6 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
             type <- ifelse(winner <= 12, "major", "minor")
             key <- sprintf("%s-%s", pc_labels_flat[key_pc + 1], substr(type, 1, 3))
 
-            browser()
             match <- ks_cor[i, winner] %>% as.numeric()
 
             tibble(segment = seg,
