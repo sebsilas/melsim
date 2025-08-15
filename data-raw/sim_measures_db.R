@@ -1,6 +1,8 @@
 
 library(tidyverse)
 
+load_all()
+
 # Base factory constructor
 generate_sim_measures <- function(ngram_lengths, configs) {
   map(ngram_lengths, function(n) {
@@ -198,6 +200,47 @@ sim_configs <- list(
     full_name_fn = function(n) paste0("ngram-ioi_cass-", n, "-distribution-similarity")
   )
 )
+
+# Expand sim_configs so each also has int_X_ioi_class
+sim_configs <- purrr::map(sim_configs, function(cfg) {
+    # If it's already a joint config, just keep it as-is
+    if (identical(cfg$parameters$transformation, "int_X_ioi_class")) {
+      return(list(cfg))
+    }
+
+    joint_cfg <- cfg
+
+    # 1) switch the transformation
+    joint_cfg$parameters <- modifyList(cfg$parameters, list(transformation = "int_X_ioi_class"))
+
+    # 2) handle name vs name_fn
+    if (!is.null(cfg$name_fn) && is.function(cfg$name_fn)) {
+      # wrap the original name_fn to add a suffix
+      orig_fn <- cfg$name_fn
+      joint_cfg$name_fn <- function(n) paste0(orig_fn(n), "_intioi")
+      joint_cfg$name <- NULL  # ensure generator uses name_fn
+    } else if (!is.null(cfg$name)) {
+      # simple scalar name → add suffix
+      joint_cfg$name <- paste0(cfg$name, "_intioi")
+    } else {
+      # leave both NULL: the generator's default_name includes the transformation,
+      # so it won't collide with the original (since trans differs)
+      joint_cfg$name <- NULL
+    }
+
+    # 3) handle full_name_fn similarly (optional, but keeps names tidy)
+    if (!is.null(cfg$full_name_fn) && is.function(cfg$full_name_fn)) {
+      ofn <- cfg$full_name_fn
+      joint_cfg$full_name_fn <- function(n) {
+        # swap the transformation segment inside something like "ngram-<trans>-<n>-<sim>"
+        gsub("ngram-[^-]+-", "ngram-int_X_ioi_class-", ofn(n))
+      }
+    }
+
+    # Return original + joint clone
+    list(cfg, joint_cfg)
+  }) |> purrr::flatten()
+
 
 
 # Generate all measures (ngram lengths 1 to 9)
