@@ -197,50 +197,85 @@ sim_configs <- list(
     name_fn = function(n) paste0("ngram_ioi_class_dist", ifelse(n == 3, "", n)),
     sim_measure = "distr_sim",
     parameters = list(transformation = "ioi_class"),
-    full_name_fn = function(n) paste0("ngram-ioi_cass-", n, "-distribution-similarity")
+    full_name_fn = function(n) paste0("ngram-ioi_class-", n, "-distribution-similarity")
   )
 )
 
 # Expand sim_configs so each also has int_X_ioi_class
+# Expand sim_configs so each also has int_X_ioi_class
 sim_configs <- purrr::map(sim_configs, function(cfg) {
-    # If it's already a joint config, just keep it as-is
-    if (identical(cfg$parameters$transformation, "int_X_ioi_class")) {
-      return(list(cfg))
+  # Skip if it's already joint, or if it is Tversky / uses an ngram_db
+  if (identical(cfg$parameters$transformation, "int_X_ioi_class") ||
+      identical(cfg$sim_measure, "Tversky") ||
+      !is.null(cfg$parameters$ngram_db)) {
+    return(list(cfg))
+  }
+
+  joint_cfg <- cfg
+  joint_cfg$parameters <- modifyList(cfg$parameters, list(transformation = "int_X_ioi_class"))
+
+  # name_fn: wrap to add suffix (generator won't add trans for name_fn)
+  if (!is.null(cfg$name_fn) && is.function(cfg$name_fn)) {
+    orig_fn <- cfg$name_fn
+    joint_cfg$name_fn <- function(n) paste0(orig_fn(n), "_intioi")
+    joint_cfg$name <- NULL
+  } else {
+    # Leave scalar name unchanged; generator will add "_<trans>_<n>"
+    joint_cfg$name <- cfg$name %||% NULL
+  }
+
+  # full_name_fn: swap the transformation segment
+  if (!is.null(cfg$full_name_fn) && is.function(cfg$full_name_fn)) {
+    ofn <- cfg$full_name_fn
+    joint_cfg$full_name_fn <- function(n) {
+      gsub("ngram-[^-]+-", "ngram-int_X_ioi_class-", ofn(n))
     }
+  }
 
-    joint_cfg <- cfg
+  list(cfg, joint_cfg)
+}) |> purrr::flatten()
 
-    # 1) switch the transformation
-    joint_cfg$parameters <- modifyList(cfg$parameters, list(transformation = "int_X_ioi_class"))
 
-    # 2) handle name vs name_fn
+
+# --- fan out non-Tversky configs to include fuzzy_int / parsons / pc ----------
+# Fan out non-Tversky configs to include fuzzy_int / parsons / pc
+extra_ngram_trans <- c("fuzzy_int", "parsons", "pc")
+
+sim_configs <- purrr::map(sim_configs, function(cfg) {
+  if (identical(cfg$sim_measure, "Tversky") || !is.null(cfg$parameters$ngram_db)) {
+    return(list(cfg))
+  }
+  if (identical(cfg$parameters$transformation, "int_X_ioi_class")) {
+    return(list(cfg))
+  }
+
+  clones <- lapply(extra_ngram_trans, function(tr) {
+    clone <- cfg
+    clone$parameters <- modifyList(cfg$parameters, list(transformation = tr))
+
+    # name_fn: wrap (generator won't add trans for name_fn)
     if (!is.null(cfg$name_fn) && is.function(cfg$name_fn)) {
-      # wrap the original name_fn to add a suffix
-      orig_fn <- cfg$name_fn
-      joint_cfg$name_fn <- function(n) paste0(orig_fn(n), "_intioi")
-      joint_cfg$name <- NULL  # ensure generator uses name_fn
-    } else if (!is.null(cfg$name)) {
-      # simple scalar name → add suffix
-      joint_cfg$name <- paste0(cfg$name, "_intioi")
+      ofn <- cfg$name_fn
+      clone$name_fn <- function(n) paste0(ofn(n), "_", tr)
+      clone$name <- NULL
     } else {
-      # leave both NULL: the generator's default_name includes the transformation,
-      # so it won't collide with the original (since trans differs)
-      joint_cfg$name <- NULL
+      # IMPORTANT: leave scalar cfg$name unchanged; generator adds "_<trans>_<n>"
+      clone$name <- cfg$name %||% NULL
     }
 
-    # 3) handle full_name_fn similarly (optional, but keeps names tidy)
+    # full_name_fn: swap the transformation segment
     if (!is.null(cfg$full_name_fn) && is.function(cfg$full_name_fn)) {
       ofn <- cfg$full_name_fn
-      joint_cfg$full_name_fn <- function(n) {
-        # swap the transformation segment inside something like "ngram-<trans>-<n>-<sim>"
-        gsub("ngram-[^-]+-", "ngram-int_X_ioi_class-", ofn(n))
+      clone$full_name_fn <- function(n) {
+        gsub("ngram-[^-]+-", paste0("ngram-", tr, "-"), ofn(n))
       }
     }
 
-    # Return original + joint clone
-    list(cfg, joint_cfg)
-  }) |> purrr::flatten()
+    clone
+  })
 
+  c(list(cfg), clones)
+}) |> purrr::flatten()
 
 
 # Generate all measures (ngram lengths 1 to 9)
@@ -355,5 +390,5 @@ if(any(duplicated(names(similarity_measures)))) {
   print(names(similarity_measures)[duplicated(names(similarity_measures))])
 }
 
-usethis::use_data(similarity_measures, overwrite = TRUE)
+# usethis::use_data(similarity_measures, overwrite = TRUE)
 
