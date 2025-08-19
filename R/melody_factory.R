@@ -543,12 +543,12 @@ melody_factory <- R6::R6Class("Melody",
           tmp <- private$.mel_data %>%
             group_by(!!sym(segmentation)) %>%
             summarise(across(int, interval_difficulty), .groups = "drop") %>%
-            unnest(int)
+            tidyr::unnest(int)
         } else {
           segmentation <- "global"
           tmp <- private$.mel_data %>%
             summarise(across(int, interval_difficulty), .groups = "drop") %>%
-            unnest(int)
+            tidyr::unnest(int)
         }
         self$.add_features(tmp, segmentation, override, prefix = "DIFF")
         invisible((self))
@@ -592,8 +592,10 @@ melody_factory <- R6::R6Class("Melody",
                                             cache = TRUE,
                                             only_winner = FALSE)
         }
-        tf <- get_tonal_features(ih) %>%
-        if(segmentation != "global")  tf <- tf %>% rename(!!segmentation := segment)
+        tf <- get_tonal_features(ih)
+        if(segmentation != "global")  {
+          tf <- tf %>% rename(!!segmentation := segment)
+        }
         self$.add_features(tf, segmentation, override, prefix ="TON")
 
       },
