@@ -327,36 +327,43 @@ file_ext <- function(file) {
 }
 
 pmi <- function(q, t) {
-
   q <- q[!is.na(q)]
   t <- t[!is.na(t)]
 
-  # Map each unique int to a single ASCII symbol
-  encode <- function(x) {
-    alphabet <- c(letters, LETTERS, 0:9, "+", "-")  # extend if needed
-    if (length(unique(x)) > length(alphabet)) {
-      stop("Alphabet too small for unique integers")
-    }
-    map <- setNames(alphabet[seq_along(unique(x))], unique(x))
-    paste0(map[as.character(x)], collapse = "")
-  }
+  offset <- min(c(q, t))
 
+  q <- q - offset + 256
+
+  t <- t - offset + 256
 
   q_l <- length(q)
   t_l <- length(t)
+  alphabet <- c(letters, LETTERS, 0:9, strsplit("!@#$%^&*()[]{}", "")[[1]])
 
-  aligned <- pwalign::pairwiseAlignment(encode(q),
-                                           encode(t),
+  u <- as.integer(factor(c(q, t)))
+
+  if(length(unique(u)) > length(alphabet)){
+    warning("Too many levels for pairwiseAlignment")
+    return(NA)
+  }
+
+  q_enc <- alphabet[u[1:q_l]] %>% paste(collapse = "")
+  t_enc <- alphabet[u[(q_l+1):length(u)]] %>% paste(collapse = "")
+  aligned <- pwalign::pairwiseAlignment(q_enc,
+                                        t_enc,
                                         type = "global", # i.e., Needleman-Wunsch
                                         gapOpening = 12,
                                         gapExtension = 6)
 
-
+  #q_aligned <- utf8ToInt(as.character(aligned@pattern))
+  #t_aligned <- utf8ToInt(as.character(aligned@subject))
   q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
   t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
 
   sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
 }
+
+
 
 
 # stimuli_pitch <- c(67, 64, 62, 67, 67, 64, 62, 67, 67, 64, 62, 64, 60, 62)
