@@ -320,25 +320,31 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
 }
 
 
-pmi <- function(q, t) {
-  q <- q[!is.na(q)]
-  t <- t[!is.na(t)]
+pmi2 <- function(q, t) {
 
-  offset <- min(c(q, t))
-  q <- q -  offset + 256
-  t <- t -  offset + 256
+  encode_notes <- function(seq) {
+    uniq <- sort(unique(seq))
+    # cycle through printable ASCII
+    alphabet <- c(letters, LETTERS, 0:9, strsplit("!@#$%^&*()[]{}", "")[[1]])
+    if (length(uniq) > length(alphabet))
+      stop("Too many distinct notes for ASCII alphabet")
 
-    q_l <- length(q)
+    map <- setNames(alphabet[seq_along(uniq)], uniq)
+    paste(map[as.character(seq)], collapse = "")
+  }
+
+
+  q_str <- encode_notes(q)
+  t_str <- encode_notes(t)
+
+  q_l <- length(q)
   t_l <- length(t)
 
-  aligned <- pwalign::pairwiseAlignment(intToUtf8(q),
-                                           intToUtf8(t),
-                                           type = "global", # i.e., Needleman-Wunsch
-                                           gapOpening = 12,
-                                           gapExtension = 6)
+  aligned <- pwalign::pairwiseAlignment(q_str, t_str,
+                                       type = "global",
+                                       gapOpening = 12, gapExtension = 6)
 
-  #q_aligned <- utf8ToInt(as.character(aligned@pattern))
-  #t_aligned <- utf8ToInt(as.character(aligned@subject))
+
   q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
   t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
 
@@ -349,6 +355,135 @@ file_ext <- function(file) {
   tmp <- str_extract(file, "\\.[a-zA-Z0-9]+$")
   ifelse(length(tmp), str_sub(tmp, 2), "")
 }
+
+pmi <- function(q, t) {
+  q_l <- length(q)
+  t_l <- length(t)
+  aligned <- pwalign::pairwiseAlignment(intToUtf8(q),
+                                        intToUtf8(t),
+                                        type = "global", # i.e., Needleman-Wunsch
+                                        gapOpening = gapOpening,
+                                        gapExtension = gapExension)
+
+  q_aligned <- utf8ToInt(as.character(aligned@pattern))
+  t_aligned <- utf8ToInt(as.character(aligned@subject))
+
+  sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
+}
+
+pmi <- function(q, t) {
+
+  q <- q[!is.na(q)]
+  t <- t[!is.na(t)]
+
+  # Map each unique int to a single ASCII symbol
+  encode <- function(x) {
+    alphabet <- c(letters, LETTERS, 0:9, "+", "-")  # extend if needed
+    if (length(unique(x)) > length(alphabet)) {
+      stop("Alphabet too small for unique integers")
+    }
+    map <- setNames(alphabet[seq_along(unique(x))], unique(x))
+    paste0(map[as.character(x)], collapse = "")
+  }
+
+
+  q_l <- length(q)
+  t_l <- length(t)
+
+  aligned <- Biostrings::pairwiseAlignment(encode(q),
+                                           encode(t),
+                                        type = "global", # i.e., Needleman-Wunsch
+                                        gapOpening = 12,
+                                        gapExtension = 6)
+
+  #q_aligned <- utf8ToInt(as.character(aligned@pattern))
+  #t_aligned <- utf8ToInt(as.character(aligned@subject))
+  q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
+  t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
+
+  sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
+}
+
+# pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExension = 6) {
+#
+#   # They use a gap opening penalty of 12 and a gap extension penalty of 6 as parameters.
+#
+#   pmi <- function(q, t) {
+#     q_l <- length(q)
+#     t_l <- length(t)
+#     aligned <- pwalign::pairwiseAlignment(intToUtf8(q),
+#                                           intToUtf8(t),
+#                                           type = "global", # i.e., Needleman-Wunsch
+#                                           gapOpening = gapOpening,
+#                                           gapExtension = gapExension)
+#
+#     q_aligned <- utf8ToInt(as.character(aligned@pattern))
+#     t_aligned <- utf8ToInt(as.character(aligned@subject))
+#
+#     sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
+#   }
+#   pmi_edit_sim <- function(q, t) {
+#     edit_sim(intToUtf8(q),
+#              intToUtf8(t))
+#   }
+#   # Run for all transpositions and pick the top
+#   #tictoc::tic()
+#   query_pitch <- as.integer(query_pitch - stats::median(query_pitch))
+#   target_pitch <- as.integer(target_pitch - stats::median(target_pitch))
+#   query_pitch <- query_pitch + 60 + min(c(query_pitch, target_pitch))
+#   target_pitch <- target_pitch + 60 + min(c(query_pitch, target_pitch))
+#
+#   #hints <- get_transposition_hints(query_pitch, target_pitch )
+#   #tictoc::toc()
+#   hints <- 0:11
+#   pmi_res <- purrr::map_dfr(hints, function(transposition) {
+#     #logging::loginfo(sprintf("Trans: %d", transposition))
+#     query_pitch <- query_pitch + transposition
+#     tibble::tibble(transposition = transposition,
+#                    pmi = pmi(query_pitch, target_pitch))
+#
+#   })
+#   pmi_res %>%
+#     dplyr::slice_max(pmi) %>%
+#     dplyr::pull(pmi) %>%
+#     unique() # If there is a tie, you get more than one pmi value
+#
+#
+# }
+
+# stimuli_pitch <- c(67, 64, 62, 67, 67, 64, 62, 67, 67, 64, 62, 64, 60, 62)
+# (t <- pmi(stimuli_pitch, stimuli_pitch))
+
+# # http://fma2018.mus.auth.gr/files/papers/FMA2018_paper_4.pdf
+#
+# # Paper examples
+#
+# # Figure 1
+#
+# stimuli_pitch <- c(67, 64, 62, 67, 67, 64, 62, 67, 67, 64, 62, 64, 60, 62)
+# sung_recall_pitch <- c(67, 64, 64, 62, 67, 64, 62, 64, 62, 67, 64, 64, 64, 62)
+# pmi(stimuli_pitch, sung_recall_pitch)
+# # Paper: 0.56
+# # 0.50
+#
+# # Figure 2
+#
+#
+# stimuli_pitch <- c(64, 62, 60, 62, 60, 60, 60)
+# sung_recall_pitch <- c(64, 62, 60, 62, 60, 57, 60)
+# pmi(stimuli_pitch, sung_recall_pitch)
+# # Paper: 0.86
+# # 0.86
+#
+#
+# # Figure 3
+#
+# stimuli_pitch <- c(60, 62, 64, 62, 60, 62, 64, 57, 62, 64, 65, 64, 62, 64, 65, 59)
+# sung_recall_pitch <- c(55, 60, 62, 64, 64, 60, 62, 64, 60, 61, 62, 64, 65, 65, 65, 62, 64, 65, 62)
+# pmi(stimuli_pitch, sung_recall_pitch)
+# # Paper: 0.73
+# # 0.69
+
 
 create_corpus_from_csvs <- function(f) {
   list.files(f, pattern = "csv", full.names = TRUE) %>%
