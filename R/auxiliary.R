@@ -320,55 +320,10 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
 }
 
 
-pmi2 <- function(q, t) {
-
-  encode_notes <- function(seq) {
-    uniq <- sort(unique(seq))
-    # cycle through printable ASCII
-    alphabet <- c(letters, LETTERS, 0:9, strsplit("!@#$%^&*()[]{}", "")[[1]])
-    if (length(uniq) > length(alphabet))
-      stop("Too many distinct notes for ASCII alphabet")
-
-    map <- setNames(alphabet[seq_along(uniq)], uniq)
-    paste(map[as.character(seq)], collapse = "")
-  }
-
-
-  q_str <- encode_notes(q)
-  t_str <- encode_notes(t)
-
-  q_l <- length(q)
-  t_l <- length(t)
-
-  aligned <- pwalign::pairwiseAlignment(q_str, t_str,
-                                       type = "global",
-                                       gapOpening = 12, gapExtension = 6)
-
-
-  q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
-  t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
-
-  sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
-}
 
 file_ext <- function(file) {
   tmp <- str_extract(file, "\\.[a-zA-Z0-9]+$")
   ifelse(length(tmp), str_sub(tmp, 2), "")
-}
-
-pmi <- function(q, t) {
-  q_l <- length(q)
-  t_l <- length(t)
-  aligned <- pwalign::pairwiseAlignment(intToUtf8(q),
-                                        intToUtf8(t),
-                                        type = "global", # i.e., Needleman-Wunsch
-                                        gapOpening = gapOpening,
-                                        gapExtension = gapExension)
-
-  q_aligned <- utf8ToInt(as.character(aligned@pattern))
-  t_aligned <- utf8ToInt(as.character(aligned@subject))
-
-  sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
 }
 
 pmi <- function(q, t) {
@@ -390,66 +345,19 @@ pmi <- function(q, t) {
   q_l <- length(q)
   t_l <- length(t)
 
-  aligned <- Biostrings::pairwiseAlignment(encode(q),
+  aligned <- pwalign::pairwiseAlignment(encode(q),
                                            encode(t),
                                         type = "global", # i.e., Needleman-Wunsch
                                         gapOpening = 12,
                                         gapExtension = 6)
 
-  #q_aligned <- utf8ToInt(as.character(aligned@pattern))
-  #t_aligned <- utf8ToInt(as.character(aligned@subject))
+
   q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
   t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
 
   sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
 }
 
-# pmi_original <- function(query_pitch, target_pitch, gapOpening = 12, gapExension = 6) {
-#
-#   # They use a gap opening penalty of 12 and a gap extension penalty of 6 as parameters.
-#
-#   pmi <- function(q, t) {
-#     q_l <- length(q)
-#     t_l <- length(t)
-#     aligned <- pwalign::pairwiseAlignment(intToUtf8(q),
-#                                           intToUtf8(t),
-#                                           type = "global", # i.e., Needleman-Wunsch
-#                                           gapOpening = gapOpening,
-#                                           gapExtension = gapExension)
-#
-#     q_aligned <- utf8ToInt(as.character(aligned@pattern))
-#     t_aligned <- utf8ToInt(as.character(aligned@subject))
-#
-#     sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
-#   }
-#   pmi_edit_sim <- function(q, t) {
-#     edit_sim(intToUtf8(q),
-#              intToUtf8(t))
-#   }
-#   # Run for all transpositions and pick the top
-#   #tictoc::tic()
-#   query_pitch <- as.integer(query_pitch - stats::median(query_pitch))
-#   target_pitch <- as.integer(target_pitch - stats::median(target_pitch))
-#   query_pitch <- query_pitch + 60 + min(c(query_pitch, target_pitch))
-#   target_pitch <- target_pitch + 60 + min(c(query_pitch, target_pitch))
-#
-#   #hints <- get_transposition_hints(query_pitch, target_pitch )
-#   #tictoc::toc()
-#   hints <- 0:11
-#   pmi_res <- purrr::map_dfr(hints, function(transposition) {
-#     #logging::loginfo(sprintf("Trans: %d", transposition))
-#     query_pitch <- query_pitch + transposition
-#     tibble::tibble(transposition = transposition,
-#                    pmi = pmi(query_pitch, target_pitch))
-#
-#   })
-#   pmi_res %>%
-#     dplyr::slice_max(pmi) %>%
-#     dplyr::pull(pmi) %>%
-#     unique() # If there is a tie, you get more than one pmi value
-#
-#
-# }
 
 # stimuli_pitch <- c(67, 64, 62, 67, 67, 64, 62, 67, 67, 64, 62, 64, 60, 62)
 # (t <- pmi(stimuli_pitch, stimuli_pitch))
