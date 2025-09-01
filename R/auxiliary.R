@@ -320,35 +320,85 @@ proxy_pkg_handler <- function(x, y, proxy_method = "Jaccard", na.rm = TRUE, resc
 }
 
 
+
+file_ext <- function(file) {
+  tmp <- str_extract(file, "\\.[a-zA-Z0-9]+$")
+  ifelse(length(tmp), str_sub(tmp, 2), "")
+}
+
 pmi <- function(q, t) {
+
   q <- q[!is.na(q)]
   t <- t[!is.na(t)]
 
   offset <- min(c(q, t))
-  q <- q -  offset + 256
-  t <- t -  offset + 256
 
-    q_l <- length(q)
+  q <- q - offset + 256
+  t <- t - offset + 256
+
+  q_l <- length(q)
   t_l <- length(t)
 
-  aligned <- pwalign::pairwiseAlignment(intToUtf8(q),
-                                           intToUtf8(t),
-                                           type = "global", # i.e., Needleman-Wunsch
-                                           gapOpening = 12,
-                                           gapExtension = 6)
+  alphabet <- c(letters, LETTERS, 0:9, strsplit("!@#$%^&*()[]{}", "")[[1]])
 
-  #q_aligned <- utf8ToInt(as.character(aligned@pattern))
-  #t_aligned <- utf8ToInt(as.character(aligned@subject))
+  u <- as.integer(factor(c(q, t)))
+
+  if(length(unique(u)) > length(alphabet)){
+    warning("Too many levels for pairwiseAlignment")
+    return(NA)
+  }
+
+  q_enc <- alphabet[u[1:q_l]] %>% paste(collapse = "")
+  t_enc <- alphabet[u[(q_l+1):length(u)]] %>% paste(collapse = "")
+
+  aligned <- pwalign::pairwiseAlignment(q_enc,
+                                        t_enc,
+                                        type = "global", # i.e., Needleman-Wunsch
+                                        gapOpening = 12,
+                                        gapExtension = 6)
+
   q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
   t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
 
   sum(q_aligned == t_aligned) / ((q_l + t_l)/2)
 }
 
-file_ext <- function(file) {
-  tmp <- str_extract(file, "\\.[a-zA-Z0-9]+$")
-  ifelse(length(tmp), str_sub(tmp, 2), "")
-}
+
+
+
+# stimuli_pitch <- c(67, 64, 62, 67, 67, 64, 62, 67, 67, 64, 62, 64, 60, 62)
+# (t <- pmi(stimuli_pitch, stimuli_pitch))
+
+# # http://fma2018.mus.auth.gr/files/papers/FMA2018_paper_4.pdf
+#
+# # Paper examples
+#
+# # Figure 1
+#
+# stimuli_pitch <- c(67, 64, 62, 67, 67, 64, 62, 67, 67, 64, 62, 64, 60, 62)
+# sung_recall_pitch <- c(67, 64, 64, 62, 67, 64, 62, 64, 62, 67, 64, 64, 64, 62)
+# pmi(stimuli_pitch, sung_recall_pitch)
+# # Paper: 0.56
+# # 0.50
+#
+# # Figure 2
+#
+#
+# stimuli_pitch <- c(64, 62, 60, 62, 60, 60, 60)
+# sung_recall_pitch <- c(64, 62, 60, 62, 60, 57, 60)
+# pmi(stimuli_pitch, sung_recall_pitch)
+# # Paper: 0.86
+# # 0.86
+#
+#
+# # Figure 3
+#
+# stimuli_pitch <- c(60, 62, 64, 62, 60, 62, 64, 57, 62, 64, 65, 64, 62, 64, 65, 59)
+# sung_recall_pitch <- c(55, 60, 62, 64, 64, 60, 62, 64, 60, 61, 62, 64, 65, 65, 65, 62, 64, 65, 62)
+# pmi(stimuli_pitch, sung_recall_pitch)
+# # Paper: 0.73
+# # 0.69
+
 
 create_corpus_from_csvs <- function(f) {
   list.files(f, pattern = "csv", full.names = TRUE) %>%
@@ -463,14 +513,19 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
       ret <-
         purrr::imap_dfr(s, function(seg, i) {
           if(only_winner) {
+
             winner <- ks_cor[i, ] %>% which.max()
+            key_pc <- (winner - 1) %% 12
+            type <- ifelse(winner <= 12, "major", "minor")
+            key <- sprintf("%s-%s", pc_labels_flat[key_pc + 1], substr(type, 1, 3))
+
+            match <- ks_cor[i, winner] %>% as.numeric()
+
             tibble(segment = seg,
-                   key_pc = (winner - 1) %% 12,
-                   type = ifelse(winner <= 12, "major", "minor"),
-                   key = sprintf("%s-%s",
-                                 pc_labels_flat[key_pc + 1], substr(type, 1, 3)),
-                   match = ks_cor[i, winner] %>% as.numeric()
-                   )
+                   key_pc = if(length(key_pc) == 0) NA_real_ else key_pc,
+                   type = if(length(type) == 0) NA_character_ else type,
+                   key = if(length(key) == 0) NA_character_ else key,
+                   match = if(length(match) == 0 || is.nan(match)) NA_real_)
           } else{
             tibble(
               segment = seg,

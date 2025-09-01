@@ -1,9 +1,12 @@
 #library(tidyverse)
 
-make_berkowitz_bigram_stack <- function(N = 8){
-  vecs <- stringr::str_split(Berkowitz::phrase_item_bank$melody, ",")
+make_berkowitz_bigram_stack <- function(N = 8,
+                                        item_bank = Berkowitz::phrase_item_bank,
+                                        col = "melody"){
+
+  vecs <- stringr::str_split(item_bank[[col]], ",")
   int_data <-
-    map_dfr(1: nrow(Berkowitz::phrase_item_bank), function(i){
+    map_dfr(1: nrow(item_bank), function(i){
       vec <- c(vecs[[i]], NA)
       id <- i
       tibble(int_raw = vec, id = i)
@@ -31,9 +34,31 @@ make_berkowitz_bigram_stack <- function(N = 8){
     mutate(idf = log(nrow(Berkowitz::phrase_item_bank)/DF))
 }
 
-
 int_ngrams_berkowitz <-  make_berkowitz_bigram_stack(N = 10) %>%
   distinct(value, DF, n_xy, f_xy, N, idf)
 
 
 usethis::use_data(int_ngrams_berkowitz, overwrite = TRUE)
+
+
+# Fix ioi bug(s)
+berk_tmp <- Berkowitz::phrase_item_bank %>%
+  as_tibble() %>%
+  rowwise() %>%
+  mutate(ioi = paste0(diff(itembankr::str_mel_to_vector(onset)), collapse = ","),
+         ioi_class = paste0(classify_duration( itembankr::str_mel_to_vector(ioi) ), collapse = ","),
+         dur_class = paste0(classify_duration( itembankr::str_mel_to_vector(durations) ), collapse = ",") ) %>%
+  ungroup()
+
+
+ioi_class_ngrams_berkowitz <-  make_berkowitz_bigram_stack(N = 10, berk_tmp, "ioi_class") %>%
+  distinct(value, DF, n_xy, f_xy, N, idf)
+
+
+dur_class_ngrams_berkowitz <-  make_berkowitz_bigram_stack(N = 10, berk_tmp, "dur_class") %>%
+  distinct(value, DF, n_xy, f_xy, N, idf)
+
+
+usethis::use_data(ioi_class_ngrams_berkowitz, dur_class_ngrams_berkowitz, overwrite = TRUE)
+
+

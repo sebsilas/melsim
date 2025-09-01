@@ -7,7 +7,7 @@
 melsim(
   melody1,
   melody2 = NULL,
-  sim_measures = similarity_measures$opti3,
+  sim_measures = melsim::similarity_measures$opti3,
   paired = FALSE,
   verbose = TRUE,
   with_progress = TRUE,
