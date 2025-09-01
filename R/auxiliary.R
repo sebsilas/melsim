@@ -327,17 +327,18 @@ file_ext <- function(file) {
 }
 
 pmi <- function(q, t) {
+
   q <- q[!is.na(q)]
   t <- t[!is.na(t)]
 
   offset <- min(c(q, t))
 
   q <- q - offset + 256
-
   t <- t - offset + 256
 
   q_l <- length(q)
   t_l <- length(t)
+
   alphabet <- c(letters, LETTERS, 0:9, strsplit("!@#$%^&*()[]{}", "")[[1]])
 
   u <- as.integer(factor(c(q, t)))
@@ -349,14 +350,13 @@ pmi <- function(q, t) {
 
   q_enc <- alphabet[u[1:q_l]] %>% paste(collapse = "")
   t_enc <- alphabet[u[(q_l+1):length(u)]] %>% paste(collapse = "")
+
   aligned <- pwalign::pairwiseAlignment(q_enc,
                                         t_enc,
                                         type = "global", # i.e., Needleman-Wunsch
                                         gapOpening = 12,
                                         gapExtension = 6)
 
-  #q_aligned <- utf8ToInt(as.character(aligned@pattern))
-  #t_aligned <- utf8ToInt(as.character(aligned@subject))
   q_aligned <- aligned@pattern %>% as.character() %>% str_split("") %>% unlist()
   t_aligned <- aligned@subject %>% as.character() %>% str_split("") %>% unlist()
 
