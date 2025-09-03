@@ -356,3 +356,7 @@ is_midi_note <- function(n) {
   n %in% 0:127
 }
 
+inv_logit <- function(x) {
+  1 / (1 + exp(-x))
+}
+
