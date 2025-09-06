@@ -14,14 +14,15 @@ sim_mat_factory <- R6::R6Class(
   #end private
   public = list(
     initialize = function(similarity_df, name = "", paired = FALSE) {
-      private$sim_df <- similarity_df
+      private$sim_df <- distinct(similarity_df)
       private$meta$name <- name
-      if(!self$validate(similarity_df, paired = paired)) {
+      if(!self$validate(private$sim_df, paired = paired)) {
         logging::logwarn("Similarity matrix invalid or in wrong format")
       }
     },
 
     check_homogenity = function(similarity_df) {
+      #browser()
       sim_df <- similarity_df %>% arrange(algorithm, melody1, melody2)
       if(length(intersect(names(sim_df), c("melody1", "melody2", "sim", "algorithm"))) != 4) {
         logging::logwarn("Wrong column names")
@@ -434,6 +435,7 @@ sim_mat_factory <- R6::R6Class(
       if(missing(similarity_df)) {
         private$sim_df
       } else {
+        similarity_df <- distinct(similarity_df)
         stopifnot(self$validate_data(similarity_df))
         private$sim_df <- similarity_df
       }

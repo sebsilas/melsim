@@ -13,7 +13,7 @@ test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "
       melody2 = NULL,
       #similarity_measures = similarity_measures[sim_measure]#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
       #similarity_measures = test_simple_matching
-      similarity_measures <- similarity_measures$pmi
+      similarity_measures <- c(similarity_measures$rhytfuzz, similarity_measures$opti3)
     )
   tictoc::toc()
   invisible(ret)
@@ -389,3 +389,22 @@ all_sims_test <- function(sim_grid = melsim::similarity_grid) {
 # prtest()
 #
 # #}
+cmp_pmi_edit <- function(n = 100){
+  tmp <- jazzodata::esac_transforms$int_raw
+  l <- length(tmp)
+  max_n <- 10
+  max_pos <- l - max_n
+  pos1 <- sample(1:max_pos, n)
+  end1 <- pos1 + sample(1:max_n, n, replace = T)
+  #pos2 <- sample(1:max_pos, n)
+  pos2 <- pos1 + sample(1:10, n, replace = T)
+  end2 <- pos2 + sample(1:max_n, n, replace = T)
+  #browser()
+  map_dfr(1:n, function(i){
+    q <- tmp[pos1[i]:end1[i]]
+    t <- tmp[pos2[i]:end2[i]]
+    #print(paste(q, collapse = ","))
+    #browser()
+    tibble(i = i, pmi = melsim:::pmi(q, t), edit_sim = melsim:::edit_sim_utf8(q, t))
+  })
+}
