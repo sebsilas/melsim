@@ -471,7 +471,13 @@ melody_factory <- R6::R6Class("Melody",
                         by = "algorithm")
             keep <- safe_get(sm$parameters, "keep_singles")
 
-            if(sm$parameters$linear_combination$apply_inv_logit_transform) {
+            if(length(sm$parameters$linear_combination$apply_inv_logit_transform) == 0) {
+              apply_inv_logit_transform <- FALSE
+            } else {
+              apply_inv_logit_transform <- sm$parameters$linear_combination$apply_inv_logit_transform
+            }
+
+            if(apply_inv_logit_transform) {
               sim_res <- inv_logit(sum(single_sims$sim * single_sims$weights))
               # Assuming here we don't need to squeeze here because we are using a bounded distribution model (e.g., beta)
             } else {
