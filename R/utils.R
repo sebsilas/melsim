@@ -360,3 +360,22 @@ inv_logit <- function(x) {
   1 / (1 + exp(-x))
 }
 
+align_onsets <- function(mel_data, zero_onsets = TRUE) {
+
+  if (length(mel_data$onset) > 1L &&
+      !dplyr::near(mel_data$onset[1], 0) &&
+      zero_onsets) {
+
+    logging::logwarn(
+      "First onset not 0.. aligning onsets to start at 0.
+       Set zero_onsets = FALSE to disable this behaviour."
+    )
+
+    mel_data <- mel_data %>%
+      dplyr::mutate(onset = onset - dplyr::first(onset))
+  }
+
+  mel_data
+}
+
+

@@ -1,3 +1,7 @@
+# melsim 0.10.0
+
+- Add default aligning of onsets in `mel_data` to zero.
+
 # melsim 0.9.3
 
 - Add support for beta regression.

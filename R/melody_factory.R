@@ -16,14 +16,19 @@ melody_factory <- R6::R6Class("Melody",
                             mel_meta = NULL,
                             fname = "",
                             override = FALSE,
+                            zero_onsets = TRUE,
                             ...) {
+
         mel_meta <- safe_append(mel_meta, list(...))
+
+        mel_data <- align_onsets(mel_data, zero_onsets)
+
         if(nzchar(fname)) {
           tmp <- self$read(fname)
           mel_data <- tmp$mel_data
           mel_meta <- tmp$mel_meta %>% safe_append(mel_meta)
         }
-        #browser()
+
         if(!self$validate_mel_data(mel_data)) {
           logging::logerror(sprintf("Invalid melody data (fname = '%s')", fname))
           stop()
