@@ -360,3 +360,13 @@ inv_logit <- function(x) {
   1 / (1 + exp(-x))
 }
 
+
+try_or_log_error_return_na <- function(exp) {
+  tryCatch({
+    exp
+  }, error = function(err) {
+    logging::logerror(err)
+    return(NA)
+  })
+}
+
