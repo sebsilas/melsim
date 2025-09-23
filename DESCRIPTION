@@ -37,8 +37,7 @@ BugReports: https://github.com/sebsilas/melsim/issues
 Depends: 
     R (>= 3.5)
 Remotes:
-    sebsilas/itembankr
+    sebsilas/itembankr, pmcharrison/ppm
 Suggests: 
     kernlab,
-    pwalign,
-    pmcharrison/ppm
+    pwalign
