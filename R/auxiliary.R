@@ -662,6 +662,7 @@ entropy_wrapper <- function(vec, norm = FALSE, domain = NULL, na.rm = TRUE) {
 
 interval_difficulty <- function(int_vec, na.rm = TRUE) {
 
+
   if(is.list(int_vec)) {
     return(purrr::map_dfr(int_vec, interval_difficulty))
   }
@@ -692,12 +693,18 @@ interval_difficulty <- function(int_vec, na.rm = TRUE) {
   int_variety <- dplyr::n_distinct(int_vec)/l
   pitch_variety <- dplyr::n_distinct(c(0, cumsum(int_vec)))/(l + 1)
 
+  mean_information_content <- try_or_log_error_return_na(get_mean_information_content(int_vec))
+  total_information_content <- l * mean_information_content
+
   res <- tidyr::tibble(mean_abs_int = mean_abs_int,
                        int_range = int_range,
                        mean_dir_change = mean_dir_change,
                        int_variety = int_variety,
                        pitch_variety = pitch_variety,
-                       mean_run_length = mean_run_length)
+                       mean_run_length = mean_run_length,
+                       mean_information_content = mean_information_content,
+                       total_information_content = total_information_content)
+
   res$mean_dir_change[!is.finite(res$mean_dir_change)] <- NA
   res
 }
@@ -722,5 +729,30 @@ get_tonal_features <- function(implicit_harmonies) {
          mode)
 
 
+}
+
+
+get_mean_information_content <- function(seq) {
+
+  if(check_pkg_installed("ppm")) {
+    seq <- factor(seq)
+    mod <- ppm::new_ppm_simple(alphabet_size = 108)
+    res <- ppm::model_seq(mod, seq)
+    return(round(mean(res$information_content, na.rm = TRUE), 2))
+  } else {
+    return(NA)
+  }
+
+}
+
+
+check_pkg_installed <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    message("Package '", pkg, "' is not installed.")
+    return(FALSE)
+  } else {
+    message("Package '", pkg, "' is installed.")
+    return(TRUE)
+  }
 }
 

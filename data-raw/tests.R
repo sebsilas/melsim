@@ -1,5 +1,27 @@
 library(tidyverse)
 
+
+# feature_test <- test_features()
+# cor_feature_test <- feature_test %>% tidyr::unnest(global) %>% corrr::correlate()
+
+test_features <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "diffsd", "rawsd")){
+
+  tictoc::tic()
+
+  kinder_full <- update_melodies(kinder_full, force = TRUE)
+
+
+  ret <- purrr::map_dfr(1:N, function(n) {
+      x <- kinder_full[[n]]
+      x$add_difficulty_features()
+      x$features
+    })
+
+  tictoc::toc()
+
+  invisible(ret)
+}
+
 test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "diffsd", "rawsd")){
   tictoc::tic()
   kinder_full <- update_melodies(kinder_full, force = TRUE)
