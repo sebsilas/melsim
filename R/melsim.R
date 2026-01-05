@@ -24,6 +24,7 @@ melsim <- function(melody1,
 
   # For now, only allow an actual sim measure to be passed.
   # Add support for character vectors later
+  browser()
   if(!is.list(sim_measures)) {
     sim_measures <- list(sim_measures)
   }

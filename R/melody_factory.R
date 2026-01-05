@@ -17,6 +17,7 @@ melody_factory <- R6::R6Class("Melody",
                             fname = "",
                             override = FALSE,
                             ...) {
+        #browser()
         mel_meta <- safe_append(mel_meta, list(...))
         if(nzchar(fname)) {
           tmp <- self$read(fname)
@@ -64,9 +65,15 @@ melody_factory <- R6::R6Class("Melody",
         }
         invisible(self)
       },
-
+      add_col = function(col_name, values, override = FALSE){
+        if(!override && col_name %in% names(private$.mel_data)){
+          logging::logwarn("Column %s already exists and override is not TRUE", col_name)
+          invisible(self)
+        }
+        private$.mel_data[[col_name]] <- values
+        invisible(self)
+      },
       add_transforms = function(transforms = sim_transformations, override = TRUE, segmentation = "bar") {
-
         if(length(transforms) == 1  && is.function(transforms)) {
           tmp <- transforms(private$.mel_data)
           if(intersect(names(private$.mel_data), names(tmp)) == names(private$.mel_data) &&
@@ -104,7 +111,7 @@ melody_factory <- R6::R6Class("Melody",
           private$.mel_data$ioi_class <- classify_duration(c(diff(private$.mel_data$onset), NA))
         }
 
-        if(transform_check("duration_class")) {
+        if(transform_check("duration_class") && "duration" %in% names(private$.mel_data)) {
           private$.mel_data$duration_class <- classify_duration(private$.mel_data$duration)
         }
 
@@ -127,22 +134,20 @@ melody_factory <- R6::R6Class("Melody",
 
         if(transform_check("implicit_harmonies")) {
           if(self$has(segmentation)) {
+            #browser()
             segmentation_info <- private$.mel_data[[segmentation]]
             ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation = segmentation_info) %>%
-              select(segment, key)
+              select(segment, implicit_harmonies = key)
             segmentation_name <- sym(segmentation)
             private$.mel_data <- private$.mel_data %>%
-              left_join(ih, by = setNames("segment", as.character(segmentation_name)) ) %>%
-              rename(implicit_harmonies = key) %>%
-              mutate(implicit_harmonies = implicit_harmonies)
+              remove_cols("implicit_harmonies") %>%
+              left_join(ih, by = setNames("segment", as.character(segmentation_name)) )
           } else {
             segmentation <- private$.mel_data$phrase_segmentation
             ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation = segmentation) %>%
-              select(segment, key)
+              select(segment, implicit_harmonies = key)
             private$.mel_data <- private$.mel_data %>%
-              left_join(ih, by = c("phrase_segmentation" = "segment")) %>%
-              rename(implicit_harmonies = key) %>%
-              mutate(implicit_harmonies = implicit_harmonies)
+              left_join(ih, by = c("phrase_segmentation" = "segment"))
           }
         }
 
@@ -179,6 +184,7 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       split_by = function(segmentation, seg_prefix = "%s") {
+        #browser()
         if(self$has_not(segmentation)) {
           return(invisible(self))
         }
@@ -192,6 +198,7 @@ melody_factory <- R6::R6Class("Melody",
         }
         name_template <- sprintf("%%s_%s", seg_prefix)
         map(segments, function(seg_id){
+          #browser()
           melody_factory$new(mel_data = private$.mel_data %>%
                                filter(!!sym(segmentation) == seg_id),
                              mel_meta = private$.mel_meta,
@@ -643,14 +650,18 @@ melody_factory <- R6::R6Class("Melody",
         invisible((self))
       },
 
-      plot = function() {
+      plot = function(segments = NULL) {
         if(self$length == 0 ) {
           stop("No melody data to plot")
         }
-
-        q <- private$.mel_data %>% ggplot(aes(x = onset, y = pitch))
-        q <- q + geom_segment(aes(xend = onset + ioi, yend = pitch))
-        q <- q + theme_bw()
+        q <- private$.mel_data %>% ggplot2::ggplot(ggplot2::aes(x = onset, y = pitch))
+        q <- q + ggplot2::geom_segment(ggplot2::aes(xend = onset + ioi,
+                                                    yend = pitch,
+                                                    color = factor(!!sym(segments))), linewidth  = 2)
+        q <- q + ggplot2::theme_bw()
+        if(is.character(segments) & segments %in% names(private$.mel_data)){
+          q <- q + ggplot2::facet_wrap(as.formula(paste("~", segments[[1]])), scale = "free_x")
+        }
         q
       }
     ),
