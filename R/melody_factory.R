@@ -650,16 +650,29 @@ melody_factory <- R6::R6Class("Melody",
         invisible((self))
       },
 
-      plot = function(segments = NULL) {
+      plot = function(segments = NULL, with_facets = F) {
         if(self$length == 0 ) {
           stop("No melody data to plot")
         }
-        q <- private$.mel_data %>% ggplot2::ggplot(ggplot2::aes(x = onset, y = pitch))
-        q <- q + ggplot2::geom_segment(ggplot2::aes(xend = onset + ioi,
-                                                    yend = pitch,
-                                                    color = factor(!!sym(segments))), linewidth  = 2)
+        has_segments <- !is.null(segments) & is.character(segments) & (length(intersect(segments, names(private$.mel_data))) > 0)
+        plot_data <- private$.mel_data
+        plot_data <- plot_data %>% mutate(duration = tidyr::replace_na(duration, median(duration)))
+        q <-  plot_data %>% ggplot2::ggplot(ggplot2::aes(xmin = onset, ymin = pitch - .125))
+        if(has_segments){
+          q <- q + ggplot2::geom_rect(ggplot2::aes(xmax = onset + duration,
+                                                   ymax = pitch + .125,
+                                                   fill = factor(!!sym(segments))),
+                                      color = "black")
+          q <- q + ggplot2::labs(fill = stringr::str_to_title(segments))
+        }
+        else{
+          q <- q + ggplot2::geom_rect(ggplot2::aes(xmax = onset + duration,
+                                                   ymax = pitch + .125),
+                                      fill = "indianred",
+                                      color = "black")
+        }
         q <- q + ggplot2::theme_bw()
-        if(is.character(segments) & segments %in% names(private$.mel_data)){
+        if(with_facets && has_segments){
           q <- q + ggplot2::facet_wrap(as.formula(paste("~", segments[[1]])), scale = "free_x")
         }
         q
