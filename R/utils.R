@@ -62,7 +62,7 @@ safe_get <- function(obj, field) {
   return(NULL)
 }
 
-remove_cols <- function(data, cols){
+remove_cols <- function(data, cols) {
   to_remove <- intersect(names(data), cols)
   if(length(to_remove) > 0){
     return(data %>% select(!all_of(to_remove)))

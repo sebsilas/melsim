@@ -686,7 +686,7 @@ melody_factory <- R6::R6Class("Melody",
             private$.mel_data <- value
           }
         }
-      },
+      }
 
       features = function(value) {
         if(missing(value)) {
