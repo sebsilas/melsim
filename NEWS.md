@@ -1,5 +1,7 @@
 # melsim 0.10.0
 
+- Add benchmark sim measure functions
+
 # melsim 0.9.3
 
 - Add support for beta regression.
