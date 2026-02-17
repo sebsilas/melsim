@@ -337,23 +337,23 @@ sim_mat_factory <- R6::R6Class(
         sim_df <- sim_df %>% filter(algorithm %in% algorithms)
       }
       if(private$type == "paired") {
-        q <- sim_df %>% ggplot(aes(x = sim, y = after_stat(count), fill = algorithm))
-        q <- q + geom_histogram(color = "black")
-        q <- q + theme_bw()
+        q <- sim_df %>% ggplot2::ggplot(ggplot2::aes(x = sim, y = ggplot2::after_stat(count), fill = algorithm))
+        q <- q + ggplot2::geom_histogram(color = "black")
+        q <- q + ggplot2::theme_bw()
         if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10) {
-          q <- q + facet_wrap(~algorithm)
-          q <- q + scale_fill_brewer(palette = "Set1")
+          q <- q + ggplot2::facet_wrap(~algorithm)
+          q <- q + ggplot2::scale_fill_brewer(palette = "Set1")
         }
         else {
-          q <- q + scale_fill_viridis_d(option = "inferno")
+          q <- q + ggplot2::scale_fill_viridis_d(option = "inferno")
         }
         return(q)
       }
-      q <- sim_df %>% ggplot(aes(x = melody1, y = melody2, fill = sim))
-      q <- q + geom_tile()
-      q <- q + theme_bw()
-      q <- q + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-      q <- q + scale_fill_viridis_c(option = "inferno")
+      q <- sim_df %>% ggplot2::ggplot(aes(x = melody1, y = melody2, fill = sim))
+      q <- q + ggplot2::geom_tile()
+      q <- q + ggplot2::theme_bw()
+      q <- q + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+      q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
       #q <- q + scale_fill_brewer(palette = "Set1")
       if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10) {
         q <- q + facet_wrap(~algorithm)

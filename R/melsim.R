@@ -23,10 +23,17 @@ melsim <- function(melody1,
                    name = "--") {
 
   # For now, only allow an actual sim measure to be passed.
-  # Add support for character vectors later
+
+  if(is.character(sim_measures)) {
+    sim_measures <- purrr::map(sim_measures, function(sm) {
+      melsim::similarity_measures[[sm]]
+    })
+  }
+
   if(!is.list(sim_measures)) {
     sim_measures <- list(sim_measures)
   }
+
   if(any(!sapply(sim_measures, is_sim_measure))){
     logging::logerror(sprintf("Received non-similarity measure"))
     browser()
