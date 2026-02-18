@@ -1,6 +1,6 @@
 
 
-load_all()
+devtools::load_all()
 
 
 beatles  <- create_corpus_from_csvs("data-raw/beatles/")
