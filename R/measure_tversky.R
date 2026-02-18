@@ -3,10 +3,14 @@ tversky_sim <- function(query_ngrams,
                         alpha = 1,
                         beta = 1,
                         ngram_db = melsim::int_ngrams_berkowitz) {
-
   intersect_ngrams <- intersect(query_ngrams, target_ngrams)
   only_query_ngrams <- setdiff(query_ngrams, intersect_ngrams)
   only_target_ngrams <- setdiff(target_ngrams, intersect_ngrams)
+
+  #early bail out
+  if(length(intersect_ngrams) == 0){
+    return(0.0)
+  }
   if(is.character(ngram_db)){
     ngram_db <- eval(parse(text = ngram_db), envir = globalenv())
   }
@@ -28,6 +32,10 @@ get_salience <- function(ngrams, ngram_db = melsim::int_ngrams_berkowitz) {
   idfs <- ngram_db %>%
     filter(value %in% ngrams) %>%
     select(ngram = value, idf)
-  return(nrow(idfs))
+  if(nrow(idfs) == 0){
+    return(0)
+  }
+  logging::loginfo(sprintf("%.2f / %.2f = %.2f", sum(idfs$idf), nrow(idfs), sum(idfs$idf)/nrow(idfs)))
+  return(sum(idfs$idf))
 }
 
