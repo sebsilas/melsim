@@ -356,7 +356,7 @@ sim_mat_factory <- R6::R6Class(
       q <- q + ggplot2::scale_fill_viridis_c(option = "inferno")
       #q <- q + scale_fill_brewer(palette = "Set1")
       if(length(unique(sim_df$algorithm)) > 1 && length(unique(sim_df$algorithm)) < 10) {
-        q <- q + facet_wrap(~algorithm)
+        q <- q + ggplot2::facet_wrap(~algorithm)
       }
       q
     },
