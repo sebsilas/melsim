@@ -258,9 +258,9 @@ plot_dtw_alignment <- function(x, y = NULL, beta = .5) {
   plot_df <- bind_rows(tibble(x = x, type = "query"), tibble(x = y, type = "reference"))
   plot_df2 <- tibble(x = x[d$index1], y = y[d$index2]) %>% mutate(d = x - y)
 
-  q <- plot_df %>% ggplot(aes(x = x, y  = type, colour = type)) + geom_point(size = 5)
+  q <- plot_df %>% ggplot(ggplot2::aes(x = x, y  = type, colour = type)) + geom_point(size = 5)
   q <- q + geom_segment(data = plot_df2,
-                        aes(x = x, y = "query", xend = y, yend = "reference"),
+                        ggplot2::aes(x = x, y = "query", xend = y, yend = "reference"),
                         colour = "black",
                         arrow = arrow(length = unit(0.30, "cm"),
                                       ends = "last",
@@ -378,4 +378,14 @@ align_onsets <- function(mel_data, zero_onsets = TRUE) {
   mel_data
 }
 
+
+
+try_or_log_error_return_na <- function(exp) {
+  tryCatch({
+    exp
+  }, error = function(err) {
+    logging::logerror(err)
+    return(NA)
+  })
+}
 
