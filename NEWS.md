@@ -1,6 +1,6 @@
 # melsim 0.10.0
 
-- Add default aligning of onsets in `mel_data` to zero.
+- Add benchmark sim measure functions
 
 # melsim 0.9.3
 
