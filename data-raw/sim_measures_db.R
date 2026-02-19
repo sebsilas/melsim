@@ -3,6 +3,8 @@ library(tidyverse)
 
 load_all()
 
+MAX_NGRAM_LENGTH <- 3L
+
 # Base factory constructor
 generate_sim_measures <- function(ngram_lengths, configs) {
   map(ngram_lengths, function(n) {
@@ -59,7 +61,7 @@ stringdot_base_configs <- list(
 )
 
 
-generate_stringdot_measures <- function(ngram_lengths = 1:9, configs) {
+generate_stringdot_measures <- function(ngram_lengths = 1:MAX_NGRAM_LENGTH, configs) {
   map(ngram_lengths, function(n) {
     map(configs, function(cfg) {
       # Build parameters list dynamically
@@ -93,56 +95,94 @@ generate_stringdot_measures <- function(ngram_lengths = 1:9, configs) {
 # Configurations
 sim_configs <- list(
 
-  # Tversky variants
+  # Tversky variants (n-gram based)
+
+  # Interval n-grams
   list(
-    name = "ngrtvers",
+    name = "ngram_int_tversky_sym",
     sim_measure = "Tversky",
-    parameters = list(transformation = "int",
-                      ngram_db = "melsim::int_ngrams_berkowitz",
-                      alpha = 1,
-                      beta = 1)
+    parameters = list(
+      transformation = "int",
+      ngram_db = "melsim::int_ngrams_berkowitz",
+      alpha = 1,
+      beta  = 1
+    )
   ),
   list(
-    name = "ngrtvera",
+    name = "ngram_int_tversky_auto",
     sim_measure = "Tversky",
-    parameters = list(transformation = "int",
-                      ngram_db = "melsim::int_ngrams_berkowitz",
-                      alpha = "auto",
-                      beta = "auto")
+    parameters = list(
+      transformation = "int",
+      ngram_db = "melsim::int_ngrams_berkowitz",
+      alpha = "auto",
+      beta  = "auto"
+    )
   ),
 
+  # Duration class n-grams
   list(
-    name = "ngrtvers",
+    name = "ngram_durclass_tversky_sym",
     sim_measure = "Tversky",
-    parameters = list(transformation = "duration_class",
-                      ngram_db = "melsim::dur_class_ngrams_berkowitz",
-                      alpha = 1,
-                      beta = 1)
+    parameters = list(
+      transformation = "duration_class",
+      ngram_db = "melsim::dur_class_ngrams_berkowitz",
+      alpha = 1,
+      beta  = 1
+    )
   ),
   list(
-    name = "ngrtvera",
+    name = "ngram_durclass_tversky_auto",
     sim_measure = "Tversky",
-    parameters = list(transformation = "duration_class",
-                      ngram_db = "melsim::dur_class_ngrams_berkowitz",
-                      alpha = "auto",
-                      beta = "auto")
+    parameters = list(
+      transformation = "duration_class",
+      ngram_db = "melsim::dur_class_ngrams_berkowitz",
+      alpha = "auto",
+      beta  = "auto"
+    )
   ),
 
+  # IOI class n-grams
   list(
-    name = "ngrtvers",
+    name = "ngram_ioiclass_tversky_sym",
     sim_measure = "Tversky",
-    parameters = list(transformation = "ioi_class",
-                      ngram_db = "melsim::ioi_class_ngrams_berkowitz",
-                      alpha = 1,
-                      beta = 1)
+    parameters = list(
+      transformation = "ioi_class",
+      ngram_db = "melsim::ioi_class_ngrams_berkowitz",
+      alpha = 1,
+      beta  = 1
+    )
   ),
   list(
-    name = "ngrtvera",
+    name = "ngram_ioiclass_tversky_auto",
     sim_measure = "Tversky",
-    parameters = list(transformation = "ioi_class",
-                      ngram_db = "melsim::ioi_class_ngrams_berkowitz",
-                      alpha = "auto",
-                      beta = "auto")
+    parameters = list(
+      transformation = "ioi_class",
+      ngram_db = "melsim::ioi_class_ngrams_berkowitz",
+      alpha = "auto",
+      beta  = "auto"
+    )
+  ),
+
+  # Joint interval × IOI class n-grams
+  list(
+    name = "ngram_intXioi_tversky_sym",
+    sim_measure = "Tversky",
+    parameters = list(
+      transformation = "int_X_ioi_class",
+      ngram_db = "melsim::int_X_ioi_class_ngrams_berkowitz",
+      alpha = 1,
+      beta  = 1
+    )
+  ),
+  list(
+    name = "ngram_intXioi_tversky_auto",
+    sim_measure = "Tversky",
+    parameters = list(
+      transformation = "int_X_ioi_class",
+      ngram_db = "melsim::int_X_ioi_class_ngrams_berkowitz",
+      alpha = "auto",
+      beta  = "auto"
+    )
   ),
 
   # Ukkonen variants with dynamic name
@@ -278,9 +318,9 @@ sim_configs <- purrr::map(sim_configs, function(cfg) {
 }) |> purrr::flatten()
 
 
-# Generate all measures (ngram lengths 1 to 9)
-stringdot_measures <- generate_stringdot_measures(1:9, stringdot_base_configs)
-all_ngram_measures <- generate_sim_measures(1:9, sim_configs)
+# Generate all measures
+stringdot_measures <- generate_stringdot_measures(1:MAX_NGRAM_LENGTH, stringdot_base_configs)
+all_ngram_measures <- generate_sim_measures(1:MAX_NGRAM_LENGTH, sim_configs)
 
 
 

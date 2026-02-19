@@ -44,6 +44,7 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       validate_mel_data = function(mel_data) {
+
         return(is.data.frame(mel_data)  && "onset" %in% names(mel_data) && "pitch" %in% names(mel_data))
       },
 
@@ -127,9 +128,25 @@ melody_factory <- R6::R6Class("Melody",
           private$.mel_data$int_X_ioi_class <- int_X_ioi_class
         }
 
-        if(transform_check("phrase_segmentation")) {
-          phrase_segmentation <- private$.mel_data %>%
+        invisible(self)
+      },
+
+      resolve_segmentation = function() {
+
+        if(self$has("bar")) {
+          return("bar")
+        }
+
+        logging:loginfo("private$.mel_data: %s", private$.mel_data)
+
+        if(!self$has("phrase_segmentation")) {
+
+          seg_df <- private$.mel_data %>%
             itembankr::segment_phrase(as_string_df = FALSE) %>%
+            dplyr::select(phrasbeg, phrasend) %>%
+            dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
+
+          private$.mel_data <- dplyr::bind_cols(private$.mel_data, seg_df)
             select(phrasbeg, phrasend) %>%
             mutate(phrase_segmentation = cumsum(phrasbeg))
           private$.mel_data <- private$.mel_data %>% remove_cols(names(phrase_segmentation))
@@ -155,8 +172,9 @@ melody_factory <- R6::R6Class("Melody",
           }
         }
 
-        invisible(self)
+        return("phrase_segmentation")
       },
+
 
       add_ngrams = function(columns, N, override = TRUE) {
         private$.mel_data <- add_ngrams(private$.mel_data, columns = columns, N = N, override = override)
@@ -244,22 +262,25 @@ melody_factory <- R6::R6Class("Melody",
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
 
-      get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE) {
+      get_implicit_harmonies = function(only_winner = TRUE, cache = TRUE) {
+
+        segmentation_name <- self$resolve_segmentation()
+        segmentation <- private$.mel_data[[segmentation_name]]
+
         ih_id <- sprintf("%s_%s",
-                         ifelse(is.null(segmentation), "global", segmentation),
+                         segmentation_name,
                          ifelse(only_winner, "best", "full"))
+
         if(cache && "implicit_harmonies" %in% names(private$.mel_cache)) {
           ih <- private$.mel_cache$implicit_harmonies[[ih_id]]
           if(!is.null(ih)) {
             return(ih)
           }
         }
-        if(self$has(segmentation)) {
-          segmentation <- private$.mel_data[[segmentation]]
-        } else {
-          #logging::logwarn(sprintf("Requested segmentation '%s' not found, using const", segmentation))
-          segmentation <- rep(1, nrow(private$.mel_data))
-        }
+
+        segmentation_name <- self$resolve_segmentation()
+        segmentation <- private$.mel_data[[segmentation_name]]
+
         if(self$has("ioi_class")) {
           weights <- 2^(private$.mel_data$ioi_class - 1)
         } else {
