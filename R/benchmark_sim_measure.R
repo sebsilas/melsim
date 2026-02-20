@@ -35,8 +35,10 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
                                   plot = FALSE) {
 
   stopifnot(is.null.or(limit_corpus_N, is.integer))
-
-  if(is.integer(limit_corpus_N)) {
+  if(plot){
+    return_sim_values <- T
+  }
+  if(is.numeric(limit_corpus_N)) {
     benchmark_corpus <- benchmark_corpus[1:limit_corpus_N]
   }
 
@@ -85,7 +87,6 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
     dplyr::mutate( data = if(return_sim_values) list (dat) else  NULL )
 
   })
-
   if(plot) {
     benchmark_plot(ret)
   }
@@ -98,14 +99,14 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
 benchmark_plot <- function(dat, by_measure = TRUE) {
 
   data_combined <- pmap_dfr(dat, function(...) {
-
     d <- list(...)
 
     sim_measure_name <- unique(d$sim_measure_name)
 
     d$sim_measure_name <- NULL
 
-    d <- d$data %>%
+    d <- d$data  %>%
+      filter(melody1 < melody2) %>%
       dplyr::select(-c(sim_measure_name, melody1, melody2))
 
     names(d) <- "sim_value"
@@ -119,14 +120,18 @@ benchmark_plot <- function(dat, by_measure = TRUE) {
   if(by_measure) {
     p <- data_combined %>%
       ggplot(aes(x = sim_value, fill = `Similarity Measure`)) +
-      geom_histogram() +
+      geom_histogram(color = "black") +
       facet_wrap(~`Similarity Measure`) +
-      labs(x = "Similarity", y = "Count")
+      labs(x = "Similarity", y = "Count") +
+      scale_fill_brewer(palette = "Set1") +
+      theme_minimal()
   } else {
     p <- data_combined %>%
       ggplot(aes(x = sim_value)) +
-      geom_histogram() +
-      labs(x = "Similarity", y = "Count")
+      geom_histogram(color = "black") +
+      labs(x = "Similarity", y = "Count") +
+      scale_fill_brewer(palette = "Set1") +
+      theme_minimal()
   }
 
 
