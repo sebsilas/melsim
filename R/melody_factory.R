@@ -681,6 +681,9 @@ melody_factory <- R6::R6Class("Melody",
         }
         has_segments <- !is.null(segments) & is.character(segments) & (length(intersect(segments, names(private$.mel_data))) > 0)
         plot_data <- private$.mel_data
+        if(!("duration" %in% names(plot_data))){
+          plot_data$duration <- diff(plot_data$ionset)
+        }
         plot_data <- plot_data %>% mutate(duration = tidyr::replace_na(duration, median(duration)))
         q <-  plot_data %>% ggplot2::ggplot(ggplot2::aes(xmin = onset, ymin = pitch - .125))
         if(has_segments){
