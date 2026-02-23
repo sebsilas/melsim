@@ -35,7 +35,7 @@ get_salience <- function(ngrams, ngram_db = melsim::int_ngrams_berkowitz) {
   if(nrow(idfs) == 0){
     return(0)
   }
-  logging::loginfo(sprintf("%.2f / %.2f = %.2f", sum(idfs$idf), nrow(idfs), sum(idfs$idf)/nrow(idfs)))
+  #logging::loginfo(sprintf("%.2f / %.2f = %.2f", sum(idfs$idf), nrow(idfs), sum(idfs$idf)/nrow(idfs)))
   return(sum(idfs$idf))
 }
 
