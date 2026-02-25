@@ -258,9 +258,9 @@ plot_dtw_alignment <- function(x, y = NULL, beta = .5) {
   plot_df <- bind_rows(tibble(x = x, type = "query"), tibble(x = y, type = "reference"))
   plot_df2 <- tibble(x = x[d$index1], y = y[d$index2]) %>% mutate(d = x - y)
 
-  q <- plot_df %>% ggplot(aes(x = x, y  = type, colour = type)) + geom_point(size = 5)
+  q <- plot_df %>% ggplot(ggplot2::aes(x = x, y  = type, colour = type)) + geom_point(size = 5)
   q <- q + geom_segment(data = plot_df2,
-                        aes(x = x, y = "query", xend = y, yend = "reference"),
+                        ggplot2::aes(x = x, y = "query", xend = y, yend = "reference"),
                         colour = "black",
                         arrow = arrow(length = unit(0.30, "cm"),
                                       ends = "last",
@@ -359,6 +359,25 @@ is_midi_note <- function(n) {
 inv_logit <- function(x) {
   1 / (1 + exp(-x))
 }
+
+align_onsets <- function(mel_data, zero_onsets = TRUE) {
+
+  if (length(mel_data$onset) > 1L &&
+      !dplyr::near(mel_data$onset[1], 0) &&
+      zero_onsets) {
+
+    logging::logwarn(
+      "First onset not 0.. aligning onsets to start at 0.
+       Set zero_onsets = FALSE to disable this behaviour."
+    )
+
+    mel_data <- mel_data %>%
+      dplyr::mutate(onset = onset - dplyr::first(onset))
+  }
+
+  mel_data
+}
+
 
 
 try_or_log_error_return_na <- function(exp) {
