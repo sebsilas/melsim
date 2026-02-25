@@ -337,7 +337,7 @@ manual_measures <- list(
   melsim::sim_measure_factory$new(full_name = "implicit-harmonies-edit-distance",
                                   name = "harmcore",
                                   transformation = "implicit_harmonies",
-                                  parameters = list(),
+                                  parameters = list(optimizer = "transpose"),
                                   sim_measure = "edit_sim"),
 
   melsim::sim_measure_factory$new(full_name = "ioi-class-edit-distance",

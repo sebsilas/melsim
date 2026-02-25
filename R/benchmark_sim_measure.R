@@ -50,6 +50,10 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
     benchmark_corpus_query <- update_melodies(benchmark_corpus_query, force = TRUE)
   }
 
+  if(!is.list(sim_measures)) {
+    sim_measures <- list(sim_measures)
+  }
+
 
   ret <- purrr::map_dfr(sim_measures, function(sm) {
 
@@ -61,6 +65,10 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
         melody2 = benchmark_corpus_query,
         sim_measures =  sm
       )
+
+    if(!is.character(sm)) {
+      sm <- sm$name
+    }
 
     dat <- sim_res$as_tibble() %>%
       tidyr::pivot_longer(dplyr::contains("sim_"), names_to = "sim_measure_name", values_to = "similarity") %>%
