@@ -7,6 +7,7 @@
 benchmark_sim_measure(
   sim_measures = c("ngrukkon", "diffed", "rawed"),
   benchmark_corpus = kinder_full,
+  benchmark_corpus_query = NULL,
   limit_corpus_N = NULL,
   return_sim_values = FALSE,
   plot = FALSE

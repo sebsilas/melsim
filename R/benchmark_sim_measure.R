@@ -30,6 +30,7 @@
 #'
 benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"),
                                   benchmark_corpus = kinder_full,
+                                  benchmark_corpus_query = NULL,
                                   limit_corpus_N = NULL,
                                   return_sim_values = FALSE,
                                   plot = FALSE) {
@@ -42,6 +43,13 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
 
   benchmark_corpus <- update_melodies(benchmark_corpus, force = TRUE)
 
+  if(!is.null(benchmark_corpus_query)) {
+    if(is.integer(limit_corpus_N)) {
+      benchmark_corpus_query <- benchmark_corpus_query[1:limit_corpus_N]
+    }
+    benchmark_corpus_query <- update_melodies(benchmark_corpus_query, force = TRUE)
+  }
+
 
   ret <- purrr::map_dfr(sim_measures, function(sm) {
 
@@ -50,6 +58,7 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
     sim_res <-
       melsim(
         melody1 = benchmark_corpus,
+        melody2 = benchmark_corpus_query,
         sim_measures =  sm
       )
 
@@ -95,9 +104,18 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
 
 }
 
+#' Benchmark plot
+#'
+#' @param dat
+#' @param by_measure
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 benchmark_plot <- function(dat, by_measure = TRUE) {
 
-  data_combined <- pmap_dfr(dat, function(...) {
+  data_combined <- purrr::pmap_dfr(dat, function(...) {
 
     d <- list(...)
 
@@ -118,15 +136,15 @@ benchmark_plot <- function(dat, by_measure = TRUE) {
 
   if(by_measure) {
     p <- data_combined %>%
-      ggplot(aes(x = sim_value, fill = `Similarity Measure`)) +
-      geom_histogram() +
-      facet_wrap(~`Similarity Measure`) +
-      labs(x = "Similarity", y = "Count")
+      ggplot2::ggplot(ggplot2::aes(x = sim_value, fill = `Similarity Measure`)) +
+      ggplot2::geom_histogram() +
+      ggplot2::facet_wrap(~`Similarity Measure`) +
+      ggplot2::labs(x = "Similarity", y = "Count")
   } else {
     p <- data_combined %>%
-      ggplot(aes(x = sim_value)) +
-      geom_histogram() +
-      labs(x = "Similarity", y = "Count")
+      ggplot2::ggplot(aes(x = sim_value)) +
+      ggplot2::geom_histogram() +
+      ggplot2::labs(x = "Similarity", y = "Count")
   }
 
 
