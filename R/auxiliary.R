@@ -131,13 +131,84 @@ sim_emd <- function(mel1, mel2, beta = 1) {
               mel2 %>% select(duration, onset, pitch) %>% as.matrix()) %>% (function(x){ exp(-beta *x) })
 }
 
-sim_dtw <- function(mel1, mel2, beta = 1) {
-  dist <- dtw::dtw(mel1$onset, mel2$onset)
-  if(is.null(beta) || !is.numeric(beta) || beta <= 0) {
-    #print(dist$normalizedDistance)
-    return(exp( - 2*dist$normalizedDistance))
+sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = list(), ...) {
+
+  # ------------------------------------------------------------
+  # 1. Extract transform matrix
+  # ------------------------------------------------------------
+  x <- get_transform_matrix(mel1, transforms)
+  y <- get_transform_matrix(mel2, transforms)
+
+  if (is.vector(x)) x <- matrix(x, ncol = 1)
+  if (is.vector(y)) y <- matrix(y, ncol = 1)
+
+  # ------------------------------------------------------------
+  # 2. Guard against degenerate input
+  # ------------------------------------------------------------
+  if (is.null(x) || is.null(y) ||
+      nrow(x) < 2 || nrow(y) < 2) {
+    return(NA_real_)
   }
-  dist$normalizedDistance %>% (function(x){exp(-beta *x)})
+
+  zero_var_x <- apply(x, 2, function(col) {
+    col <- col[!is.na(col)]
+    if (length(col) < 2) return(TRUE)
+    var(col) == 0
+  })
+
+  zero_var_y <- apply(y, 2, function(col) {
+    col <- col[!is.na(col)]
+    if (length(col) < 2) return(TRUE)
+    var(col) == 0
+  })
+
+  if (any(zero_var_x) || any(zero_var_y)) {
+    return(NA_real_)
+  }
+
+  # ------------------------------------------------------------
+  # 3. Determine DTW mode
+  # ------------------------------------------------------------
+  mode <- parameters$mode %||% "structural"
+
+  if (mode == "recall") {
+    step_pattern <- dtw::asymmetric
+    open_begin   <- TRUE
+    open_end     <- TRUE
+  } else {
+    # Default: structural similarity
+    step_pattern <- dtw::symmetric2
+    open_begin   <- FALSE
+    open_end     <- FALSE
+  }
+
+  # ------------------------------------------------------------
+  # 4. Compute DTW
+  # ------------------------------------------------------------
+  alignment <- tryCatch(
+    dtw::dtw(
+      x,
+      y,
+      step.pattern = step_pattern,
+      open.begin = open_begin,
+      open.end = open_end,
+      ...
+    ),
+    error = function(e) NULL
+  )
+
+  if (is.null(alignment) || is.null(alignment$normalizedDistance))
+    return(NA_real_)
+
+  d <- alignment$normalizedDistance
+
+  # ------------------------------------------------------------
+  # 5. Convert distance to similarity
+  # ------------------------------------------------------------
+  if (is.null(beta) || beta <= 0)
+    return(exp(-2 * d))
+
+  exp(-beta * d)
 }
 
 compression_ratio <- function(s, t, method = "gz") {
@@ -754,5 +825,24 @@ check_pkg_installed <- function(pkg) {
     message("Package '", pkg, "' is installed.")
     return(TRUE)
   }
+}
+
+get_transform_matrix <- function(melody, transforms) {
+
+  if(is.null(transforms))
+    stop("No transformation provided.")
+
+  if(is.character(transforms) && length(transforms) == 1) {
+    return(melody$data[[transforms]])
+  }
+
+  # Multiple transforms → return matrix
+  mats <- lapply(transforms, function(tr) {
+    melody$data[[tr]]
+  })
+
+  # Remove rows where all NA
+  mat <- do.call(cbind, mats)
+  mat[complete.cases(mat), , drop = FALSE]
 }
 

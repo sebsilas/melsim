@@ -318,6 +318,88 @@ sim_configs <- purrr::map(sim_configs, function(cfg) {
 }) |> purrr::flatten()
 
 
+dtw_base_transforms <- c(
+  "pitch",
+  "int",
+  "fuzzy_int",
+  "parsons",
+  "ioi",
+  "ioi_class"
+)
+
+# ------------------------------------------------------------
+# Helper to build one DTW measure (structural or recall)
+# ------------------------------------------------------------
+make_dtw_measure <- function(trs, mode = "structural") {
+
+  nm <- paste(trs, collapse = "_")
+
+  # Suffix for recall mode
+  name_suffix  <- if (mode == "recall") "_recall" else ""
+  full_suffix  <- if (mode == "recall") " (Recall Mode)" else ""
+
+  melsim::sim_measure_factory$new(
+    full_name = paste0("DTW-", paste(trs, collapse = "+"), full_suffix),
+    name = paste0("dtw_", nm, name_suffix),
+    transformation = trs,
+    parameters = list(
+      beta = 0,
+      mode = mode
+    ),
+    sim_measure = "sim_dtw",
+    transposition_invariant = FALSE,
+    tempo_invariant = FALSE
+  )
+}
+
+# ------------------------------------------------------------
+# 1. Univariate DTW (structural + recall)
+# ------------------------------------------------------------
+dtw_univariate <- purrr::flatten(
+  purrr::map(dtw_base_transforms, function(tr) {
+    list(
+      make_dtw_measure(tr, mode = "structural"),
+      make_dtw_measure(tr, mode = "recall")
+    )
+  })
+)
+
+# ------------------------------------------------------------
+# 2. 2D DTW combinations
+# ------------------------------------------------------------
+dtw_2d_pairs <- list(
+  c("int", "ioi"),
+  c("int", "ioi_class"),
+  c("pitch", "ioi"),
+  c("pitch", "ioi_class"),
+  c("fuzzy_int", "ioi_class")
+)
+
+dtw_multivariate <- purrr::flatten(
+  purrr::map(dtw_2d_pairs, function(trs) {
+    list(
+      make_dtw_measure(trs, mode = "structural"),
+      make_dtw_measure(trs, mode = "recall")
+    )
+  })
+)
+
+# ------------------------------------------------------------
+# 3. 3D DTW combinations
+# ------------------------------------------------------------
+dtw_3d <- list(
+  c("int", "ioi", "pitch")
+)
+
+dtw_3d_measures <- purrr::flatten(
+  purrr::map(dtw_3d, function(trs) {
+    list(
+      make_dtw_measure(trs, mode = "structural"),
+      make_dtw_measure(trs, mode = "recall")
+    )
+  })
+)
+
 # Generate all measures
 stringdot_measures <- generate_stringdot_measures(1:MAX_NGRAM_LENGTH, stringdot_base_configs)
 all_ngram_measures <- generate_sim_measures(1:MAX_NGRAM_LENGTH, sim_configs)
@@ -407,7 +489,7 @@ manual_measures <- list(
 )
 
 # Combine the manually defined measures with the generated ones
-similarity_measures <- c(manual_measures, stringdot_measures, all_ngram_measures)
+similarity_measures <- c(manual_measures, stringdot_measures, all_ngram_measures, dtw_univariate, dtw_multivariate, dtw_3d_measures)
 
 # Assign unique names
 names(similarity_measures) <- map_chr(similarity_measures, ~ .x$name)

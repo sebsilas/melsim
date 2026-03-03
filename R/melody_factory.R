@@ -543,9 +543,13 @@ melody_factory <- R6::R6Class("Melody",
             }
             if(sm$sim_measure == "sim_dtw") {
               stopifnot(methods::is(melody, "Melody"))
-              sim <- sim_dtw(private$.mel_data,
-                             melody$data,
-                             beta = sm$parameters$beta)
+              sim <- sim_dtw(
+                mel1 = self,
+                mel2 = melody,
+                transforms = sm$transformation,
+                beta = sm$parameters$beta,
+                parameters = sm$parameters
+              )
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             if(sm$sim_measure == "pmi") {
