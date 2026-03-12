@@ -1,3 +1,5 @@
+# melsim 0.11.0
+
 # melsim 0.10.0
 
 - Add benchmark sim measure functions

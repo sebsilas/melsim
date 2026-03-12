@@ -36,8 +36,10 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
                                   plot = FALSE) {
 
   stopifnot(is.null.or(limit_corpus_N, is.integer))
-
-  if(is.integer(limit_corpus_N)) {
+  if(plot){
+    return_sim_values <- T
+  }
+  if(is.numeric(limit_corpus_N)) {
     benchmark_corpus <- benchmark_corpus[1:limit_corpus_N]
   }
 
@@ -102,7 +104,6 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
     dplyr::mutate( data = if(return_sim_values) list (dat) else  NULL )
 
   })
-
   if(plot) {
     benchmark_plot(ret)
   }
@@ -130,7 +131,8 @@ benchmark_plot <- function(dat, by_measure = TRUE) {
 
     d$sim_measure_name <- NULL
 
-    d <- d$data %>%
+    d <- d$data  %>%
+      filter(melody1 < melody2) %>%
       dplyr::select(-c(sim_measure_name, melody1, melody2))
 
     names(d) <- "sim_value"
@@ -146,15 +148,18 @@ benchmark_plot <- function(dat, by_measure = TRUE) {
       ggplot2::ggplot(ggplot2::aes(x = sim_value, fill = `Similarity Measure`)) +
       ggplot2::geom_histogram() +
       ggplot2::facet_wrap(~`Similarity Measure`) +
-      ggplot2::labs(x = "Similarity", y = "Count")
+      ggplot2::labs(x = "Similarity", y = "Count")  +
+      ggplot2::scale_fill_brewer(palette = "Set1") +
+      ggplot2::theme_minimal()
 
   } else {
 
     p <- data_combined %>%
-      ggplot2::ggplot(ggplot2::aes(x = sim_value)) +
-      ggplot2::geom_histogram() +
-      ggplot2::labs(x = "Similarity", y = "Count")
-
+      ggplot2::ggplot(aes(x = sim_value)) +
+      ggplot2::geom_histogram(color = "black") +
+      ggplot2::labs(x = "Similarity", y = "Count") +
+      ggplot2::scale_fill_brewer(palette = "Set1") +
+      ggplot2::theme_minimal()
   }
 
   return(p)
