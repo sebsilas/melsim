@@ -763,3 +763,22 @@ check_pkg_installed <- function(pkg) {
   }
 }
 
+#' MeloSpyGUI exports MCSV2 with too many quotations marks around the strings in the signature column
+#' as a results MeloSpyGUI throws and error when reading in such  MCSV2 files.
+#' Here is a simple function that fixes that.
+#'@export
+fix_mcsv2 <- function(fnames, outdir){
+  for(fn in fnames){
+    #browser()
+    print(fn)
+    bn <- basename(fn)
+    #ext <- tools::file_ext(fn)
+    outname <- file.path(outdir, bn)
+    mel <- melsim::melody_factory$new(fname = fn)$data
+    export_names <- read_csv2(fn) %>% names()
+    export <- mel %>%
+      mutate(signature = str_extract(signature, "[0-9]+/[0-9]+")) %>%
+      select(all_of(export_names))
+    export %>% write.table(outname, quote = F, row.names = F, sep = ";")
+  }
+}
