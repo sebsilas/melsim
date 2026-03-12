@@ -1,4 +1,4 @@
-#' Compute the melodic similarity between melodies
+#' Compute the melodic similarity between melodies.
 #'
 #' @param melody1 Vector of melody objects or file names - for comparison.
 #' @param melody2 Vector of melody objects or file names - for comparison.
@@ -30,8 +30,6 @@ melsim <- function(melody1,
     })
   }
 
-  # Add support for character vectors later
-  #browser()
   if(!is.list(sim_measures)) {
     sim_measures <- list(sim_measures)
   }

@@ -83,7 +83,7 @@ melody_factory <- R6::R6Class("Melody",
           tmp <- transforms(private$.mel_data)
           if(intersect(names(private$.mel_data), names(tmp)) == names(private$.mel_data) &&
              override &&
-             nrow(tmp) == nrow(privat$.mel_data)) {
+             nrow(tmp) == nrow(private$.mel_data)) {
             private$.mel_data <- tmp
           }
         }
@@ -128,6 +128,24 @@ melody_factory <- R6::R6Class("Melody",
           private$.mel_data$int_X_ioi_class <- int_X_ioi_class
         }
 
+        if(transform_check("implicit_harmonies")) {
+          segmentation <- self$resolve_segmentation()
+          ih <- get_implicit_harmonies(private$.mel_data$pitch,
+                                       segmentation = private$.mel_data[[segmentation]],
+                                       only_winner = TRUE)
+          segmentation_name <- segmentation
+
+          ih_df <- ih %>%
+            dplyr::select(segment, key) %>%
+            dplyr::rename(implicit_harmonies = key)
+
+          private$.mel_data <- private$.mel_data %>%
+            dplyr::left_join(
+              ih_df,
+              by = setNames("segment", segmentation_name)
+            )
+        }
+
         invisible(self)
       },
 
@@ -137,7 +155,11 @@ melody_factory <- R6::R6Class("Melody",
           return("bar")
         }
 
+<<<<<<< HEAD
         #logging:loginfo("private$.mel_data: %s", private$.mel_data)
+=======
+        logging::loginfo("private$.mel_data: %s", private$.mel_data)
+>>>>>>> 49cef03a9c7022acdc0a6ccda91f46a50de2d7e5
 
         if(!self$has("phrase_segmentation")) {
 
@@ -147,6 +169,7 @@ melody_factory <- R6::R6Class("Melody",
             dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
 
           private$.mel_data <- dplyr::bind_cols(private$.mel_data, seg_df)
+<<<<<<< HEAD
             select(phrasbeg, phrasend) %>%
             mutate(phrase_segmentation = cumsum(phrasbeg))
           private$.mel_data <- private$.mel_data %>% remove_cols(names(phrase_segmentation))
@@ -170,6 +193,8 @@ melody_factory <- R6::R6Class("Melody",
             private$.mel_data <- private$.mel_data %>%
               left_join(ih, by = c("phrase_segmentation" = "segment"))
           }
+=======
+>>>>>>> 49cef03a9c7022acdc0a6ccda91f46a50de2d7e5
         }
 
         return("phrase_segmentation")
@@ -278,9 +303,6 @@ melody_factory <- R6::R6Class("Melody",
             return(ih)
           }
         }
-
-        segmentation_name <- self$resolve_segmentation()
-        segmentation <- private$.mel_data[[segmentation_name]]
 
         if(self$has("ioi_class")) {
           weights <- 2^(private$.mel_data$ioi_class - 1)
@@ -552,9 +574,13 @@ melody_factory <- R6::R6Class("Melody",
             }
             if(sm$sim_measure == "sim_dtw") {
               stopifnot(methods::is(melody, "Melody"))
-              sim <- sim_dtw(private$.mel_data,
-                             melody$data,
-                             beta = sm$parameters$beta)
+              sim <- sim_dtw(
+                mel1 = self,
+                mel2 = melody,
+                transforms = sm$transformation,
+                beta = sm$parameters$beta,
+                parameters = sm$parameters
+              )
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             if(sm$sim_measure == "pmi") {

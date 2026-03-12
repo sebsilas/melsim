@@ -30,6 +30,7 @@
 #'
 benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"),
                                   benchmark_corpus = kinder_full,
+                                  benchmark_corpus_query = NULL,
                                   limit_corpus_N = NULL,
                                   return_sim_values = FALSE,
                                   plot = FALSE) {
@@ -44,6 +45,17 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
 
   benchmark_corpus <- update_melodies(benchmark_corpus, force = TRUE)
 
+  if(!is.null(benchmark_corpus_query)) {
+    if(is.integer(limit_corpus_N)) {
+      benchmark_corpus_query <- benchmark_corpus_query[1:limit_corpus_N]
+    }
+    benchmark_corpus_query <- update_melodies(benchmark_corpus_query, force = TRUE)
+  }
+
+  if(!is.list(sim_measures)) {
+    sim_measures <- list(sim_measures)
+  }
+
 
   ret <- purrr::map_dfr(sim_measures, function(sm) {
 
@@ -52,8 +64,13 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
     sim_res <-
       melsim(
         melody1 = benchmark_corpus,
+        melody2 = benchmark_corpus_query,
         sim_measures =  sm
       )
+
+    if(!is.character(sm)) {
+      sm <- sm$name
+    }
 
     dat <- sim_res$as_tibble() %>%
       tidyr::pivot_longer(dplyr::contains("sim_"), names_to = "sim_measure_name", values_to = "similarity") %>%
@@ -96,11 +113,20 @@ benchmark_sim_measure <- function(sim_measures = c("ngrukkon", "diffed", "rawed"
 
 }
 
+#' Benchmark plot
+#'
+#' @param dat
+#' @param by_measure
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 benchmark_plot <- function(dat, by_measure = TRUE) {
 
-  data_combined <- pmap_dfr(dat, function(...) {
-    d <- list(...)
+  data_combined <- purrr::pmap_dfr(dat, function(...) {
 
+    d <- list(...)
     sim_measure_name <- unique(d$sim_measure_name)
 
     d$sim_measure_name <- NULL
@@ -111,30 +137,31 @@ benchmark_plot <- function(dat, by_measure = TRUE) {
 
     names(d) <- "sim_value"
 
-
     d %>%
-      dplyr::mutate(`Similarity Measure` = sim_measure_name )
+      dplyr::mutate(`Similarity Measure` = sim_measure_name)
 
   })
 
-  if(by_measure) {
+  if (by_measure) {
+
     p <- data_combined %>%
-      ggplot(aes(x = sim_value, fill = `Similarity Measure`)) +
-      geom_histogram(color = "black") +
-      facet_wrap(~`Similarity Measure`) +
-      labs(x = "Similarity", y = "Count") +
-      scale_fill_brewer(palette = "Set1") +
-      theme_minimal()
+      ggplot2::ggplot(ggplot2::aes(x = sim_value, fill = `Similarity Measure`)) +
+      ggplot2::geom_histogram() +
+      ggplot2::facet_wrap(~`Similarity Measure`) +
+      ggplot2::labs(x = "Similarity", y = "Count")  +
+      ggplot2::scale_fill_brewer(palette = "Set1") +
+      ggplot2::theme_minimal()
+
   } else {
+
     p <- data_combined %>%
-      ggplot(aes(x = sim_value)) +
-      geom_histogram(color = "black") +
-      labs(x = "Similarity", y = "Count") +
-      scale_fill_brewer(palette = "Set1") +
-      theme_minimal()
+      ggplot2::ggplot(aes(x = sim_value)) +
+      ggplot2::geom_histogram(color = "black") +
+      ggplot2::labs(x = "Similarity", y = "Count") +
+      ggplot2::scale_fill_brewer(palette = "Set1") +
+      ggplot2::theme_minimal()
   }
 
-
-  print(p)
+  return(p)
 }
 

@@ -47,15 +47,21 @@ sim_measure_factory <- R6::R6Class(
       stopifnot(purrr::is_scalar_character(name),
                 purrr::is_scalar_character(full_name),
                 purrr::is_scalar_character(type),
-                purrr::is_scalar_character(transformation),
+
+                is.character(transformation),
+                length(transformation) >= 1,
+
                 is.list(parameters),
                 purrr::is_scalar_character(sim_measure) || purrr::is_formula(sim_measure),
                 purrr::is_scalar_logical(transposition_invariant),
                 purrr::is_scalar_logical(tempo_invariant))
-      if(!transformation %in% sim_transformations) {
-        stop(sprintf("Unrecognized transformation: %s", transformation))
+
+      if(!all(transformation %in% sim_transformations)) {
+        stop(sprintf("Unrecognized transformation(s): %s",
+                     paste(setdiff(transformation, sim_transformations), collapse = ", ")))
       }
-      if(transformation == "ngrams") {
+
+      if(length(transformation) == 1 && transformation == "ngrams") {
         if(!is.list(parameters)) {
           stop("Ngram transformation needs parameter lists")
         }
@@ -142,8 +148,8 @@ sim_transformations <- c("pitch",
                          "pc",
                          "int",
                          "parsons",
-                         #"ioi",
-                         #"phrase_segmentation",
+                         "ioi",
+                         "phrase_segmentation",
                          "ioi_class",
                          "fuzzy_int",
                          "duration_class",

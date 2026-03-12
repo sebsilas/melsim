@@ -89,8 +89,3 @@ use_data(combinatoric_sim_measures)
 ```
 
 
-```{r}
-
-
-```
-
