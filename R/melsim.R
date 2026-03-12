@@ -1,4 +1,4 @@
-#' Compute the melodic similarity between melodies
+#' Compute the melodic similarity between melodies.
 #'
 #' @param melody1 Vector of melody objects or file names - for comparison.
 #' @param melody2 Vector of melody objects or file names - for comparison.
