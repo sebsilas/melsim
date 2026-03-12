@@ -137,7 +137,7 @@ melody_factory <- R6::R6Class("Melody",
           return("bar")
         }
 
-        logging:loginfo("private$.mel_data: %s", private$.mel_data)
+        #logging:loginfo("private$.mel_data: %s", private$.mel_data)
 
         if(!self$has("phrase_segmentation")) {
 
@@ -154,8 +154,8 @@ melody_factory <- R6::R6Class("Melody",
         }
 
         if(transform_check("implicit_harmonies")) {
+          #browser()
           if(self$has(segmentation)) {
-            #browser()
             segmentation_info <- private$.mel_data[[segmentation]]
             ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation = segmentation_info) %>%
               select(segment, implicit_harmonies = key)
@@ -256,7 +256,8 @@ melody_factory <- R6::R6Class("Melody",
                              header = TRUE,
                              sep = ";",
                              stringsAsFactors = FALSE) %>%
-          as_tibble()
+          as_tibble() %>%
+          mutate(signature = str_extract(signature, "[0-9]+/[0-9]+"))
         mel_meta <- list(file_name =  fname,
                          name = tools::file_path_sans_ext(basename(fname)))
         list(mel_data = mel_data, mel_meta = mel_meta)

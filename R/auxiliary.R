@@ -493,9 +493,15 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
   # Krumhansl-Schmuckler algorithm
   ks_weights_major <- c(6.33, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
   ks_weights_minor <- c(6.35, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
+  #browser()
+
 
   ks_weights_major_z <- scale(ks_weights_major) %>% as.numeric()
   ks_weights_minor_z <- scale(ks_weights_minor) %>% as.numeric()
+
+  ks_weights_major_z <- ks_weights_major/max(ks_weights_major_z)
+  ks_weights_minor_z <- ks_weights_minor/max(ks_weights_minor_z)
+
 
   ks_weights_major_mat <- sapply(0:11, function(t) ks_weights_major_z[((0:11 - t) %% 12) + 1])
   ks_weights_minor_mat <- sapply(0:11, function(t) ks_weights_minor_z[((0:11 - t) %% 12) + 1])
@@ -578,13 +584,14 @@ get_implicit_harmonies <- function(pitch_vec, segmentation = NULL, weights = NUL
       w_minor <- stats::cor.test(pitch_freq,
                           ks_weights_minor_mat[, t + 1])$estimate
       dplyr::bind_rows(tidyr::tibble(key_pc = t,
-                                     match = w_major,
                                      type = "major",
-                                     key = sprintf("%s-maj", pc_labels_flat[t + 1])),
+                                     key = sprintf("%s-maj", pc_labels_flat[t + 1]),
+                                     match = w_major),
                        tidyr::tibble(key_pc = t,
-                                     match = w_minor,
+
                                      type = "minor",
-                                     key = sprintf("%s-min", pc_labels_flat[t + 1])))
+                                     key = sprintf("%s-min", pc_labels_flat[t + 1]),
+                                     match = w_minor))
     }) %>%
       dplyr::arrange(desc(match))
   }
