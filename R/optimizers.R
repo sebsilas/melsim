@@ -114,7 +114,6 @@ apply_optimizer <- function(query,
   #    nchar(name) == 0){
   #   name <- "none"
   # }
-  browser()
   name <- match.arg(name)
   switch(name,
          none = sim_measure(query, target),

@@ -323,7 +323,6 @@ melody_factory <- R6::R6Class("Melody",
                           optimizer = NULL,
                           optimizer_pars = list(strategy = c("all", "hints", "best")),
                           parameters = NULL) {
-        browser()
         v1 <- private$.mel_data[[transform]] %>% na.omit() %>% unclass()
         v2 <- melody$data[[transform]] %>% na.omit() %>% unclass()
         if (length(v1) == 0 || length(v2) == 0) {
@@ -567,7 +566,6 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             if(sm$sim_measure == "sim_dtw") {
-              browser()
               stopifnot(methods::is(melody, "Melody"))
               sim <- sim_dtw(
                 mel1 = self,

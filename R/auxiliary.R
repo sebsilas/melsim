@@ -141,7 +141,6 @@ sim_dtw_old <- function(mel1, mel2, beta = 1){
 }
 
 sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = list(), ...) {
-  browser()
   # ------------------------------------------------------------
   # 1. Extract transform matrix
   # ------------------------------------------------------------
