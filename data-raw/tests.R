@@ -12,8 +12,8 @@ test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "
       melody1 = kinder_full[1:N],
       melody2 = NULL,
       #similarity_measures = similarity_measures[sim_measure]#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
-      #similarity_measures = test_simple_matching
-      similarity_measures <- c(similarity_measures$rhytfuzz, similarity_measures$opti3)
+      sim_measures = manual_measures$harmcore
+      #similarity_measures <- c(similarity_measures$rhytfuzz, similarity_measures$opti3)
     )
   tictoc::toc()
   invisible(ret)
