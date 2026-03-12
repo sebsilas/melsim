@@ -420,7 +420,7 @@ manual_measures <- list(
                                   name = "harmcore",
                                   transformation = "implicit_harmonies",
                                   parameters = list(optimizer = "transpose"),
-                                  sim_measure = "edit_sim"),
+                                  sim_measure = "edit_sim_utf8"),
 
   melsim::sim_measure_factory$new(full_name = "ioi-class-edit-distance",
                                   name = "rhytfuzz",
@@ -465,7 +465,7 @@ manual_measures <- list(
 
   melsim::sim_measure_factory$new(full_name = "dtw_normed_dist",
                                   name = "dtw",
-                                  transformation = "none",
+                                  transformation = "onset",
                                   parameters = list(beta = 0),
                                   sim_measure = "sim_dtw",
                                   transposition_invariant = TRUE,
