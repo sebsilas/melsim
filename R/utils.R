@@ -245,7 +245,7 @@ validate_sim_measure <- function(sim_measure) {
 }
 
 plot_dtw_alignment <- function(x, y = NULL, beta = .5) {
-  if(class(x) == "dtw") {
+  if(is(x, "dtw")) {
     d <- x
     x <- d$query %>% as.vector()
     y <- d$reference %>% as.vector()
