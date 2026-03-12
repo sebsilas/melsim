@@ -78,6 +78,69 @@ fuse_two_note_motifs <- function(mel_obj, pos){
   #browser()
   pos
 }
+
+find_lcs <- function(x, min_length = 8){
+
+  l <- length(x)
+  if(l == 0){
+    stop("find_lcs: Invalid vector")
+  }
+  pos <- c(1, rep(0, length(x)- 1))
+  if(length(x) <= min_length){
+    return(pos)
+  }
+  #all the same? Don't segment
+  if(length(unique(x)) == 1){
+    return(pos)
+  }
+
+  max_level <- floor(l/2) + 1
+  bs <- parkR:::build_bigram_stack(x, max_level, sd_threshold = 0)
+  candidates <- bs %>% filter(n_xy > 1)
+  if(nrow(candidates) == 0 || length(candidates$value %>% str_split(",") %>% unlist() %>% unique()) == 1){
+    return(pos)
+  }
+  overlaps <-
+    map_dfr(candidates$value %>% unique(), function(v){
+      #browser()
+      tmp <- candidates %>% filter(value == v) %>% mutate(end = pos + N - 1, N = N)
+      tibble(value = v, has_overlap = any(tmp$pos <= lag(tmp$end, default = 0)), pos = tmp$pos, N = tmp$N)
+    })
+  overlaps <- overlaps %>% filter(!has_overlap)
+  if(nrow(overlaps) == 0){
+    browser()
+    return(pos)
+  }
+  #cover the most with the fewest and highest coverage
+  overlaps <- overlaps %>%
+    group_by(value, N) %>%
+    mutate(n = n(),
+           inner_range = max(pos) + N  - min(pos),
+           inner_coverage = sum(N)/inner_range,
+           coverage = sum(N)/l) %>%
+    ungroup() %>%
+    arrange(desc(coverage), desc(inner_coverage), desc(n), desc(N))
+
+  final <- overlaps %>%
+    filter(coverage == max(coverage)) %>%
+    filter(inner_coverage == max(inner_coverage)) %>%
+    filter(n == max(n)) %>%
+    filter(N == max(N))
+
+  if(nrow(final) > 0 & max(final$coverage) >= .7){
+    #browser()
+    if(final %>% distinct(value) %>% nrow() > 1){
+      final <- final %>% filter(value == value[1])
+    }
+    pos[final$pos] <- 1
+    pos <- fuse_single_note_motifs(pos)
+    if(length(pos) > 3 && pos[3] == 1){
+      pos[3] <- 0
+    }
+  }
+  pos
+}
+
 #' New segmentation function, does a rather fine segmentation, in fact, it looks for motifs not segments
 #' On the Kinder set, the algorithm receives an median F1 of .65, whereas
 #' itembankr::get_segmentation achvievs a median F1 of .38
@@ -114,12 +177,26 @@ motifator <- function(mel_obj, threshold = 3){
     else{
       tmp <- new_tmp
     }
-    #logging::loginfo("Fusing singles...")
+    #messagef("Fusing singles...")
 
   }
   pos <- fuse_two_note_motifs(mel_obj, pos)
   #browser()
   segment_ids <- cumsum(pos)
+  rle <- rle(segment_ids)
+  large_segments <- rle$value[rle$lengths >= 10]
+  if(length(large_segments) > 0){
+    tmp_pos <- pos
+    for(sid in large_segments){
+      idz <- which(segment_ids == sid)
+      new_pos <- suppressMessages(find_lcs(mel_obj$data$int[idz]))
+      if(sum(new_pos) > 1){
+        messagef("Found subsequences, yay")
+        pos[idz] <- new_pos
+      }
+    }
+    segment_ids <- cumsum(pos)
+  }
   return(segment_ids)
 }
 
