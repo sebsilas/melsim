@@ -145,6 +145,7 @@ sim_types <- c("set_based",
 
 #'@export
 sim_transformations <- c("pitch",
+                         "onset",
                          "pc",
                          "int",
                          "parsons",

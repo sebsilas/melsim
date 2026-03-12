@@ -131,8 +131,17 @@ sim_emd <- function(mel1, mel2, beta = 1) {
               mel2 %>% select(duration, onset, pitch) %>% as.matrix()) %>% (function(x){ exp(-beta *x) })
 }
 
-sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = list(), ...) {
+sim_dtw_old <- function(mel1, mel2, beta = 1){
+  dist <- dtw::dtw(mel1$onset, mel2$onset)
+  if(is.null(beta) || !is.numeric(beta) || beta <= 0){
+    #print(dist$normalizedDistance)
+    return(exp( - 2*dist$normalizedDistance))
+  }
+  dist$normalizedDistance %>% (function(x){exp(-beta *x)})
+}
 
+sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = list(), ...) {
+  browser()
   # ------------------------------------------------------------
   # 1. Extract transform matrix
   # ------------------------------------------------------------
@@ -855,7 +864,7 @@ fix_mcsv2 <- function(fnames, outdir){
 }
 
 get_transform_matrix <- function(melody, transforms) {
-
+  browser()
   if(is.null(transforms))
     stop("No transformation provided.")
 

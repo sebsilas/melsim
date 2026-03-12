@@ -24,7 +24,6 @@ optim_transposer <- function(query,
   } else if(parameters$strategy == "best" ) {
     hints <- find_best_transposition(target, query)
   }
-
   # Run for all transpositions and pick the top
   purrr::map_dfr(union(d, hints), function(trans) {
     tibble(trans = trans, sim = sim_measure(query + trans, target))
@@ -115,6 +114,7 @@ apply_optimizer <- function(query,
   #    nchar(name) == 0){
   #   name <- "none"
   # }
+  browser()
   name <- match.arg(name)
   switch(name,
          none = sim_measure(query, target),

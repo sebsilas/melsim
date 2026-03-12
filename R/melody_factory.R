@@ -155,11 +155,7 @@ melody_factory <- R6::R6Class("Melody",
           return("bar")
         }
 
-<<<<<<< HEAD
         #logging:loginfo("private$.mel_data: %s", private$.mel_data)
-=======
-        logging::loginfo("private$.mel_data: %s", private$.mel_data)
->>>>>>> 49cef03a9c7022acdc0a6ccda91f46a50de2d7e5
 
         if(!self$has("phrase_segmentation")) {
 
@@ -169,7 +165,6 @@ melody_factory <- R6::R6Class("Melody",
             dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
 
           private$.mel_data <- dplyr::bind_cols(private$.mel_data, seg_df)
-<<<<<<< HEAD
             select(phrasbeg, phrasend) %>%
             mutate(phrase_segmentation = cumsum(phrasbeg))
           private$.mel_data <- private$.mel_data %>% remove_cols(names(phrase_segmentation))
@@ -193,8 +188,7 @@ melody_factory <- R6::R6Class("Melody",
             private$.mel_data <- private$.mel_data %>%
               left_join(ih, by = c("phrase_segmentation" = "segment"))
           }
-=======
->>>>>>> 49cef03a9c7022acdc0a6ccda91f46a50de2d7e5
+
         }
 
         return("phrase_segmentation")
@@ -329,7 +323,7 @@ melody_factory <- R6::R6Class("Melody",
                           optimizer = NULL,
                           optimizer_pars = list(strategy = c("all", "hints", "best")),
                           parameters = NULL) {
-
+        browser()
         v1 <- private$.mel_data[[transform]] %>% na.omit() %>% unclass()
         v2 <- melody$data[[transform]] %>% na.omit() %>% unclass()
         if (length(v1) == 0 || length(v2) == 0) {
@@ -573,6 +567,7 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
             if(sm$sim_measure == "sim_dtw") {
+              browser()
               stopifnot(methods::is(melody, "Melody"))
               sim <- sim_dtw(
                 mel1 = self,
