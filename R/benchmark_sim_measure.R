@@ -126,7 +126,6 @@ benchmark_plot <- function(dat, by_measure = TRUE) {
   data_combined <- purrr::pmap_dfr(dat, function(...) {
 
     d <- list(...)
-
     sim_measure_name <- unique(d$sim_measure_name)
 
     d$sim_measure_name <- NULL
@@ -136,26 +135,28 @@ benchmark_plot <- function(dat, by_measure = TRUE) {
 
     names(d) <- "sim_value"
 
-
     d %>%
-      dplyr::mutate(`Similarity Measure` = sim_measure_name )
+      dplyr::mutate(`Similarity Measure` = sim_measure_name)
 
   })
 
-  if(by_measure) {
+  if (by_measure) {
+
     p <- data_combined %>%
       ggplot2::ggplot(ggplot2::aes(x = sim_value, fill = `Similarity Measure`)) +
       ggplot2::geom_histogram() +
       ggplot2::facet_wrap(~`Similarity Measure`) +
       ggplot2::labs(x = "Similarity", y = "Count")
+
   } else {
+
     p <- data_combined %>%
-      ggplot2::ggplot(aes(x = sim_value)) +
+      ggplot2::ggplot(ggplot2::aes(x = sim_value)) +
       ggplot2::geom_histogram() +
       ggplot2::labs(x = "Similarity", y = "Count")
+
   }
 
-
-  print(p)
+  return(p)
 }
 
