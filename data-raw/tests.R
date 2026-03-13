@@ -3,6 +3,7 @@ library(tidyverse)
 test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "diffsd", "rawsd")){
   tictoc::tic()
   kinder_full <- update_melodies(kinder_full, force = TRUE)
+  names(kinder_full) <- sapply(kinder_full, \(x) x$meta$name)
   test_simple_matching <- sim_measure_factory$new("sm_test", "sm_test", "ioi_class", sim_measure = "Braun-Blanquet")
   ret <-
     melsim(
@@ -10,9 +11,11 @@ test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "
       #melody1 = list.files("data-raw/kinder/", pattern = "csv", full.names = T),
       #melody1 = kinder_full[sample(1:length(kinder_full), N)],
       melody1 = kinder_full[1:N],
+      #melody1 = kinder_full[c("K0028", "K0057")],
       melody2 = NULL,
       #similarity_measures = similarity_measures[sim_measure]#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
-      sim_measures = manual_measures$harmcore
+      #sim_measures = manual_measures$harmcore
+      sim_measures = similarity_measures$opti3
       #similarity_measures <- c(similarity_measures$rhytfuzz, similarity_measures$opti3)
     )
   tictoc::toc()

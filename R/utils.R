@@ -389,3 +389,12 @@ try_or_log_error_return_na <- function(exp) {
   })
 }
 
+parse_key <- function(key, mapping = 3){
+  elts <- str_split_fixed(key, "-", 2)
+  apply(elts, 1, function(x){
+    #browser()
+    key_pc <- which(pc_labels_flat == x[[1]]) - 1
+    offset <- ifelse(x[[2]] == "maj", 0, mapping[1])
+    key_pc + offset
+  })
+}

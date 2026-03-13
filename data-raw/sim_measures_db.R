@@ -1,7 +1,7 @@
 
 library(tidyverse)
 
-load_all()
+devtools::load_all()
 
 MAX_NGRAM_LENGTH <- 3L
 
@@ -418,9 +418,9 @@ manual_measures <- list(
 
   melsim::sim_measure_factory$new(full_name = "implicit-harmonies-edit-distance",
                                   name = "harmcore",
-                                  transformation = "implicit_harmonies",
-                                  parameters = list(optimizer = "transpose"),
-                                  sim_measure = "edit_sim_utf8"),
+                                  transformation = "none",
+                                  parameters = list(strategy = "all"),
+                                  sim_measure = "sim_ih_ed"),
 
   melsim::sim_measure_factory$new(full_name = "ioi-class-edit-distance",
                                   name = "rhytfuzz",
@@ -512,5 +512,5 @@ if(any(duplicated(names(similarity_measures)))) {
   print(names(similarity_measures)[duplicated(names(similarity_measures))])
 }
 
-# usethis::use_data(similarity_measures, overwrite = TRUE)
+usethis::use_data(similarity_measures, overwrite = TRUE)
 

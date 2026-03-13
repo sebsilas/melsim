@@ -228,8 +228,7 @@ sequence_based_measures <- c(
 
 #'@export
 special_measures <- c(
-  "pmi", "const", "sim_emd", "sim_dtw" # from melsim
-
+  "pmi", "const", "sim_emd", "sim_dtw", "sim_ih_ed" # from melsim
   )
 
 #'@export

@@ -144,6 +144,10 @@ sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = lis
   # ------------------------------------------------------------
   # 1. Extract transform matrix
   # ------------------------------------------------------------
+  #browser()
+  if(!("onset" %in% transforms)){
+   transforms <- c("onset", transforms)
+  }
   x <- get_transform_matrix(mel1, transforms)
   y <- get_transform_matrix(mel2, transforms)
 
@@ -200,6 +204,7 @@ sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = lis
       step.pattern = step_pattern,
       open.begin = open_begin,
       open.end = open_end,
+      keep.internals = T,
       ...
     ),
     error = function(e) NULL
@@ -863,7 +868,7 @@ fix_mcsv2 <- function(fnames, outdir){
 }
 
 get_transform_matrix <- function(melody, transforms) {
-  browser()
+
   if(is.null(transforms))
     stop("No transformation provided.")
 

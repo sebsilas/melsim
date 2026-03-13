@@ -323,8 +323,15 @@ melody_factory <- R6::R6Class("Melody",
                           optimizer = NULL,
                           optimizer_pars = list(strategy = c("all", "hints", "best")),
                           parameters = NULL) {
-        v1 <- private$.mel_data[[transform]] %>% na.omit() %>% unclass()
-        v2 <- melody$data[[transform]] %>% na.omit() %>% unclass()
+        if(transform == "implicit_harmonies"){
+          #browser()
+          return(optim_transposer_ih(private$.mel_data, melody$data, parameters = optimizer_pars))
+        }
+        else{
+          v1 <- private$.mel_data[[transform]] %>% na.omit() %>% unclass()
+          v2 <- melody$data[[transform]] %>% na.omit() %>% unclass()
+
+        }
         if (length(v1) == 0 || length(v2) == 0) {
           return(NA)
         }
@@ -550,6 +557,13 @@ melody_factory <- R6::R6Class("Melody",
             if(sm$sim_measure == "const") {
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = 1.0))
             }
+            if(sm$sim_measure == "sim_ih_ed") {
+              sim <- optim_transposer_ih(mel1 = private$.mel_data,
+                                         mel2 = melody$data,
+                                         parameters = sm$parameters)
+              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+            }
+
             if(sm$sim_measure == "sim_emd") {
               stopifnot(methods::is(melody, "Melody"))
               if(!is.null(sm$parameters$optimizer)) {

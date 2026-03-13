@@ -2,7 +2,7 @@
 % Please edit documentation in R/melsim.R
 \name{melsim}
 \alias{melsim}
-\title{Compute the melodic similarity between melodies}
+\title{Compute the melodic similarity between melodies.}
 \usage{
 melsim(
   melody1,
@@ -25,5 +25,5 @@ melsim(
 \item{name}{}
 }
 \description{
-Compute the melodic similarity between melodies
+Compute the melodic similarity between melodies.
 }

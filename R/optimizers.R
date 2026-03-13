@@ -24,10 +24,12 @@ optim_transposer <- function(query,
   } else if(parameters$strategy == "best" ) {
     hints <- find_best_transposition(target, query)
   }
+  #browser()
   # Run for all transpositions and pick the top
-  purrr::map_dfr(union(d, hints), function(trans) {
+  ret <- purrr::map_dfr(union(d, hints), function(trans) {
     tibble(trans = trans, sim = sim_measure(query + trans, target))
-  }) %>% pull(sim) %>% max()
+  })
+  ret %>% pull(sim) %>% max()
 }
 
 optim_transposer_emd <- function(mel1,
@@ -66,6 +68,46 @@ optim_transposer_emd <- function(mel1,
 
 }
 
+optim_transposer_ih <- function(mel1,
+                                 mel2,
+                                 sim_measure = edit_sim_utf8,
+                                 parameters = list(
+                                   strategy = c("all", "hints", "best")
+                                 ),
+                                ...) {
+  mel1$pitch <- mel1$pitch + 60 - min(c(mel1$pitch))
+  mel2$pitch <- mel2$pitch + 60 - min(c(mel2$pitch))
+  if(is.null(parameters)){
+    parameters <- list(strategy = "all")
+  }
+  strategy <- parameters$strategy[1]
+
+  d <- stats::median(mel2$pitch)  -  stats::median(mel1$pitch)
+
+  if(strategy == "all") {
+    hints <- 0:11
+  }
+  else if(strategy == "hints") {
+    hints <- get_transposition_hints(mel2$pitch, mel1$pitch )
+  }
+  else if(strategy == "best") {
+    hints <- find_best_transposition(mel2$pitch, mel1$pitch)
+  }
+
+  ih1 <- get_implicit_harmonies(mel1$pitch, segmentation = mel1$bar)
+  ih2 <- get_implicit_harmonies(mel2$pitch, segmentation = mel2$bar)%>%
+    mutate(symbols = key_pc  + 12 * as.integer(factor(type))- 12) %>%
+    pull(symbols)
+
+  ret <- purrr::map_dfr(union(d, hints) %% 12, function(trans) {
+    #browser()
+    ih1_trans <- (ih1$key_pc + trans) %% 12 + 12 * as.integer(factor(ih1$type))- 12
+    tibble(trans = trans,
+           sim = sim_measure(ih1_trans, ih2))
+  })
+  #browser()
+  ret %>% pull(sim) %>% max()
+}
 
 optim_slide_shorter_melody <- function(query,
                                        target,
