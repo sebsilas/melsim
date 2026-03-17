@@ -8,7 +8,7 @@ Updates a list of melody objects to the current version of the melody object (as
 update_melodies(mel_list, force = TRUE)
 }
 \arguments{
-\item{mel_list}{list of Melody objects}
+\item{mel_list}{melody object or list of melody objects}
 
 \item{force}{(logical) Do it no matter what, otherwise only if version of melsim has changed}
 }
