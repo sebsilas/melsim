@@ -152,20 +152,26 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       resolve_segmentation = function() {
-
+        #browser()
         if(self$has("bar")) {
           return("bar")
         }
-
+        if(self$has("phrase_id")){
+          return("phrase_id")
+        }
         if(!self$has("phrase_segmentation")) {
+          # seg_df <- private$.mel_data %>%
+          #   itembankr::segment_phrase(as_string_df = FALSE) %>%
+          #   dplyr::select(phrasbeg, phrasend) %>%
+          #   dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
+          # segments <- seg_df$phrase_segmentation
+          #browser()
+          segments <- motifator(self)
 
-          seg_df <- private$.mel_data %>%
-            itembankr::segment_phrase(as_string_df = FALSE) %>%
-            dplyr::select(phrasbeg, phrasend) %>%
-            dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
-
-          private$.mel_data <- dplyr::bind_cols(private$.mel_data, seg_df) %>%
-              dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
+          private$.mel_data <- private$.mel_data %>%
+            mutate(phrase_segmentation = segments,
+                   phrasbeg = c(1, sign(diff(segments))),
+                   phrasend = c(sign(diff(segments)), 0))
         }
 
         return("phrase_segmentation")
@@ -259,11 +265,17 @@ melody_factory <- R6::R6Class("Melody",
         list(mel_data = mel_data, mel_meta = mel_meta)
       },
 
-      get_implicit_harmonies = function(only_winner = TRUE, cache = TRUE) {
-
-        segmentation_name <- self$resolve_segmentation()
+      get_implicit_harmonies = function(segmentation = "bar", only_winner = TRUE, cache = TRUE) {
+        #browser()
+        #segmentation_name <- self$resolve_segmentation()
+        segmentation_name <- segmentation
         segmentation <- private$.mel_data[[segmentation_name]]
-
+        if(is.null(segmentation)){
+          logging::logwarn("Invalid segmentation requested: %s, using global", segmentation_name)
+          segmentation <- rep(1, nrow(private$.mel_data))
+          segmentation_name <- "global"
+        }
+        #browser()
         ih_id <- sprintf("%s_%s",
                          segmentation_name,
                          ifelse(only_winner, "best", "full"))
@@ -302,7 +314,7 @@ melody_factory <- R6::R6Class("Melody",
                           parameters = NULL) {
         if(transform == "implicit_harmonies"){
           #browser()
-          return(optim_transposer_ih(private$.mel_data, melody$data, parameters = optimizer_pars))
+          return(optim_transposer_ih(self, melody, parameters = optimizer_pars))
         }
         else{
           v1 <- private$.mel_data[[transform]] %>% na.omit() %>% unclass()
@@ -535,8 +547,8 @@ melody_factory <- R6::R6Class("Melody",
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = 1.0))
             }
             if(sm$sim_measure == "sim_ih_ed") {
-              sim <- optim_transposer_ih(mel1 = private$.mel_data,
-                                         mel2 = melody$data,
+              sim <- optim_transposer_ih(mel1 = self,
+                                         mel2 = melody,
                                          parameters = sm$parameters)
               return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
             }
@@ -649,6 +661,7 @@ melody_factory <- R6::R6Class("Melody",
                                             cache = TRUE,
                                             only_winner = FALSE)
         }
+        browser()
         tf <- get_tonal_features(ih)
         if(segmentation != "global")  {
           tf <- tf %>% rename(!!segmentation := segment)
@@ -657,6 +670,7 @@ melody_factory <- R6::R6Class("Melody",
 
       },
       .add_features  = function(features, segmentation = NULL, override = TRUE, prefix = "") {
+        browser()
         if(is.null(segmentation)) {
           segmentation <- "global"
         }
