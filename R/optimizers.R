@@ -68,13 +68,15 @@ optim_transposer_emd <- function(mel1,
 
 }
 
-optim_transposer_ih <- function(mel1,
-                                 mel2,
-                                 sim_measure = edit_sim_utf8,
-                                 parameters = list(
+optim_transposer_ih <- function(mel1_obj,
+                                mel2_obj,
+                                sim_measure = edit_sim_utf8,
+                                parameters = list(
                                    strategy = c("all", "hints", "best")
                                  ),
                                 ...) {
+  mel1 <- mel1_obj$data
+  mel2 <- mel2_obj$data
 
   mel1$pitch <- mel1$pitch + 60 - min(c(mel1$pitch))
   mel2$pitch <- mel2$pitch + 60 - min(c(mel2$pitch))
@@ -82,7 +84,7 @@ optim_transposer_ih <- function(mel1,
   if (is.null(parameters)) {
     parameters <- list(strategy = "all")
   }
-  strategy <- parameters$strategy[1]
+  strategy <- ifelse(length(parameters$strategy) == 0, "all", parameters$strategy[1])
 
   d <- stats::median(mel2$pitch)  -  stats::median(mel1$pitch)
 
@@ -95,17 +97,18 @@ optim_transposer_ih <- function(mel1,
   else if (strategy == "best") {
     hints <- find_best_transposition(mel2$pitch, mel1$pitch)
   }
-
-  if("bar" %in% names(mel1)) {
-    mel1_seg <- mel1$bar
-    mel2_seg <- mel2$bar
-  } else if("phrase_segmentation" %in% names(mel1)) {
-    mel1_seg <- mel1$phrase_segmentation
-    mel2_seg <- mel2$phrase_segmentation
-  } else {
-    mel1_seg <- NULL
-    mel2_seg <- NULL
-  }
+  browser()
+  # mel1_seg <- rep(1, nrow(mel1))
+  # mel2_seg <- rep(1, nrow(mel2))
+  mel1_seg <- mel1[[mel1_obj$resolve_segmentation()]]
+  mel2_seg <- mel2[[mel2_obj$resolve_segmentation()]]
+  # for(seg in parameters$segmentation){
+  #   if(seg %in% names(mel1) && seg %in% names(mel2)){
+  #     mel1_seg <- mel1[[seg]]
+  #     mel2_seg <- mel2[[seg]]
+  #     break
+  #   }
+  # }
 
 
   ih1 <- get_implicit_harmonies(mel1$pitch, segmentation = mel1_seg)
@@ -115,7 +118,6 @@ optim_transposer_ih <- function(mel1,
     pull(symbols)
 
   ret <- purrr::map_dfr(union(d, hints) %% 12, function(trans) {
-
     ih1_trans <- (ih1$key_pc + trans) %% 12 + 12 * as.integer(factor(ih1$type)) - 12
     tibble(trans = trans, sim = sim_measure(ih1_trans, ih2))
   })
