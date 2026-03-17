@@ -75,37 +75,52 @@ optim_transposer_ih <- function(mel1,
                                    strategy = c("all", "hints", "best")
                                  ),
                                 ...) {
+
   mel1$pitch <- mel1$pitch + 60 - min(c(mel1$pitch))
   mel2$pitch <- mel2$pitch + 60 - min(c(mel2$pitch))
-  if(is.null(parameters)){
+
+  if (is.null(parameters)) {
     parameters <- list(strategy = "all")
   }
   strategy <- parameters$strategy[1]
 
   d <- stats::median(mel2$pitch)  -  stats::median(mel1$pitch)
 
-  if(strategy == "all") {
+  if (strategy == "all") {
     hints <- 0:11
   }
-  else if(strategy == "hints") {
-    hints <- get_transposition_hints(mel2$pitch, mel1$pitch )
+  else if (strategy == "hints") {
+    hints <- get_transposition_hints(mel2$pitch, mel1$pitch)
   }
-  else if(strategy == "best") {
+  else if (strategy == "best") {
     hints <- find_best_transposition(mel2$pitch, mel1$pitch)
   }
 
-  ih1 <- get_implicit_harmonies(mel1$pitch, segmentation = mel1$bar)
-  ih2 <- get_implicit_harmonies(mel2$pitch, segmentation = mel2$bar)%>%
-    mutate(symbols = key_pc  + 12 * as.integer(factor(type))- 12) %>%
+  if("bar" %in% names(mel1)) {
+    mel1_seg <- mel1$bar
+    mel2_seg <- mel2$bar
+  } else if("phrase_segmentation" %in% names(mel1)) {
+    mel1_seg <- mel1$phrase_segmentation
+    mel2_seg <- mel2$phrase_segmentation
+  } else {
+    mel1_seg <- NULL
+    mel2_seg <- NULL
+  }
+
+
+  ih1 <- get_implicit_harmonies(mel1$pitch, segmentation = mel1_seg)
+
+  ih2 <- get_implicit_harmonies(mel2$pitch, segmentation = mel2_seg) %>%
+    mutate(symbols = key_pc + 12 * (match(type, chord_type_levels) - 1)) %>%
     pull(symbols)
 
   ret <- purrr::map_dfr(union(d, hints) %% 12, function(trans) {
-    #browser()
-    ih1_trans <- (ih1$key_pc + trans) %% 12 + 12 * as.integer(factor(ih1$type))- 12
-    tibble(trans = trans,
-           sim = sim_measure(ih1_trans, ih2))
+
+    ih1_trans <- (ih1$key_pc + trans) %% 12 + 12 * as.integer(factor(ih1$type)) - 12
+    tibble(trans = trans, sim = sim_measure(ih1_trans, ih2))
   })
-  #browser()
+
+
   ret %>% pull(sim) %>% max()
 }
 
