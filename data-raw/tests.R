@@ -15,7 +15,7 @@ test_melsim <- function(N = 20, sim_measure = c("ngrukkon", "diffed", "rawed", "
       melody2 = NULL,
       #similarity_measures = similarity_measures[sim_measure]#, "pmi_ps",   "rhytfuzz", "diffed", "harmcore")
       #sim_measures = manual_measures$harmcore
-      sim_measures = similarity_measures$opti3
+      sim_measures = similarity_measures$harmcore
       #similarity_measures <- c(similarity_measures$rhytfuzz, similarity_measures$opti3)
     )
   tictoc::toc()
