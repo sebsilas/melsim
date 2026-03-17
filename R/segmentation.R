@@ -149,7 +149,11 @@ motifator <- function(mel_obj, threshold = 3){
   mel <- mel_obj$data
   #browser()
   if(!("ioi_class") %in% names(mel_obj)){
-    mel$ioi_class <- melsim::classify_duration(mel$ioi, ref_duration = unique(mel$beat_duration)[1])
+    beat_duration <- 0.5
+    if(mel_obj$has("beat_duration")) {
+      beat_duration <- unique(mel$beat_duration)[]
+    }
+    mel$ioi_class <- melsim::classify_duration(mel$ioi, ref_duration = beat_duration)
   }
   d_ioi <- sign(diff(mel$ioi))
   pos_ioi <- rep(0, length(na.omit(mel$ioi)))
@@ -191,7 +195,7 @@ motifator <- function(mel_obj, threshold = 3){
       idz <- which(segment_ids == sid)
       new_pos <- suppressMessages(find_lcs(mel_obj$data$int[idz]))
       if(sum(new_pos) > 1){
-        messagef("Found subsequences, yay")
+        #messagef("Found subsequences, yay")
         pos[idz] <- new_pos
       }
     }
