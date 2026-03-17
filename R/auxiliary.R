@@ -495,12 +495,15 @@ read_melody <- function(f) {
 
 #' update_melodies
 #' Updates a list of melody objects to the current version of the melody object (as R6 objects keep their bindings, once created)
-#' @param mel_list list of Melody objects
+#' @param mel_list melody object or list of melody objects
 #' @param force (logical) Do it no matter what, otherwise only if version of melsim has changed
 #'@export
 update_melodies <- function(mel_list, force = TRUE){
+  if(!is.list(mel_list)){
+    mel_list <- list(mel_list)
+  }
   current_version <- melody_factory$new()$version
-  map(mel_list, function(x){
+  ret <- map(mel_list, function(x){
     if(force || is.null(x$version) || x$version != current_version){
       melody_factory$new(mel_data = x$data, mel_meta = x$meta, override = FALSE)
     }
@@ -508,6 +511,10 @@ update_melodies <- function(mel_list, force = TRUE){
       x
     }
   })
+  if(length(ret) == 1){
+    ret <- ret[[1]]
+  }
+  ret
 }
 
 #' update_sim_mat
