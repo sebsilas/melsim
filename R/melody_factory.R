@@ -129,7 +129,9 @@ melody_factory <- R6::R6Class("Melody",
         }
 
         if(transform_check("implicit_harmonies")) {
+
           segmentation <- self$resolve_segmentation()
+
           ih <- get_implicit_harmonies(private$.mel_data$pitch,
                                        segmentation = private$.mel_data[[segmentation]],
                                        only_winner = TRUE)
@@ -155,8 +157,6 @@ melody_factory <- R6::R6Class("Melody",
           return("bar")
         }
 
-        #logging:loginfo("private$.mel_data: %s", private$.mel_data)
-
         if(!self$has("phrase_segmentation")) {
 
           seg_df <- private$.mel_data %>%
@@ -164,31 +164,8 @@ melody_factory <- R6::R6Class("Melody",
             dplyr::select(phrasbeg, phrasend) %>%
             dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
 
-          private$.mel_data <- dplyr::bind_cols(private$.mel_data, seg_df)
-            select(phrasbeg, phrasend) %>%
-            mutate(phrase_segmentation = cumsum(phrasbeg))
-          private$.mel_data <- private$.mel_data %>% remove_cols(names(phrase_segmentation))
-          private$.mel_data <- bind_cols(private$.mel_data, phrase_segmentation)
-        }
-
-        if(transform_check("implicit_harmonies")) {
-          #browser()
-          if(self$has(segmentation)) {
-            segmentation_info <- private$.mel_data[[segmentation]]
-            ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation = segmentation_info) %>%
-              select(segment, implicit_harmonies = key)
-            segmentation_name <- sym(segmentation)
-            private$.mel_data <- private$.mel_data %>%
-              remove_cols("implicit_harmonies") %>%
-              left_join(ih, by = setNames("segment", as.character(segmentation_name)) )
-          } else {
-            segmentation <- private$.mel_data$phrase_segmentation
-            ih <- get_implicit_harmonies(private$.mel_data$pitch, segmentation = segmentation) %>%
-              select(segment, implicit_harmonies = key)
-            private$.mel_data <- private$.mel_data %>%
-              left_join(ih, by = c("phrase_segmentation" = "segment"))
-          }
-
+          private$.mel_data <- dplyr::bind_cols(private$.mel_data, seg_df) %>%
+              dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
         }
 
         return("phrase_segmentation")
