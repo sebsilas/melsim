@@ -166,7 +166,8 @@ melody_factory <- R6::R6Class("Melody",
           #   dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
           # segments <- seg_df$phrase_segmentation
           #browser()
-          segments <- motifator(self)
+          segments <- patch_itembankr_segmenter(private$.mel_data)
+          #segments <- motifator(self)
 
           private$.mel_data <- private$.mel_data %>%
             mutate(phrase_segmentation = segments,

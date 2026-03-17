@@ -255,3 +255,11 @@ get_motif_augemented_transformation <- function(mel_obj,
   }
   ret
 }
+
+patch_itembankr_segmenter <- function(mel_data){
+  seg_df <- mel_data %>% itembankr::segment_phrase(as_string_df = FALSE)
+  phrasbeg <- lead(seg_df$phrasbeg, default = 0)
+  phrasbeg[1] <- 1
+  segments <- cumsum(phrasbeg)
+  segments
+}
