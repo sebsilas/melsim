@@ -662,7 +662,6 @@ melody_factory <- R6::R6Class("Melody",
                                             cache = TRUE,
                                             only_winner = FALSE)
         }
-        browser()
         tf <- get_tonal_features(ih)
         if(segmentation != "global")  {
           tf <- tf %>% rename(!!segmentation := segment)
@@ -671,7 +670,7 @@ melody_factory <- R6::R6Class("Melody",
 
       },
       .add_features  = function(features, segmentation = NULL, override = TRUE, prefix = "") {
-        browser()
+
         if(is.null(segmentation)) {
           segmentation <- "global"
         }

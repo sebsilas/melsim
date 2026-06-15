@@ -97,7 +97,6 @@ optim_transposer_ih <- function(mel1_obj,
   else if (strategy == "best") {
     hints <- find_best_transposition(mel2$pitch, mel1$pitch)
   }
-  browser()
   # mel1_seg <- rep(1, nrow(mel1))
   # mel2_seg <- rep(1, nrow(mel2))
   mel1_seg <- mel1[[mel1_obj$resolve_segmentation()]]
