@@ -141,10 +141,9 @@ sim_dtw_old <- function(mel1, mel2, beta = 1){
 }
 
 sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = list(), ...) {
-  # ------------------------------------------------------------
+
   # 1. Extract transform matrix
-  # ------------------------------------------------------------
-  #browser()
+
   if(!("onset" %in% transforms)){
    transforms <- c("onset", transforms)
   }
@@ -154,9 +153,8 @@ sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = lis
   if (is.vector(x)) x <- matrix(x, ncol = 1)
   if (is.vector(y)) y <- matrix(y, ncol = 1)
 
-  # ------------------------------------------------------------
   # 2. Guard against degenerate input
-  # ------------------------------------------------------------
+
   if (is.null(x) || is.null(y) ||
       nrow(x) < 2 || nrow(y) < 2) {
     return(NA_real_)
@@ -178,9 +176,9 @@ sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = lis
     return(NA_real_)
   }
 
-  # ------------------------------------------------------------
+
   # 3. Determine DTW mode
-  # ------------------------------------------------------------
+
   mode <- parameters$mode %||% "structural"
 
   if (mode == "recall") {
@@ -194,9 +192,9 @@ sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = lis
     open_end     <- FALSE
   }
 
-  # ------------------------------------------------------------
+
   # 4. Compute DTW
-  # ------------------------------------------------------------
+
   alignment <- tryCatch(
     dtw::dtw(
       x,
@@ -204,7 +202,7 @@ sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = lis
       step.pattern = step_pattern,
       open.begin = open_begin,
       open.end = open_end,
-      keep.internals = T,
+      keep.internals = TRUE,
       ...
     ),
     error = function(e) NULL
@@ -215,9 +213,9 @@ sim_dtw <- function(mel1, mel2, transforms = "onset", beta = 1, parameters = lis
 
   d <- alignment$normalizedDistance
 
-  # ------------------------------------------------------------
+
   # 5. Convert distance to similarity
-  # ------------------------------------------------------------
+
   if (is.null(beta) || beta <= 0)
     return(exp(-2 * d))
 
