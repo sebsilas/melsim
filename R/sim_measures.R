@@ -275,7 +275,7 @@ sim_measure_from_string <- function(sm) {
 
 #' @export
 get_sim_measures <- function(){
-  names(similarity_measures)
+  names(melsim::similarity_measures)
 }
 
 #'@export
