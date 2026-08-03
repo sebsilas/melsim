@@ -908,8 +908,16 @@ get_transform_matrix <- function(melody, transforms) {
 }
 
 
+#' Benchmark against Müllensiefen & Frieler 2004.
+#'
+#' @param sim_measure
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 benchmark_sim_measure_on_muel_frieler_2004 <- function(sim_measure = "opti3") {
-  get_orig_variation_pairs(corpus = muel_frieler_exp1, sim_measure = sim_measure)
+  get_orig_variation_pairs(corpus = melsim::muel_frieler_exp1, sim_measure = sim_measure)
 }
 
 get_orig_variation_pairs <- function(
@@ -922,7 +930,7 @@ get_orig_variation_pairs <- function(
   sim_matrix <- if (is.null(sim_measure)) {
     melsim(corpus)$as_tibble()
   } else {
-    melsim(corpus, similarity = sim_measure)$as_tibble()
+    melsim(corpus, sim_measures = sim_measure)$as_tibble()
   }
 
   out <- bind_rows(
@@ -965,5 +973,6 @@ get_orig_variation_pairs <- function(
     out <- dplyr::select(out, -sim_const)
   }
 
-  out
+  out %>%
+    distinct(melody1, melody2, .keep_all = TRUE)
 }

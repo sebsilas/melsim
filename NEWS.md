@@ -1,3 +1,7 @@
+# melsim 0.13.0
+
+- Add benchmarking against Müllensiefen and Frieler 2004 functionality + corpus used there.
+
 # melsim 0.12.2
 
 - Remove browser()

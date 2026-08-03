@@ -3,6 +3,7 @@
 export(add_ngrams)
 export(benchmark_plot)
 export(benchmark_sim_measure)
+export(benchmark_sim_measure_on_muel_frieler_2004)
 export(classify_duration)
 export(distribution_based_measures)
 export(expand_grid_unique)
