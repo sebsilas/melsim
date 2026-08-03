@@ -516,18 +516,29 @@ melody_factory <- R6::R6Class("Melody",
                         by = "algorithm")
             keep <- safe_get(sm$parameters, "keep_singles")
 
-            if(length(sm$parameters$linear_combination$apply_inv_logit_transform) == 0) {
-              apply_inv_logit_transform <- FALSE
+            lc <- sm$parameters$linear_combination
+
+            # Backward compatible: old measures used apply_inv_logit_transform = TRUE/FALSE
+            transform <- if (!is.null(lc$transform)) {
+              lc$transform
+            } else if (isTRUE(lc$apply_inv_logit_transform)) {
+              "inv_logit"
             } else {
-              apply_inv_logit_transform <- sm$parameters$linear_combination$apply_inv_logit_transform
+              "squeeze"
             }
 
-            if(apply_inv_logit_transform) {
-              sim_res <- inv_logit(sum(single_sims$sim * single_sims$weights))
-              # Assuming here we don't need to squeeze here because we are using a bounded distribution model (e.g., beta)
-            } else {
-              sim_res <- squeeze(sum(single_sims$sim * single_sims$weights), 0, 1)
-            }
+            eta <- sum(single_sims$sim * single_sims$weights)
+
+            sim_res <- switch(
+              transform,
+              inv_logit = inv_logit(eta),
+              # exp transform: eta <= 0 by construction when the const weight equals
+              # -(sum of positive feature weights), so exp(eta) is in (0, 1].
+              # pmin guards against floating-point overshoot at identity.
+              exp       = pmin(exp(eta), 1),
+              squeeze   = squeeze(eta, 0, 1),
+              stop("Unknown linear_combination transform: ", transform)
+            )
 
             combi_sim <-
               tibble(algorithm = sm$name,
