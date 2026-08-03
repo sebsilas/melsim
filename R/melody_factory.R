@@ -244,7 +244,7 @@ melody_factory <- R6::R6Class("Melody",
           stop("Not implemented")
         }
         if(ext %in% c("mid", "midi")) {
-          stop("Not implemented")
+          return(read_midi(fname))
         }
         if(ext %in% c("xml",  "musicxml")) {
           #stop("Not implemented")
