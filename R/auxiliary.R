@@ -487,6 +487,22 @@ create_corpus_from_csvs <- function(f) {
     purrr::map(read_melody)
 }
 
+create_corpus_from_midi <- function(f) {
+  l <- list.files(
+    f,
+    pattern = "\\.mid(i)?$",
+    ignore.case = TRUE,
+    full.names = TRUE
+  ) |>
+    purrr::map(read_melody)
+
+  nms <- purrr::map(l, ~.x$meta$name )
+
+  names(l) <- nms
+
+  return(l)
+}
+
 read_melody <- function(f) {
   melody_factory$new(fname = f, name = tools::file_path_sans_ext(basename(f)))
 }
@@ -891,3 +907,72 @@ get_transform_matrix <- function(melody, transforms) {
   mat[complete.cases(mat), , drop = FALSE]
 }
 
+
+#' Benchmark against Müllensiefen & Frieler 2004.
+#'
+#' @param sim_measure
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+benchmark_sim_measure_on_muel_frieler_2004 <- function(sim_measure = "opti3") {
+  get_orig_variation_pairs(corpus = melsim::muel_frieler_exp1, sim_measure = sim_measure)
+}
+
+get_orig_variation_pairs <- function(
+    corpus,
+    sim_measure = NULL,
+    keep_identity = FALSE,
+    drop_sim_const = TRUE
+) {
+
+  sim_matrix <- if (is.null(sim_measure)) {
+    melsim(corpus)$as_tibble()
+  } else {
+    melsim(corpus, sim_measures = sim_measure)$as_tibble()
+  }
+
+  out <- bind_rows(
+
+    # Original vs variation
+    sim_matrix %>%
+      mutate(
+        base1 = stringr::str_remove(melody1, "_[^_]+$"),
+        base2 = stringr::str_remove(melody2, "_[^_]+$")
+      ) %>%
+      filter(
+        base1 == base2,
+        xor(
+          stringr::str_ends(melody1, "_orig"),
+          stringr::str_ends(melody2, "_orig")
+        )
+      ),
+
+    # Original vs original
+    sim_matrix %>%
+      filter(
+        melody1 == melody2,
+        stringr::str_ends(melody1, "_orig")
+      )
+
+  ) %>%
+    mutate(
+      m1 = melody1,
+      m2 = melody2,
+      melody1 = dplyr::if_else(stringr::str_ends(m2, "_orig"), m2, m1),
+      melody2 = dplyr::if_else(stringr::str_ends(m2, "_orig"), m1, m2)
+    ) %>%
+    dplyr::select(-starts_with("base"), -m1, -m2)
+
+  if (!keep_identity) {
+    out <- dplyr::filter(out, melody1 != melody2)
+  }
+
+  if (drop_sim_const && "sim_const" %in% names(out)) {
+    out <- dplyr::select(out, -sim_const)
+  }
+
+  out %>%
+    distinct(melody1, melody2, .keep_all = TRUE)
+}

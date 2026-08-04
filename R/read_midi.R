@@ -21,11 +21,15 @@ read_midi <- function(midi_file) {
                   durations = round(ticks_to_ms(length, ppq = get_division_from_midi_file(midi_file), tempo = tempo), 2)) %>%
     dplyr::select(onset, durations, note) %>%
     dplyr::rename(pitch = note)
-  notes
+
+  nm <- tools::file_path_sans_ext(basename(midi_file))
+
+  return(list(mel_data = notes, mel_meta = list(name = nm )))
+
 }
 
 # Utils
 
 
 
-#t <- read_midi('data-raw/Berkowitz623.mid')
+# t <- read_midi('data-raw/Berkowitz623.mid')

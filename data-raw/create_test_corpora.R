@@ -16,4 +16,22 @@ midi <- map(unique(midi_biased_trial$target_id), function(tid){
   onset <- cumsum(c(0, duration[-length(duration)]))
   melody_factory$new(mel_data = tibble(onset = onset, pitch = pitch, duration = duration))
 })
-usethis::use_data(kinder_full, beatles, parker, miles, overwrite = TRUE)
+
+
+muel_frieler_exp1 <- create_corpus_from_midi("data-raw/2004_MuelFrielerPaper/Exp1")
+
+
+muel_frieler_exp1_sim <- get_orig_variation_pairs(muel_frieler_exp1)
+
+# Recall sim with Müllensiefen & Frieler 2004 paper
+
+usethis::use_data(kinder_full,
+                  beatles,
+                  parker,
+                  miles,
+
+                  muel_frieler_exp1,
+
+                  muel_frieler_exp1_sim,
+
+                  overwrite = TRUE)
