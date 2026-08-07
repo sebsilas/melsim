@@ -152,7 +152,12 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       resolve_segmentation = function() {
-        #browser()
+
+        if (!is.null(private$.mel_meta$segmentation) &&
+            self$has(private$.mel_meta$segmentation)) {
+          return(private$.mel_meta$segmentation)
+        }
+
         if(self$has("bar")) {
           return("bar")
         }
@@ -160,12 +165,7 @@ melody_factory <- R6::R6Class("Melody",
           return("phrase_id")
         }
         if(!self$has("phrase_segmentation")) {
-          # seg_df <- private$.mel_data %>%
-          #   itembankr::segment_phrase(as_string_df = FALSE) %>%
-          #   dplyr::select(phrasbeg, phrasend) %>%
-          #   dplyr::mutate(phrase_segmentation = cumsum(phrasbeg))
-          # segments <- seg_df$phrase_segmentation
-          #browser()
+
           segments <- patch_itembankr_segmenter(private$.mel_data)
           #segments <- motifator(self)
 
@@ -255,12 +255,34 @@ melody_factory <- R6::R6Class("Melody",
       },
 
       read_mcsv = function(fname) {
-        mel_data <- read.csv(fname,
-                             header = TRUE,
-                             sep = ";",
-                             stringsAsFactors = FALSE) %>%
-          as_tibble() %>%
-          mutate(signature = str_extract(signature, "[0-9]+/[0-9]+"))
+
+        if (grepl("^\\s*Signature\\s*:", readLines(fname, n = 1), ignore.case = TRUE)) {
+
+          # Muelensiefen/Frieler format
+          signature <- stringr::str_extract(readLines(fname, n = 1), "\\d+/\\d+")
+
+          mel_data <- read.csv2(
+            fname,
+            skip = 1,
+            stringsAsFactors = FALSE
+          ) %>%
+            tibble::as_tibble() %>%
+            mutate(signature = signature)
+
+        } else {
+
+          # Existing behaviour (unchanged)
+          mel_data <- read.csv(
+            fname,
+            header = TRUE,
+            sep = ";",
+            stringsAsFactors = FALSE
+          ) %>%
+            tibble::as_tibble() %>%
+            mutate(signature = stringr::str_extract(signature, "[0-9]+/[0-9]+"))
+
+        }
+
         mel_meta <- list(file_name =  fname,
                          name = tools::file_path_sans_ext(basename(fname)))
         list(mel_data = mel_data, mel_meta = mel_meta)

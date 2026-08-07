@@ -2,13 +2,21 @@
 % Please edit documentation in R/auxiliary.R
 \name{benchmark_sim_measure_on_muel_frieler_2004}
 \alias{benchmark_sim_measure_on_muel_frieler_2004}
-\title{Benchmark against Müllensiefen & Frieler 2004.}
+\title{Benchmark a similarity measure against Müllensiefen & Frieler (2004).}
 \usage{
-benchmark_sim_measure_on_muel_frieler_2004(sim_measure = "opti3")
+benchmark_sim_measure_on_muel_frieler_2004(
+  sim_measure = "opti3",
+  experiment = 1:3
+)
 }
 \arguments{
-\item{sim_measure}{}
+\item{sim_measure}{Character vector of similarity measures.}
+
+\item{experiment}{Integer vector indicating which experiments (1--3) to run.}
+}
+\value{
+A tibble containing the benchmark data and newly computed similarity values.
 }
 \description{
-Benchmark against Müllensiefen & Frieler 2004.
+Benchmark a similarity measure against Müllensiefen & Frieler (2004).
 }

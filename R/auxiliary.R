@@ -482,9 +482,9 @@ pmi <- function(q, t) {
 # # 0.69
 
 
-create_corpus_from_csvs <- function(f) {
+create_corpus_from_csvs <- function(f, segmentation = NULL) {
   list.files(f, pattern = "csv", full.names = TRUE) %>%
-    purrr::map(read_melody)
+    purrr::map(read_melody, segmentation = segmentation)
 }
 
 create_corpus_from_midi <- function(f) {
@@ -503,8 +503,10 @@ create_corpus_from_midi <- function(f) {
   return(l)
 }
 
-read_melody <- function(f) {
-  melody_factory$new(fname = f, name = tools::file_path_sans_ext(basename(f)))
+read_melody <- function(f, segmentation = NULL) {
+  melody_factory$new(fname = f,
+                     name = tools::file_path_sans_ext(basename(f)),
+                     segmentation = segmentation)
 }
 
 #' update_melodies
@@ -908,71 +910,88 @@ get_transform_matrix <- function(melody, transforms) {
 }
 
 
-#' Benchmark against Müllensiefen & Frieler 2004.
+#' Benchmark a similarity measure against Müllensiefen & Frieler (2004).
 #'
-#' @param sim_measure
+#' @param sim_measure Character vector of similarity measures.
+#' @param experiment Integer vector indicating which experiments (1--3) to run.
 #'
 #' @returns
-#' @export
+#' A tibble containing the benchmark data and newly computed similarity values.
 #'
-#' @examples
-benchmark_sim_measure_on_muel_frieler_2004 <- function(sim_measure = "opti3") {
-  get_orig_variation_pairs(corpus = melsim::muel_frieler_exp1, sim_measure = sim_measure)
-}
-
-get_orig_variation_pairs <- function(
-    corpus,
-    sim_measure = NULL,
-    keep_identity = FALSE,
-    drop_sim_const = TRUE
+#' @export
+benchmark_sim_measure_on_muel_frieler_2004 <- function(
+    sim_measure = "opti3",
+    experiment = 1:3
 ) {
 
-  sim_matrix <- if (is.null(sim_measure)) {
-    melsim(corpus)$as_tibble()
-  } else {
-    melsim(corpus, sim_measures = sim_measure)$as_tibble()
-  }
+  stopifnot(all(experiment %in% 1:3))
 
-  out <- bind_rows(
+  datasets <- list(
+    `1` = list(
+      corpus = melsim::muel_frieler_exp1,
+      benchmark = melsim::muel_frieler_exp1_sim
+    ),
+    `2` = list(
+      corpus = melsim::muel_frieler_exp2,
+      benchmark = melsim::muel_frieler_exp2_sim
+    ),
+    `3` = list(
+      corpus = melsim::muel_frieler_exp3,
+      benchmark = melsim::muel_frieler_exp3_sim
+    )
+  )
 
-    # Original vs variation
-    sim_matrix %>%
-      mutate(
-        base1 = stringr::str_remove(melody1, "_[^_]+$"),
-        base2 = stringr::str_remove(melody2, "_[^_]+$")
-      ) %>%
-      filter(
-        base1 == base2,
-        xor(
-          stringr::str_ends(melody1, "_orig"),
-          stringr::str_ends(melody2, "_orig")
+  purrr::map_dfr(experiment, function(exp) {
+
+    corpus <- update_melodies(datasets[[as.character(exp)]]$corpus)
+
+    sim_tbl <-
+      melsim(
+        corpus,
+        sim_measures = sim_measure
+      )$as_tibble() |>
+      dplyr::rename(
+        target = melody1,
+        query = melody2
+      ) |>
+      dplyr::select(target, query, dplyr::starts_with("sim_"))
+
+    if(exp == 1) {
+      sim_tbl <- sim_tbl |>
+        mutate(query = toupper(query))
+    }
+
+    if(exp == 2) {
+      sim_tbl <- sim_tbl |>
+        mutate(
+          target = case_when(target == "KK1" ~ "kk1", TRUE ~ target),
+          query = case_when(query == "KK1" ~ "kk1", TRUE ~ query)
         )
-      ),
+    }
 
-    # Original vs original
-    sim_matrix %>%
-      filter(
-        melody1 == melody2,
-        stringr::str_ends(melody1, "_orig")
+    if(exp == 3) {
+      sim_tbl <- sim_tbl |>
+        mutate(
+          target = tolower(target),
+          query = tolower(query)
+        )
+    }
+
+    datasets[[as.character(exp)]]$benchmark |>
+      dplyr::select(
+        -dplyr::starts_with("sim_")
+      ) |>
+      dplyr::left_join(
+        sim_tbl,
+        by = c("target", "query")
+      ) |>
+      dplyr::mutate(
+        experiment = exp,
+        .before = 1
       )
 
-  ) %>%
-    mutate(
-      m1 = melody1,
-      m2 = melody2,
-      melody1 = dplyr::if_else(stringr::str_ends(m2, "_orig"), m2, m1),
-      melody2 = dplyr::if_else(stringr::str_ends(m2, "_orig"), m1, m2)
-    ) %>%
-    dplyr::select(-starts_with("base"), -m1, -m2)
+  })
 
-  if (!keep_identity) {
-    out <- dplyr::filter(out, melody1 != melody2)
-  }
-
-  if (drop_sim_const && "sim_const" %in% names(out)) {
-    out <- dplyr::select(out, -sim_const)
-  }
-
-  out %>%
-    distinct(melody1, melody2, .keep_all = TRUE)
 }
+
+
