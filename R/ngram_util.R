@@ -1,3 +1,4 @@
+
 #' Add ngrams of multiple sizes to given melody data frame
 #'
 #' @param mel_data Melody data frame
@@ -8,7 +9,6 @@
 #' @export
 #'
 #' @examples
-
 add_ngrams <- function(mel_data, columns, N, override = FALSE) {
   ngram_cols <-
     map_dfc(columns, function(col){
@@ -73,4 +73,18 @@ get_all_ngrams <- function(x, N = 3, collapse = ",", keep_length = FALSE){
   ret
 }
 
+
+open_bigrams <- function(pitch) {
+
+  n <- length(pitch)
+
+  if (n < 2) {
+    return(numeric(0))
+  }
+
+  purrr::map(seq_len(n - 1), \(i) {
+    pitch[(i + 1):n] - pitch[i]
+  }) |>
+    purrr::list_c()
+}
 

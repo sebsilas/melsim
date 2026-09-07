@@ -405,6 +405,36 @@ stringdot_measures <- generate_stringdot_measures(1:MAX_NGRAM_LENGTH, stringdot_
 all_ngram_measures <- generate_sim_measures(1:MAX_NGRAM_LENGTH, sim_configs)
 
 
+open_bigram_measures <- list(
+
+  melsim::sim_measure_factory$new(
+    full_name = "interval-open-bigram-sum-common",
+    name = "ob_sumc",
+    transformation = "open_bigrams",
+    sim_measure = "sum_common"
+  ),
+
+  melsim::sim_measure_factory$new(
+    full_name = "interval-open-bigram-count-distinct",
+    name = "ob_coord",
+    transformation = "open_bigrams",
+    sim_measure = "count_distinct"
+  ),
+
+  melsim::sim_measure_factory$new(
+    full_name = "interval-open-bigram-jaccard",
+    name = "ob_jacc",
+    transformation = "open_bigrams",
+    sim_measure = "Jaccard"
+  ),
+
+  melsim::sim_measure_factory$new(
+    full_name = "interval-open-bigram-distribution-similarity",
+    name = "ob_dist",
+    transformation = "open_bigrams",
+    sim_measure = "distr_sim"
+  )
+)
 
 manual_measures <- list(
 
@@ -489,7 +519,7 @@ manual_measures <- list(
 )
 
 # Combine the manually defined measures with the generated ones
-similarity_measures <- c(manual_measures, stringdot_measures, all_ngram_measures, dtw_univariate, dtw_multivariate, dtw_3d_measures)
+similarity_measures <- c(manual_measures, stringdot_measures, all_ngram_measures, dtw_univariate, dtw_multivariate, dtw_3d_measures, open_bigram_measures)
 
 # Assign unique names
 names(similarity_measures) <- map_chr(similarity_measures, ~ .x$name)

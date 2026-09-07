@@ -419,6 +419,39 @@ melody_factory <- R6::R6Class("Melody",
         }
       },
 
+      open_bigram_similarity = function(melody,
+                                        method = "Jaccard",
+                                        parameters = NULL) {
+
+        stopifnot(methods::is(melody, "Melody"))
+
+        ob1 <- open_bigrams(private$.mel_data$pitch)
+        ob2 <- open_bigrams(melody$data$pitch)
+
+        if (is.function(method)) {
+          method(ob1, ob2)
+
+        } else if (method == "count_distinct") {
+          count_distinct(ob1, ob2)
+
+        } else if (method == "sum_common") {
+          sum_common(ob1, ob2)
+
+        } else if (method == "distr_sim") {
+          distr_sim(ob1, ob2)
+
+        } else if (proxy::pr_DB$entry_exists(method)) {
+          proxy_pkg_handler(ob1, ob2, method)
+
+        } else {
+          logging::logerror(
+            "Open-bigram similarity function %s not defined",
+            method
+          )
+          NA
+        }
+      },
+
       similarity = function(melody, sim_measures) {
         #browser()
         # Make sure both melodies have transforms
@@ -480,23 +513,40 @@ melody_factory <- R6::R6Class("Melody",
           else if(sm$type == "set_based" || sm$type == "distribution_based" ) {
 
             if(sm$transformation == "ngrams") {
-              sim <- self$ngram_similarity(melody,
-                                           N = sm$parameters$ngram_length,
-                                           transform = sm$parameters$transform,
-                                           method = sm$sim_measure,
-                                           modify = sm$cache,
-                                           parameters = sm$parameters)
 
-              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
+              sim <- self$ngram_similarity(
+                melody,
+                N = sm$parameters$ngram_length,
+                transform = sm$parameters$transform,
+                method = sm$sim_measure,
+                modify = sm$cache,
+                parameters = sm$parameters
+              )
 
+            } else if(sm$transformation == "open_bigrams") {
+
+              sim <- self$open_bigram_similarity(
+                melody,
+                method = sm$sim_measure,
+                parameters = sm$parameters
+              )
             } else {
-              sim <- proxy_pkg_handler(x = self$data[[sm$transformation]],
-                                       y = melody$data[[sm$transformation]],
-                                       proxy_method = sm$sim_measure)
 
-              return(tibble(algorithm = sm$name, full_name = sm$full_name, sim = sim))
-
+              sim <- proxy_pkg_handler(
+                x = self$data[[sm$transformation]],
+                y = melody$data[[sm$transformation]],
+                proxy_method = sm$sim_measure
+              )
             }
+
+            return(
+              tibble(
+                algorithm = sm$name,
+                full_name = sm$full_name,
+                sim = sim
+              )
+            )
+
           } else if(sm$type == "vector_based") {
 
             if(sm$sim_measure == "Minkowski") {

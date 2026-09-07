@@ -157,6 +157,7 @@ sim_transformations <- c("pitch",
                          "implicit_harmonies",
                          "int_X_ioi_class",
                          "ngrams",
+                         "open_bigrams",
                          "none")
 
 proxy_pkg_measures <-  proxy::pr_DB$get_entry_names()
