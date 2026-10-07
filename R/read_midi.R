@@ -18,8 +18,8 @@ read_midi <- function(midi_file) {
   notes <- tuneR::getMidiNotes(midi_file_dat) %>%
     tibble::as_tibble() %>%
     dplyr::mutate(onset = round(ticks_to_ms(time, ppq = get_division_from_midi_file(midi_file), tempo = tempo), 2),
-                  durations = round(ticks_to_ms(length, ppq = get_division_from_midi_file(midi_file), tempo = tempo), 2)) %>%
-    dplyr::select(onset, durations, note) %>%
+                  duration = round(ticks_to_ms(length, ppq = get_division_from_midi_file(midi_file), tempo = tempo), 2)) %>%
+    dplyr::select(onset, duration, note) %>%
     dplyr::rename(pitch = note)
 
   nm <- tools::file_path_sans_ext(basename(midi_file))
