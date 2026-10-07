@@ -147,7 +147,7 @@ find_lcs <- function(x, min_length = 8){
 #' @export
 motifator <- function(mel_obj, threshold = 3){
   mel <- mel_obj$data
-  #browser()
+  browser()
   if(!("ioi_class") %in% names(mel_obj)){
     beat_duration <- 0.5
     if(mel_obj$has("beat_duration")) {
@@ -193,9 +193,9 @@ motifator <- function(mel_obj, threshold = 3){
     tmp_pos <- pos
     for(sid in large_segments){
       idz <- which(segment_ids == sid)
-      new_pos <- suppressMessages(find_lcs(mel_obj$data$int[idz]))
+      new_pos <- suppressMessages(find_lcs(mel_obj$data$fuzzy_int[idz]))
       if(sum(new_pos) > 1){
-        #messagef("Found subsequences, yay")
+        logging::loginfo("Found subsequences, yay")
         pos[idz] <- new_pos
       }
     }
@@ -229,7 +229,7 @@ motif_plot <- function(mel_obj, max_motif = Inf, with_facets = T, external = NUL
   q
 }
 
-get_motif_augemented_transformation <- function(mel_obj,
+get_motif_augmented_transformation <- function(mel_obj,
                                                 transform = "int_X_ioi_class",
                                                 symbols = c("start" = "^", "in" = "", "end" = "$"),
                                                 as_df = F){
